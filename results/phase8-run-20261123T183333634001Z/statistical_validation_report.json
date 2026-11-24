@@ -1,0 +1,1760 @@
+{
+  "metadata": {
+    "results_dir": "C:\\tracerecover\\results\\phase8-run-20261123T183333634001Z",
+    "telemetry_csv": "C:\\tracerecover\\data\\tracerecover_execution_telemetry.csv",
+    "dataset_version": "2.0",
+    "dataset_sha256": "7e3a535c6609021ace84acc86e62fbc641ca6f567feac77a2d5b457f61f5050c",
+    "seed": 42,
+    "task_count_per_rate": 100,
+    "failure_rates_percent": [
+      0.0,
+      20.0,
+      40.0
+    ]
+  },
+  "telemetry_csv_parity": {
+    "available": true,
+    "csv_path": "C:\\tracerecover\\data\\tracerecover_execution_telemetry.csv",
+    "total_csv_rows": 600,
+    "parity_ok": true,
+    "mismatches": []
+  },
+  "conditions": [
+    {
+      "failure_rate_percent": 0.0,
+      "baseline": {
+        "task_success_rate": 0.86,
+        "task_success_count": 86,
+        "task_count": 100,
+        "wilson_95_ci": {
+          "lower": 0.7786263961619276,
+          "upper": 0.914737342455351
+        },
+        "decisions": {
+          "total": 100,
+          "counts": {
+            "ANSWER": 0,
+            "WARN": 0,
+            "ABSTAIN": 0,
+            "NOT_APPLICABLE": 100
+          },
+          "rates": {
+            "ANSWER": 0.0,
+            "WARN": 0.0,
+            "ABSTAIN": 0.0,
+            "NOT_APPLICABLE": 1.0
+          }
+        },
+        "accuracy_and_hallucination": {
+          "independent_gold_accuracy_all": {
+            "rate": 0.86,
+            "correct": 86,
+            "denominator": 100
+          },
+          "independent_gold_accuracy_answerable": {
+            "rate": 1.0,
+            "correct": 70,
+            "denominator": 70
+          },
+          "selective_accuracy_strict": {
+            "description": "Gold accuracy strictly over non-abstained outputs; any non-abstained response on a should_abstain=True task counts as incorrect.",
+            "rate": 0.7,
+            "correct": 70,
+            "denominator": 100
+          },
+          "selective_accuracy_task_criterion": {
+            "description": "Task-criterion accuracy over non-abstained outputs (crediting explicit textual refusal strings on should_abstain=True tasks).",
+            "rate": 0.86,
+            "correct": 86,
+            "denominator": 100
+          },
+          "selective_accuracy_by_decision": {
+            "ANSWER": {
+              "rate": null,
+              "correct": 0,
+              "denominator": 0
+            },
+            "WARN": {
+              "rate": null,
+              "correct": 0,
+              "denominator": 0
+            }
+          },
+          "gold_fact_hallucination_rate": {
+            "rate": 0.13131313131313133,
+            "hallucinating_answers": 13,
+            "denominator": 99
+          },
+          "nli_grounded_hallucination_rate": {
+            "backend": "deterministic_offline_fallback",
+            "entity_scoped": true,
+            "answer_level_rate": 0.29292929292929293,
+            "hallucinating_answers": 29,
+            "denominator": 99,
+            "claim_level_ungrounded_rate": 0.15343915343915343,
+            "unsupported_claims": 19,
+            "contradicted_claims": 10,
+            "total_claims": 189
+          },
+          "zero_claim_non_abstained_tasks": [
+            {
+              "task_id": "MEA-20",
+              "category": "missing_evidence_abstention",
+              "query": "What is the verified status and owner of ticket T-419?",
+              "raw_answer": "{}",
+              "final_decision": "NOT_APPLICABLE",
+              "should_abstain": true,
+              "task_success": false,
+              "reason": "ClaimExtractor requires at least one alphanumeric character; raw emitted answer '{}' contains zero factual claims and is therefore excluded from the claim-bearing hallucination denominator."
+            }
+          ],
+          "non_abstained_answerable_errors": []
+        },
+        "brier_score": {
+          "brier_score": null,
+          "sample_count": 0
+        },
+        "ece": {
+          "ece": null,
+          "sample_count": 0,
+          "bin_count": 10,
+          "binning": "equal-width [0,1], last bin includes 1",
+          "bins": []
+        }
+      },
+      "tracerecover": {
+        "task_success_rate": 1.0,
+        "task_success_count": 100,
+        "task_count": 100,
+        "wilson_95_ci": {
+          "lower": 0.9630051925239981,
+          "upper": 0.9999999999999999
+        },
+        "decisions": {
+          "total": 100,
+          "counts": {
+            "ANSWER": 70,
+            "WARN": 0,
+            "ABSTAIN": 30,
+            "NOT_APPLICABLE": 0
+          },
+          "rates": {
+            "ANSWER": 0.7,
+            "WARN": 0.0,
+            "ABSTAIN": 0.3,
+            "NOT_APPLICABLE": 0.0
+          }
+        },
+        "accuracy_and_hallucination": {
+          "independent_gold_accuracy_all": {
+            "rate": 1.0,
+            "correct": 100,
+            "denominator": 100
+          },
+          "independent_gold_accuracy_answerable": {
+            "rate": 1.0,
+            "correct": 70,
+            "denominator": 70
+          },
+          "selective_accuracy_strict": {
+            "description": "Gold accuracy strictly over non-abstained outputs; any non-abstained response on a should_abstain=True task counts as incorrect.",
+            "rate": 1.0,
+            "correct": 70,
+            "denominator": 70
+          },
+          "selective_accuracy_task_criterion": {
+            "description": "Task-criterion accuracy over non-abstained outputs (crediting explicit textual refusal strings on should_abstain=True tasks).",
+            "rate": 1.0,
+            "correct": 70,
+            "denominator": 70
+          },
+          "selective_accuracy_by_decision": {
+            "ANSWER": {
+              "rate": 1.0,
+              "correct": 70,
+              "denominator": 70
+            },
+            "WARN": {
+              "rate": null,
+              "correct": 0,
+              "denominator": 0
+            }
+          },
+          "gold_fact_hallucination_rate": {
+            "rate": 0.0,
+            "hallucinating_answers": 0,
+            "denominator": 70
+          },
+          "nli_grounded_hallucination_rate": {
+            "backend": "deterministic_offline_fallback",
+            "entity_scoped": true,
+            "answer_level_rate": 0.0,
+            "hallucinating_answers": 0,
+            "denominator": 70,
+            "claim_level_ungrounded_rate": 0.0,
+            "unsupported_claims": 0,
+            "contradicted_claims": 0,
+            "total_claims": 150
+          },
+          "zero_claim_non_abstained_tasks": [],
+          "non_abstained_answerable_errors": []
+        },
+        "brier_score": {
+          "brier_score": 0.15165816326530612,
+          "sample_count": 100
+        },
+        "ece": {
+          "ece": 0.19642857142857142,
+          "sample_count": 100,
+          "bin_count": 10,
+          "binning": "equal-width [0,1], last bin includes 1",
+          "bins": [
+            {
+              "bin": 0,
+              "lower_bound": 0.0,
+              "upper_bound": 0.1,
+              "sample_count": 10,
+              "average_confidence": 0.0,
+              "accuracy": 1.0
+            },
+            {
+              "bin": 3,
+              "lower_bound": 0.3,
+              "upper_bound": 0.4,
+              "sample_count": 10,
+              "average_confidence": 0.3571428571428572,
+              "accuracy": 1.0
+            },
+            {
+              "bin": 6,
+              "lower_bound": 0.6,
+              "upper_bound": 0.7,
+              "sample_count": 10,
+              "average_confidence": 0.6785714285714286,
+              "accuracy": 1.0
+            },
+            {
+              "bin": 9,
+              "lower_bound": 0.9,
+              "upper_bound": 1.0,
+              "sample_count": 70,
+              "average_confidence": 1.0,
+              "accuracy": 1.0
+            }
+          ]
+        }
+      },
+      "paired_mcnemar_test": {
+        "paired_task_count": 100,
+        "contingency_table": {
+          "both_correct_n11": 86,
+          "baseline_only_n10": 0,
+          "tracerecover_only_n01": 14,
+          "both_wrong_n00": 0
+        },
+        "discordant_pairs": 14,
+        "net_gain_tasks": 14,
+        "exact_two_sided_p_value": 0.0001220703125,
+        "chi2_continuity_corrected": 12.071428571428571,
+        "chi2_p_value": 0.0005120045221899044,
+        "significant_at_0_05": true,
+        "significant_at_0_01": true
+      }
+    },
+    {
+      "failure_rate_percent": 20.0,
+      "baseline": {
+        "task_success_rate": 0.58,
+        "task_success_count": 58,
+        "task_count": 100,
+        "wilson_95_ci": {
+          "lower": 0.4820630799889527,
+          "upper": 0.672017750814887
+        },
+        "decisions": {
+          "total": 100,
+          "counts": {
+            "ANSWER": 0,
+            "WARN": 0,
+            "ABSTAIN": 0,
+            "NOT_APPLICABLE": 100
+          },
+          "rates": {
+            "ANSWER": 0.0,
+            "WARN": 0.0,
+            "ABSTAIN": 0.0,
+            "NOT_APPLICABLE": 1.0
+          }
+        },
+        "accuracy_and_hallucination": {
+          "independent_gold_accuracy_all": {
+            "rate": 0.58,
+            "correct": 58,
+            "denominator": 100
+          },
+          "independent_gold_accuracy_answerable": {
+            "rate": 0.6285714285714286,
+            "correct": 44,
+            "denominator": 70
+          },
+          "selective_accuracy_strict": {
+            "description": "Gold accuracy strictly over non-abstained outputs; any non-abstained response on a should_abstain=True task counts as incorrect.",
+            "rate": 0.44,
+            "correct": 44,
+            "denominator": 100
+          },
+          "selective_accuracy_task_criterion": {
+            "description": "Task-criterion accuracy over non-abstained outputs (crediting explicit textual refusal strings on should_abstain=True tasks).",
+            "rate": 0.58,
+            "correct": 58,
+            "denominator": 100
+          },
+          "selective_accuracy_by_decision": {
+            "ANSWER": {
+              "rate": null,
+              "correct": 0,
+              "denominator": 0
+            },
+            "WARN": {
+              "rate": null,
+              "correct": 0,
+              "denominator": 0
+            }
+          },
+          "gold_fact_hallucination_rate": {
+            "rate": 0.40404040404040403,
+            "hallucinating_answers": 40,
+            "denominator": 99
+          },
+          "nli_grounded_hallucination_rate": {
+            "backend": "deterministic_offline_fallback",
+            "entity_scoped": true,
+            "answer_level_rate": 0.5454545454545454,
+            "hallucinating_answers": 54,
+            "denominator": 99,
+            "claim_level_ungrounded_rate": 0.2994652406417112,
+            "unsupported_claims": 47,
+            "contradicted_claims": 9,
+            "total_claims": 187
+          },
+          "zero_claim_non_abstained_tasks": [
+            {
+              "task_id": "MEA-20",
+              "category": "missing_evidence_abstention",
+              "query": "What is the verified status and owner of ticket T-419?",
+              "raw_answer": "{}",
+              "final_decision": "NOT_APPLICABLE",
+              "should_abstain": true,
+              "task_success": false,
+              "reason": "ClaimExtractor requires at least one alphanumeric character; raw emitted answer '{}' contains zero factual claims and is therefore excluded from the claim-bearing hallucination denominator."
+            }
+          ],
+          "non_abstained_answerable_errors": [
+            {
+              "task_id": "MHSM-01",
+              "category": "multi_hop_search_math",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "M-1",
+                "420",
+                "855"
+              ],
+              "raw_answer": "Aerospace Telemetry Metric M-1 reports orbital booster stage-1 chamber pressure at 420 bar. The derived calculation equals None."
+            },
+            {
+              "task_id": "MHSM-02",
+              "category": "multi_hop_search_math",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "M-2",
+                "185",
+                "250"
+              ],
+              "raw_answer": "ERROR: TimeoutError: Simulated timeout for tool 'search'. The derived calculation equals 250."
+            },
+            {
+              "task_id": "MHSM-04",
+              "category": "multi_hop_search_math",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "M-4",
+                "640",
+                "200"
+              ],
+              "raw_answer": "ERROR: KeyError: 'query' The derived calculation equals ERROR: KeyError: 'expression'."
+            },
+            {
+              "task_id": "MHSM-10",
+              "category": "multi_hop_search_math",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "M-10",
+                "28",
+                "90"
+              ],
+              "raw_answer": "Enterprise SLA Tickets Metric M-10 reports monthly priority-one ticket backlog at 28 tickets. The derived calculation equals 91."
+            },
+            {
+              "task_id": "MHSM-12",
+              "category": "multi_hop_search_math",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "M-12",
+                "120",
+                "480"
+              ],
+              "raw_answer": "Enterprise SLA Tickets Metric M-12 reports tier-two support capacity at 120 tickets per week. The derived calculation equals ERROR: TimeoutError: Simulated timeout for tool 'calculator'.."
+            },
+            {
+              "task_id": "MHSM-18",
+              "category": "multi_hop_search_math",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "M-18",
+                "64",
+                "136"
+              ],
+              "raw_answer": "Clinical Equipment Logs Metric M-18 reports ICU ventilator fleet active count at 64 units. The derived calculation equals None."
+            },
+            {
+              "task_id": "MHSM-20",
+              "category": "multi_hop_search_math",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "M-20",
+                "215",
+                "250"
+              ],
+              "raw_answer": "ERROR: KeyError: 'query' The derived calculation equals 250."
+            },
+            {
+              "task_id": "MRAA-01",
+              "category": "multi_record_api_aggregation",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "T-401",
+                "Elena",
+                "T-402",
+                "Marcus",
+                "total=2050"
+              ],
+              "raw_answer": "{\"injected_wrong_output\": true}; {\"cost_usd\": 850, \"id\": \"T-402\", \"owner\": \"Marcus\", \"priority\": \"P1\", \"sla_hours\": 6, \"status\": \"in_progress\", \"ticket_id\": \"T-402\"}; total=2050"
+            },
+            {
+              "task_id": "MRAA-03",
+              "category": "multi_record_api_aggregation",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "T-403",
+                "Priya",
+                "T-404",
+                "Devon",
+                "total=2400"
+              ],
+              "raw_answer": "{\"cost_usd\": 450, \"id\": \"T-403\", \"owner\": \"Priya\", \"priority\": \"P2\", \"sla_hours\": 12, \"status\": \"closed\", \"ticket_id\": \"T-403\"}; {\"cost_usd\": 1950, \"id\": \"T-404\", \"owner\": \"Devon\", \"priority\": \"P1\", \"sla_hours\": 2, \"status\": \"open\", \"ticket_id\": \"T-404\"}; total=ERROR: TimeoutError: Simulated timeout for tool 'python_exec'."
+            },
+            {
+              "task_id": "MRAA-06",
+              "category": "multi_record_api_aggregation",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "T-406",
+                "Mateo",
+                "T-407",
+                "Hannah",
+                "total=2120"
+              ],
+              "raw_answer": "{\"cost_usd\": 620, \"id\": \"T-406\", \"owner\": \"Mateo\", \"priority\": \"P2\", \"sla_hours\": 8, \"status\": \"pending\", \"ticket_id\": \"T-406\"}; {\"injected_wrong_output\": true}; total=2120"
+            },
+            {
+              "task_id": "MRAA-07",
+              "category": "multi_record_api_aggregation",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "T-407",
+                "Hannah",
+                "T-408",
+                "Tariq",
+                "total=2280"
+              ],
+              "raw_answer": "ERROR: TimeoutError: Simulated timeout for tool 'mock_api'.; {\"cost_usd\": 780, \"id\": \"T-408\", \"owner\": \"Tariq\", \"priority\": \"P2\", \"sla_hours\": 10, \"status\": \"in_progress\", \"ticket_id\": \"T-408\"}; total=2280"
+            },
+            {
+              "task_id": "MRAA-09",
+              "category": "multi_record_api_aggregation",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "T-409",
+                "Nora",
+                "T-410",
+                "Kenji",
+                "total=2510"
+              ],
+              "raw_answer": "None; {\"cost_usd\": 2100, \"id\": \"T-410\", \"owner\": \"Kenji\", \"priority\": \"P1\", \"sla_hours\": 3, \"status\": \"open\", \"ticket_id\": \"T-410\"}; total=2510"
+            },
+            {
+              "task_id": "MRAA-11",
+              "category": "multi_record_api_aggregation",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "T-411",
+                "Chloe",
+                "T-412",
+                "Victor",
+                "total=28"
+              ],
+              "raw_answer": "{\"cost_usd\": 540, \"id\": \"T-411\", \"owner\": \"Chloe\", \"priority\": \"P2\", \"sla_hours\": 12, \"status\": \"resolved\", \"ticket_id\": \"T-411\"}; {\"cost_usd\": 930, \"id\": \"T-412\", \"owner\": \"Victor\", \"priority\": \"P2\", \"sla_hours\": 16, \"status\": \"pending\", \"ticket_id\": \"T-412\"}; total=ERROR: TimeoutError: Simulated timeout for tool 'python_exec'."
+            },
+            {
+              "task_id": "MRAA-13",
+              "category": "multi_record_api_aggregation",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "T-413",
+                "Amara",
+                "T-414",
+                "Lucas",
+                "total=14"
+              ],
+              "raw_answer": "{\"cost_usd\": 1340, \"id\": \"T-413\", \"owner\": \"Amara\", \"priority\": \"P1\", \"sla_hours\": 5, \"status\": \"open\", \"ticket_id\": \"T-413\"}; {\"cost_usd\": 670, \"id\": \"T-414\", \"owner\": \"Lucas\", \"priority\": \"P2\", \"sla_hours\": 9, \"status\": \"in_progress\", \"ticket_id\": \"T-414\"}; total=15"
+            },
+            {
+              "task_id": "MRAA-16",
+              "category": "multi_record_api_aggregation",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "T-402",
+                "Marcus",
+                "T-410",
+                "Kenji",
+                "total=9"
+              ],
+              "raw_answer": "{\"cost_usd\": 850, \"id\": \"T-402\", \"owner\": \"Marcus\", \"priority\": \"P1\", \"sla_hours\": 6, \"status\": \"in_progress\", \"ticket_id\": \"T-402\"}; ERROR: KeyError: 'ticket_id'; total=9"
+            },
+            {
+              "task_id": "MRAA-18",
+              "category": "multi_record_api_aggregation",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "T-404",
+                "Devon",
+                "T-413",
+                "Amara",
+                "total=3290"
+              ],
+              "raw_answer": "{\"cost_usd\": 1950, \"id\": \"T-404\", \"owner\": \"Devon\", \"priority\": \"P1\", \"sla_hours\": 2, \"status\": \"open\", \"ticket_id\": \"T-404\"}; None; total=3290"
+            },
+            {
+              "task_id": "ARTS-08",
+              "category": "argument_repair_tool_switch",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "product=60",
+                "difference=45"
+              ],
+              "raw_answer": "product=60; difference=ERROR: TimeoutError: Simulated timeout for tool 'python_exec'."
+            },
+            {
+              "task_id": "ARTS-13",
+              "category": "argument_repair_tool_switch",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "240"
+              ],
+              "raw_answer": "ERROR: TimeoutError: Simulated timeout for tool 'python_exec'."
+            },
+            {
+              "task_id": "ARTS-15",
+              "category": "argument_repair_tool_switch",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "92"
+              ],
+              "raw_answer": "None"
+            },
+            {
+              "task_id": "ARTS-17",
+              "category": "argument_repair_tool_switch",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "square=121",
+                "difference=100"
+              ],
+              "raw_answer": "square=121; difference=None"
+            },
+            {
+              "task_id": "ARTS-18",
+              "category": "argument_repair_tool_switch",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "quotient=8",
+                "product=40"
+              ],
+              "raw_answer": "quotient=8.0; product=None"
+            },
+            {
+              "task_id": "ARTS-20",
+              "category": "argument_repair_tool_switch",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "product=42",
+                "sum=50"
+              ],
+              "raw_answer": "product=ERROR: TimeoutError: Simulated timeout for tool 'python_exec'.; sum=50"
+            },
+            {
+              "task_id": "NCT-13",
+              "category": "numeric_contradiction_trap",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "S-93",
+                "365",
+                "730"
+              ],
+              "raw_answer": "ERROR: TimeoutError: Simulated timeout for tool 'search'.; The doubled threshold equals 730."
+            },
+            {
+              "task_id": "NCT-14",
+              "category": "numeric_contradiction_trap",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "S-94",
+                "480",
+                "960"
+              ],
+              "raw_answer": "None; The doubled threshold equals None."
+            },
+            {
+              "task_id": "NCT-16",
+              "category": "numeric_contradiction_trap",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "S-96",
+                "98",
+                "196"
+              ],
+              "raw_answer": "[INJECTED WRONG OUTPUT]; The doubled threshold equals 196."
+            },
+            {
+              "task_id": "NCT-19",
+              "category": "numeric_contradiction_trap",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "S-99",
+                "84",
+                "168"
+              ],
+              "raw_answer": "ERROR: TimeoutError: Simulated timeout for tool 'search'.; The doubled threshold equals 168."
+            }
+          ]
+        },
+        "brier_score": {
+          "brier_score": null,
+          "sample_count": 0
+        },
+        "ece": {
+          "ece": null,
+          "sample_count": 0,
+          "bin_count": 10,
+          "binning": "equal-width [0,1], last bin includes 1",
+          "bins": []
+        }
+      },
+      "tracerecover": {
+        "task_success_rate": 0.89,
+        "task_success_count": 89,
+        "task_count": 100,
+        "wilson_95_ci": {
+          "lower": 0.8136853697209698,
+          "upper": 0.9374586804477487
+        },
+        "decisions": {
+          "total": 100,
+          "counts": {
+            "ANSWER": 58,
+            "WARN": 2,
+            "ABSTAIN": 40,
+            "NOT_APPLICABLE": 0
+          },
+          "rates": {
+            "ANSWER": 0.58,
+            "WARN": 0.02,
+            "ABSTAIN": 0.4,
+            "NOT_APPLICABLE": 0.0
+          }
+        },
+        "accuracy_and_hallucination": {
+          "independent_gold_accuracy_all": {
+            "rate": 0.89,
+            "correct": 89,
+            "denominator": 100
+          },
+          "independent_gold_accuracy_answerable": {
+            "rate": 0.8428571428571429,
+            "correct": 59,
+            "denominator": 70
+          },
+          "selective_accuracy_strict": {
+            "description": "Gold accuracy strictly over non-abstained outputs; any non-abstained response on a should_abstain=True task counts as incorrect.",
+            "rate": 0.9833333333333333,
+            "correct": 59,
+            "denominator": 60
+          },
+          "selective_accuracy_task_criterion": {
+            "description": "Task-criterion accuracy over non-abstained outputs (crediting explicit textual refusal strings on should_abstain=True tasks).",
+            "rate": 0.9833333333333333,
+            "correct": 59,
+            "denominator": 60
+          },
+          "selective_accuracy_by_decision": {
+            "ANSWER": {
+              "rate": 0.9827586206896551,
+              "correct": 57,
+              "denominator": 58
+            },
+            "WARN": {
+              "rate": 1.0,
+              "correct": 2,
+              "denominator": 2
+            }
+          },
+          "gold_fact_hallucination_rate": {
+            "rate": 0.0,
+            "hallucinating_answers": 0,
+            "denominator": 60
+          },
+          "nli_grounded_hallucination_rate": {
+            "backend": "deterministic_offline_fallback",
+            "entity_scoped": true,
+            "answer_level_rate": 0.0,
+            "hallucinating_answers": 0,
+            "denominator": 60,
+            "claim_level_ungrounded_rate": 0.0,
+            "unsupported_claims": 0,
+            "contradicted_claims": 0,
+            "total_claims": 126
+          },
+          "zero_claim_non_abstained_tasks": [],
+          "non_abstained_answerable_errors": [
+            {
+              "task_id": "NCT-16",
+              "category": "numeric_contradiction_trap",
+              "final_decision": "ANSWER",
+              "expected_facts": [
+                "S-96",
+                "98",
+                "196"
+              ],
+              "raw_answer": "196; The doubled threshold equals 196."
+            }
+          ]
+        },
+        "brier_score": {
+          "brier_score": 0.16379873361109148,
+          "sample_count": 100
+        },
+        "ece": {
+          "ece": 0.21249579831932766,
+          "sample_count": 100,
+          "bin_count": 10,
+          "binning": "equal-width [0,1], last bin includes 1",
+          "bins": [
+            {
+              "bin": 0,
+              "lower_bound": 0.0,
+              "upper_bound": 0.1,
+              "sample_count": 19,
+              "average_confidence": 0.019349845201238385,
+              "accuracy": 0.5263157894736842
+            },
+            {
+              "bin": 1,
+              "lower_bound": 0.1,
+              "upper_bound": 0.2,
+              "sample_count": 1,
+              "average_confidence": 0.196078431372549,
+              "accuracy": 0.0
+            },
+            {
+              "bin": 3,
+              "lower_bound": 0.3,
+              "upper_bound": 0.4,
+              "sample_count": 10,
+              "average_confidence": 0.3504201680672269,
+              "accuracy": 1.0
+            },
+            {
+              "bin": 6,
+              "lower_bound": 0.6,
+              "upper_bound": 0.7,
+              "sample_count": 10,
+              "average_confidence": 0.6703081232492998,
+              "accuracy": 1.0
+            },
+            {
+              "bin": 7,
+              "lower_bound": 0.7,
+              "upper_bound": 0.8,
+              "sample_count": 1,
+              "average_confidence": 0.7950980392156863,
+              "accuracy": 1.0
+            },
+            {
+              "bin": 8,
+              "lower_bound": 0.8,
+              "upper_bound": 0.9,
+              "sample_count": 4,
+              "average_confidence": 0.8607843137254902,
+              "accuracy": 0.75
+            },
+            {
+              "bin": 9,
+              "lower_bound": 0.9,
+              "upper_bound": 1.0,
+              "sample_count": 55,
+              "average_confidence": 0.9821746880570411,
+              "accuracy": 1.0
+            }
+          ]
+        }
+      },
+      "paired_mcnemar_test": {
+        "paired_task_count": 100,
+        "contingency_table": {
+          "both_correct_n11": 58,
+          "baseline_only_n10": 0,
+          "tracerecover_only_n01": 31,
+          "both_wrong_n00": 11
+        },
+        "discordant_pairs": 31,
+        "net_gain_tasks": 31,
+        "exact_two_sided_p_value": 9.313225746154785e-10,
+        "chi2_continuity_corrected": 29.032258064516128,
+        "chi2_p_value": 7.118304164714048e-08,
+        "significant_at_0_05": true,
+        "significant_at_0_01": true
+      }
+    },
+    {
+      "failure_rate_percent": 40.0,
+      "baseline": {
+        "task_success_rate": 0.4,
+        "task_success_count": 40,
+        "task_count": 100,
+        "wilson_95_ci": {
+          "lower": 0.3093997461136028,
+          "upper": 0.4979992153815976
+        },
+        "decisions": {
+          "total": 100,
+          "counts": {
+            "ANSWER": 0,
+            "WARN": 0,
+            "ABSTAIN": 0,
+            "NOT_APPLICABLE": 100
+          },
+          "rates": {
+            "ANSWER": 0.0,
+            "WARN": 0.0,
+            "ABSTAIN": 0.0,
+            "NOT_APPLICABLE": 1.0
+          }
+        },
+        "accuracy_and_hallucination": {
+          "independent_gold_accuracy_all": {
+            "rate": 0.4,
+            "correct": 40,
+            "denominator": 100
+          },
+          "independent_gold_accuracy_answerable": {
+            "rate": 0.4,
+            "correct": 28,
+            "denominator": 70
+          },
+          "selective_accuracy_strict": {
+            "description": "Gold accuracy strictly over non-abstained outputs; any non-abstained response on a should_abstain=True task counts as incorrect.",
+            "rate": 0.28,
+            "correct": 28,
+            "denominator": 100
+          },
+          "selective_accuracy_task_criterion": {
+            "description": "Task-criterion accuracy over non-abstained outputs (crediting explicit textual refusal strings on should_abstain=True tasks).",
+            "rate": 0.4,
+            "correct": 40,
+            "denominator": 100
+          },
+          "selective_accuracy_by_decision": {
+            "ANSWER": {
+              "rate": null,
+              "correct": 0,
+              "denominator": 0
+            },
+            "WARN": {
+              "rate": null,
+              "correct": 0,
+              "denominator": 0
+            }
+          },
+          "gold_fact_hallucination_rate": {
+            "rate": 0.5757575757575758,
+            "hallucinating_answers": 57,
+            "denominator": 99
+          },
+          "nli_grounded_hallucination_rate": {
+            "backend": "deterministic_offline_fallback",
+            "entity_scoped": true,
+            "answer_level_rate": 0.696969696969697,
+            "hallucinating_answers": 69,
+            "denominator": 99,
+            "claim_level_ungrounded_rate": 0.43478260869565216,
+            "unsupported_claims": 75,
+            "contradicted_claims": 5,
+            "total_claims": 184
+          },
+          "zero_claim_non_abstained_tasks": [
+            {
+              "task_id": "MEA-20",
+              "category": "missing_evidence_abstention",
+              "query": "What is the verified status and owner of ticket T-419?",
+              "raw_answer": "{}",
+              "final_decision": "NOT_APPLICABLE",
+              "should_abstain": true,
+              "task_success": false,
+              "reason": "ClaimExtractor requires at least one alphanumeric character; raw emitted answer '{}' contains zero factual claims and is therefore excluded from the claim-bearing hallucination denominator."
+            }
+          ],
+          "non_abstained_answerable_errors": [
+            {
+              "task_id": "MHSM-01",
+              "category": "multi_hop_search_math",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "M-1",
+                "420",
+                "855"
+              ],
+              "raw_answer": "Aerospace Telemetry Metric M-1 reports orbital booster stage-1 chamber pressure at 420 bar. The derived calculation equals None."
+            },
+            {
+              "task_id": "MHSM-02",
+              "category": "multi_hop_search_math",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "M-2",
+                "185",
+                "250"
+              ],
+              "raw_answer": "ERROR: TimeoutError: Simulated timeout for tool 'search'. The derived calculation equals 251."
+            },
+            {
+              "task_id": "MHSM-04",
+              "category": "multi_hop_search_math",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "M-4",
+                "640",
+                "200"
+              ],
+              "raw_answer": "ERROR: KeyError: 'query' The derived calculation equals ERROR: KeyError: 'expression'."
+            },
+            {
+              "task_id": "MHSM-06",
+              "category": "multi_hop_search_math",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "M-6",
+                "480",
+                "600"
+              ],
+              "raw_answer": "Cloud FinOps Metric M-6 reports object storage tier monthly volume at 480 terabytes. The derived calculation equals None."
+            },
+            {
+              "task_id": "MHSM-09",
+              "category": "multi_hop_search_math",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "M-9",
+                "45",
+                "180"
+              ],
+              "raw_answer": "None The derived calculation equals 181."
+            },
+            {
+              "task_id": "MHSM-10",
+              "category": "multi_hop_search_math",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "M-10",
+                "28",
+                "90"
+              ],
+              "raw_answer": "Enterprise SLA Tickets Metric M-10 reports monthly priority-one ticket backlog at 28 tickets. The derived calculation equals 91."
+            },
+            {
+              "task_id": "MHSM-12",
+              "category": "multi_hop_search_math",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "M-12",
+                "120",
+                "480"
+              ],
+              "raw_answer": "Enterprise SLA Tickets Metric M-12 reports tier-two support capacity at 120 tickets per week. The derived calculation equals ERROR: TimeoutError: Simulated timeout for tool 'calculator'.."
+            },
+            {
+              "task_id": "MHSM-14",
+              "category": "multi_hop_search_math",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "M-14",
+                "94",
+                "6"
+              ],
+              "raw_answer": "Climate Grid Sensors Metric M-14 reports solar substation inverter efficiency at 94 percent. The derived calculation equals ERROR: TimeoutError: Simulated timeout for tool 'calculator'.."
+            },
+            {
+              "task_id": "MHSM-15",
+              "category": "multi_hop_search_math",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "M-15",
+                "310",
+                "650"
+              ],
+              "raw_answer": "Climate Grid Sensors Metric M-15 reports grid frequency stabilization reserve at 310 megawatts. The derived calculation equals ERROR: KeyError: 'expression'."
+            },
+            {
+              "task_id": "MHSM-16",
+              "category": "multi_hop_search_math",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "M-16",
+                "540",
+                "90"
+              ],
+              "raw_answer": "ERROR: KeyError: 'query' The derived calculation equals ERROR: TimeoutError: Simulated timeout for tool 'calculator'.."
+            },
+            {
+              "task_id": "MHSM-18",
+              "category": "multi_hop_search_math",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "M-18",
+                "64",
+                "136"
+              ],
+              "raw_answer": "Clinical Equipment Logs Metric M-18 reports ICU ventilator fleet active count at 64 units. The derived calculation equals None."
+            },
+            {
+              "task_id": "MHSM-19",
+              "category": "multi_hop_search_math",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "M-19",
+                "90",
+                "360"
+              ],
+              "raw_answer": "ERROR: KeyError: 'query' The derived calculation equals 360."
+            },
+            {
+              "task_id": "MHSM-20",
+              "category": "multi_hop_search_math",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "M-20",
+                "215",
+                "250"
+              ],
+              "raw_answer": "ERROR: KeyError: 'query' The derived calculation equals 250."
+            },
+            {
+              "task_id": "MRAA-01",
+              "category": "multi_record_api_aggregation",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "T-401",
+                "Elena",
+                "T-402",
+                "Marcus",
+                "total=2050"
+              ],
+              "raw_answer": "{\"injected_wrong_output\": true}; {\"cost_usd\": 850, \"id\": \"T-402\", \"owner\": \"Marcus\", \"priority\": \"P1\", \"sla_hours\": 6, \"status\": \"in_progress\", \"ticket_id\": \"T-402\"}; total=2050"
+            },
+            {
+              "task_id": "MRAA-02",
+              "category": "multi_record_api_aggregation",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "T-402",
+                "Marcus",
+                "T-403",
+                "Priya",
+                "total=1300"
+              ],
+              "raw_answer": "{\"cost_usd\": 850, \"id\": \"T-402\", \"owner\": \"Marcus\", \"priority\": \"P1\", \"sla_hours\": 6, \"status\": \"in_progress\", \"ticket_id\": \"T-402\"}; {\"cost_usd\": 450, \"id\": \"T-403\", \"owner\": \"Priya\", \"priority\": \"P2\", \"sla_hours\": 12, \"status\": \"closed\", \"ticket_id\": \"T-403\"}; total=None"
+            },
+            {
+              "task_id": "MRAA-03",
+              "category": "multi_record_api_aggregation",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "T-403",
+                "Priya",
+                "T-404",
+                "Devon",
+                "total=2400"
+              ],
+              "raw_answer": "{\"cost_usd\": 450, \"id\": \"T-403\", \"owner\": \"Priya\", \"priority\": \"P2\", \"sla_hours\": 12, \"status\": \"closed\", \"ticket_id\": \"T-403\"}; {\"cost_usd\": 1950, \"id\": \"T-404\", \"owner\": \"Devon\", \"priority\": \"P1\", \"sla_hours\": 2, \"status\": \"open\", \"ticket_id\": \"T-404\"}; total=ERROR: TimeoutError: Simulated timeout for tool 'python_exec'."
+            },
+            {
+              "task_id": "MRAA-04",
+              "category": "multi_record_api_aggregation",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "T-404",
+                "Devon",
+                "T-405",
+                "Lin",
+                "total=2250"
+              ],
+              "raw_answer": "{\"injected_wrong_output\": true}; {\"cost_usd\": 300, \"id\": \"T-405\", \"owner\": \"Lin\", \"priority\": \"P3\", \"sla_hours\": 24, \"status\": \"resolved\", \"ticket_id\": \"T-405\"}; total=2250"
+            },
+            {
+              "task_id": "MRAA-06",
+              "category": "multi_record_api_aggregation",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "T-406",
+                "Mateo",
+                "T-407",
+                "Hannah",
+                "total=2120"
+              ],
+              "raw_answer": "{\"cost_usd\": 620, \"id\": \"T-406\", \"owner\": \"Mateo\", \"priority\": \"P2\", \"sla_hours\": 8, \"status\": \"pending\", \"ticket_id\": \"T-406\"}; {\"injected_wrong_output\": true}; total=2120"
+            },
+            {
+              "task_id": "MRAA-07",
+              "category": "multi_record_api_aggregation",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "T-407",
+                "Hannah",
+                "T-408",
+                "Tariq",
+                "total=2280"
+              ],
+              "raw_answer": "ERROR: TimeoutError: Simulated timeout for tool 'mock_api'.; {\"injected_wrong_output\": true}; total=2280"
+            },
+            {
+              "task_id": "MRAA-08",
+              "category": "multi_record_api_aggregation",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "T-408",
+                "Tariq",
+                "T-409",
+                "Nora",
+                "total=1190"
+              ],
+              "raw_answer": "None; {\"cost_usd\": 410, \"id\": \"T-409\", \"owner\": \"Nora\", \"priority\": \"P3\", \"sla_hours\": 18, \"status\": \"closed\", \"ticket_id\": \"T-409\"}; total=1190"
+            },
+            {
+              "task_id": "MRAA-09",
+              "category": "multi_record_api_aggregation",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "T-409",
+                "Nora",
+                "T-410",
+                "Kenji",
+                "total=2510"
+              ],
+              "raw_answer": "None; {\"cost_usd\": 2100, \"id\": \"T-410\", \"owner\": \"Kenji\", \"priority\": \"P1\", \"sla_hours\": 3, \"status\": \"open\", \"ticket_id\": \"T-410\"}; total=2510"
+            },
+            {
+              "task_id": "MRAA-11",
+              "category": "multi_record_api_aggregation",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "T-411",
+                "Chloe",
+                "T-412",
+                "Victor",
+                "total=28"
+              ],
+              "raw_answer": "{\"cost_usd\": 540, \"id\": \"T-411\", \"owner\": \"Chloe\", \"priority\": \"P2\", \"sla_hours\": 12, \"status\": \"resolved\", \"ticket_id\": \"T-411\"}; {\"injected_wrong_output\": true}; total=28"
+            },
+            {
+              "task_id": "MRAA-12",
+              "category": "multi_record_api_aggregation",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "T-412",
+                "Victor",
+                "T-413",
+                "Amara",
+                "total=21"
+              ],
+              "raw_answer": "{\"cost_usd\": 930, \"id\": \"T-412\", \"owner\": \"Victor\", \"priority\": \"P2\", \"sla_hours\": 16, \"status\": \"pending\", \"ticket_id\": \"T-412\"}; {\"cost_usd\": 1340, \"id\": \"T-413\", \"owner\": \"Amara\", \"priority\": \"P1\", \"sla_hours\": 5, \"status\": \"open\", \"ticket_id\": \"T-413\"}; total=None"
+            },
+            {
+              "task_id": "MRAA-13",
+              "category": "multi_record_api_aggregation",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "T-413",
+                "Amara",
+                "T-414",
+                "Lucas",
+                "total=14"
+              ],
+              "raw_answer": "ERROR: KeyError: 'ticket_id'; {\"cost_usd\": 670, \"id\": \"T-414\", \"owner\": \"Lucas\", \"priority\": \"P2\", \"sla_hours\": 9, \"status\": \"in_progress\", \"ticket_id\": \"T-414\"}; total=15"
+            },
+            {
+              "task_id": "MRAA-16",
+              "category": "multi_record_api_aggregation",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "T-402",
+                "Marcus",
+                "T-410",
+                "Kenji",
+                "total=9"
+              ],
+              "raw_answer": "ERROR: TimeoutError: Simulated timeout for tool 'mock_api'.; None; total=9"
+            },
+            {
+              "task_id": "MRAA-18",
+              "category": "multi_record_api_aggregation",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "T-404",
+                "Devon",
+                "T-413",
+                "Amara",
+                "total=3290"
+              ],
+              "raw_answer": "{\"cost_usd\": 1950, \"id\": \"T-404\", \"owner\": \"Devon\", \"priority\": \"P1\", \"sla_hours\": 2, \"status\": \"open\", \"ticket_id\": \"T-404\"}; None; total=3290"
+            },
+            {
+              "task_id": "MRAA-19",
+              "category": "multi_record_api_aggregation",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "T-405",
+                "Lin",
+                "T-414",
+                "Lucas",
+                "total=33"
+              ],
+              "raw_answer": "{\"cost_usd\": 300, \"id\": \"T-405\", \"owner\": \"Lin\", \"priority\": \"P3\", \"sla_hours\": 24, \"status\": \"resolved\", \"ticket_id\": \"T-405\"}; ERROR: KeyError: 'ticket_id'; total=33"
+            },
+            {
+              "task_id": "MRAA-20",
+              "category": "multi_record_api_aggregation",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "T-406",
+                "Mateo",
+                "T-415",
+                "Zara",
+                "total=1010"
+              ],
+              "raw_answer": "ERROR: TimeoutError: Simulated timeout for tool 'mock_api'.; {\"cost_usd\": 390, \"id\": \"T-415\", \"owner\": \"Zara\", \"priority\": \"P3\", \"sla_hours\": 20, \"status\": \"closed\", \"ticket_id\": \"T-415\"}; total=1011"
+            },
+            {
+              "task_id": "ARTS-01",
+              "category": "argument_repair_tool_switch",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "441"
+              ],
+              "raw_answer": "ERROR: KeyError: 'expression'"
+            },
+            {
+              "task_id": "ARTS-02",
+              "category": "argument_repair_tool_switch",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "19"
+              ],
+              "raw_answer": "None"
+            },
+            {
+              "task_id": "ARTS-08",
+              "category": "argument_repair_tool_switch",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "product=60",
+                "difference=45"
+              ],
+              "raw_answer": "product=ERROR: TimeoutError: Simulated timeout for tool 'calculator'.; difference=ERROR: KeyError: 'code'"
+            },
+            {
+              "task_id": "ARTS-13",
+              "category": "argument_repair_tool_switch",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "240"
+              ],
+              "raw_answer": "ERROR: TimeoutError: Simulated timeout for tool 'python_exec'."
+            },
+            {
+              "task_id": "ARTS-15",
+              "category": "argument_repair_tool_switch",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "92"
+              ],
+              "raw_answer": "None"
+            },
+            {
+              "task_id": "ARTS-17",
+              "category": "argument_repair_tool_switch",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "square=121",
+                "difference=100"
+              ],
+              "raw_answer": "square=121; difference=None"
+            },
+            {
+              "task_id": "ARTS-18",
+              "category": "argument_repair_tool_switch",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "quotient=8",
+                "product=40"
+              ],
+              "raw_answer": "quotient=8.0; product=None"
+            },
+            {
+              "task_id": "ARTS-20",
+              "category": "argument_repair_tool_switch",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "product=42",
+                "sum=50"
+              ],
+              "raw_answer": "product=ERROR: TimeoutError: Simulated timeout for tool 'python_exec'.; sum=ERROR: KeyError: 'expression'"
+            },
+            {
+              "task_id": "NCT-13",
+              "category": "numeric_contradiction_trap",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "S-93",
+                "365",
+                "730"
+              ],
+              "raw_answer": "ERROR: TimeoutError: Simulated timeout for tool 'search'.; The doubled threshold equals None."
+            },
+            {
+              "task_id": "NCT-14",
+              "category": "numeric_contradiction_trap",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "S-94",
+                "480",
+                "960"
+              ],
+              "raw_answer": "None; The doubled threshold equals None."
+            },
+            {
+              "task_id": "NCT-16",
+              "category": "numeric_contradiction_trap",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "S-96",
+                "98",
+                "196"
+              ],
+              "raw_answer": "[INJECTED WRONG OUTPUT]; The doubled threshold equals 196."
+            },
+            {
+              "task_id": "NCT-18",
+              "category": "numeric_contradiction_trap",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "S-98",
+                "66",
+                "132"
+              ],
+              "raw_answer": "ERROR: TimeoutError: Simulated timeout for tool 'search'.; The doubled threshold equals ERROR: KeyError: 'expression'."
+            },
+            {
+              "task_id": "NCT-19",
+              "category": "numeric_contradiction_trap",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "S-99",
+                "84",
+                "168"
+              ],
+              "raw_answer": "ERROR: TimeoutError: Simulated timeout for tool 'search'.; The doubled threshold equals 168."
+            },
+            {
+              "task_id": "NCT-20",
+              "category": "numeric_contradiction_trap",
+              "final_decision": "NOT_APPLICABLE",
+              "expected_facts": [
+                "S-100",
+                "108",
+                "216"
+              ],
+              "raw_answer": "ERROR: TimeoutError: Simulated timeout for tool 'search'.; The doubled threshold equals 216."
+            }
+          ]
+        },
+        "brier_score": {
+          "brier_score": null,
+          "sample_count": 0
+        },
+        "ece": {
+          "ece": null,
+          "sample_count": 0,
+          "bin_count": 10,
+          "binning": "equal-width [0,1], last bin includes 1",
+          "bins": []
+        }
+      },
+      "tracerecover": {
+        "task_success_rate": 0.79,
+        "task_success_count": 79,
+        "task_count": 100,
+        "wilson_95_ci": {
+          "lower": 0.7001985069803768,
+          "upper": 0.8583445046835422
+        },
+        "decisions": {
+          "total": 100,
+          "counts": {
+            "ANSWER": 46,
+            "WARN": 3,
+            "ABSTAIN": 51,
+            "NOT_APPLICABLE": 0
+          },
+          "rates": {
+            "ANSWER": 0.46,
+            "WARN": 0.03,
+            "ABSTAIN": 0.51,
+            "NOT_APPLICABLE": 0.0
+          }
+        },
+        "accuracy_and_hallucination": {
+          "independent_gold_accuracy_all": {
+            "rate": 0.79,
+            "correct": 79,
+            "denominator": 100
+          },
+          "independent_gold_accuracy_answerable": {
+            "rate": 0.7,
+            "correct": 49,
+            "denominator": 70
+          },
+          "selective_accuracy_strict": {
+            "description": "Gold accuracy strictly over non-abstained outputs; any non-abstained response on a should_abstain=True task counts as incorrect.",
+            "rate": 1.0,
+            "correct": 49,
+            "denominator": 49
+          },
+          "selective_accuracy_task_criterion": {
+            "description": "Task-criterion accuracy over non-abstained outputs (crediting explicit textual refusal strings on should_abstain=True tasks).",
+            "rate": 1.0,
+            "correct": 49,
+            "denominator": 49
+          },
+          "selective_accuracy_by_decision": {
+            "ANSWER": {
+              "rate": 1.0,
+              "correct": 46,
+              "denominator": 46
+            },
+            "WARN": {
+              "rate": 1.0,
+              "correct": 3,
+              "denominator": 3
+            }
+          },
+          "gold_fact_hallucination_rate": {
+            "rate": 0.0,
+            "hallucinating_answers": 0,
+            "denominator": 49
+          },
+          "nli_grounded_hallucination_rate": {
+            "backend": "deterministic_offline_fallback",
+            "entity_scoped": true,
+            "answer_level_rate": 0.0,
+            "hallucinating_answers": 0,
+            "denominator": 49,
+            "claim_level_ungrounded_rate": 0.0,
+            "unsupported_claims": 0,
+            "contradicted_claims": 0,
+            "total_claims": 102
+          },
+          "zero_claim_non_abstained_tasks": [],
+          "non_abstained_answerable_errors": []
+        },
+        "brier_score": {
+          "brier_score": 0.17925569561157798,
+          "sample_count": 100
+        },
+        "ece": {
+          "ece": 0.23482072829131653,
+          "sample_count": 100,
+          "bin_count": 10,
+          "binning": "equal-width [0,1], last bin includes 1",
+          "bins": [
+            {
+              "bin": 0,
+              "lower_bound": 0.0,
+              "upper_bound": 0.1,
+              "sample_count": 33,
+              "average_confidence": 0.017082590612002374,
+              "accuracy": 0.3939393939393939
+            },
+            {
+              "bin": 2,
+              "lower_bound": 0.2,
+              "upper_bound": 0.3,
+              "sample_count": 1,
+              "average_confidence": 0.23529411764705888,
+              "accuracy": 0.0
+            },
+            {
+              "bin": 3,
+              "lower_bound": 0.3,
+              "upper_bound": 0.4,
+              "sample_count": 8,
+              "average_confidence": 0.34873949579831937,
+              "accuracy": 1.0
+            },
+            {
+              "bin": 5,
+              "lower_bound": 0.5,
+              "upper_bound": 0.6,
+              "sample_count": 1,
+              "average_confidence": 0.5794117647058824,
+              "accuracy": 1.0
+            },
+            {
+              "bin": 6,
+              "lower_bound": 0.6,
+              "upper_bound": 0.7,
+              "sample_count": 8,
+              "average_confidence": 0.6579131652661064,
+              "accuracy": 1.0
+            },
+            {
+              "bin": 8,
+              "lower_bound": 0.8,
+              "upper_bound": 0.9,
+              "sample_count": 11,
+              "average_confidence": 0.8558823529411765,
+              "accuracy": 1.0
+            },
+            {
+              "bin": 9,
+              "lower_bound": 0.9,
+              "upper_bound": 1.0,
+              "sample_count": 38,
+              "average_confidence": 0.9774251805985552,
+              "accuracy": 1.0
+            }
+          ]
+        }
+      },
+      "paired_mcnemar_test": {
+        "paired_task_count": 100,
+        "contingency_table": {
+          "both_correct_n11": 40,
+          "baseline_only_n10": 0,
+          "tracerecover_only_n01": 39,
+          "both_wrong_n00": 21
+        },
+        "discordant_pairs": 39,
+        "net_gain_tasks": 39,
+        "exact_two_sided_p_value": 3.637978807091713e-12,
+        "chi2_continuity_corrected": 37.02564102564103,
+        "chi2_p_value": 1.1658598093780544e-09,
+        "significant_at_0_05": true,
+        "significant_at_0_01": true
+      }
+    }
+  ],
+  "pooled_across_all_rates": {
+    "total_paired_runs": 300,
+    "baseline_task_success_rate": 0.6133333333333333,
+    "tracerecover_task_success_rate": 0.8933333333333333,
+    "paired_mcnemar_test": {
+      "paired_task_count": 300,
+      "contingency_table": {
+        "both_correct_n11": 184,
+        "baseline_only_n10": 0,
+        "tracerecover_only_n01": 84,
+        "both_wrong_n00": 32
+      },
+      "discordant_pairs": 84,
+      "net_gain_tasks": 84,
+      "exact_two_sided_p_value": 1.0339757656912846e-25,
+      "chi2_continuity_corrected": 82.01190476190476,
+      "chi2_p_value": 1.3526945495274317e-19,
+      "significant_at_0_05": true,
+      "significant_at_0_01": true
+    },
+    "tracerecover_brier_score": {
+      "brier_score": 0.16490419749599186,
+      "sample_count": 300
+    },
+    "tracerecover_ece": {
+      "ece": 0.2116274509803922,
+      "sample_count": 300
+    }
+  },
+  "five_fold_cross_fitted_thresholds": {
+    "cv_protocol": "5-fold stratified group-by-task_id cross-fitting (seed=42; 80% train tasks -> 20% held-out tasks across all failure rates; zero task overlap between train and test folds).",
+    "target_abstain_precision": 0.85,
+    "fitted_threshold_summary": {
+      "answer_threshold_mean": 0.23118,
+      "answer_threshold_stdev": 0.04208279933654604,
+      "abstain_threshold_mean": 0.3214,
+      "abstain_threshold_stdev": 0.0
+    },
+    "out_of_fold_aggregate": {
+      "sample_count": 300,
+      "task_success_rate": 0.8933333333333333,
+      "selective_accuracy_strict": 0.994413407821229,
+      "non_abstained_count": 179,
+      "answer_count": 178,
+      "warn_count": 1,
+      "abstain_count": 121,
+      "abstain_precision": 0.743801652892562,
+      "abstain_recall": 1.0,
+      "abstain_f1": 0.8530805687203791
+    },
+    "default_threshold_baseline_0_15_0_55": {
+      "sample_count": 300,
+      "task_success_rate": 0.8933333333333333,
+      "selective_accuracy_strict": 0.994413407821229,
+      "non_abstained_count": 179,
+      "answer_count": 174,
+      "warn_count": 5,
+      "abstain_count": 121,
+      "abstain_precision": 0.743801652892562,
+      "abstain_recall": 1.0,
+      "abstain_f1": 0.8530805687203791
+    },
+    "folds": [
+      {
+        "fold": 1,
+        "train_task_count": 80,
+        "test_task_count": 20,
+        "train_run_count": 240,
+        "test_run_count": 60,
+        "fitted_answer_threshold": 0.25,
+        "fitted_abstain_threshold": 0.3214,
+        "train_target_precision_met": false,
+        "held_out_metrics": {
+          "sample_count": 60,
+          "task_success_rate": 0.8333333333333334,
+          "selective_accuracy_strict": 1.0,
+          "non_abstained_count": 35,
+          "answer_count": 35,
+          "warn_count": 0,
+          "abstain_count": 25,
+          "abstain_precision": 0.6,
+          "abstain_recall": 1.0,
+          "abstain_f1": 0.7499999999999999
+        }
+      },
+      {
+        "fold": 2,
+        "train_task_count": 80,
+        "test_task_count": 20,
+        "train_run_count": 240,
+        "test_run_count": 60,
+        "fitted_answer_threshold": 0.25,
+        "fitted_abstain_threshold": 0.3214,
+        "train_target_precision_met": false,
+        "held_out_metrics": {
+          "sample_count": 60,
+          "task_success_rate": 0.9,
+          "selective_accuracy_strict": 1.0,
+          "non_abstained_count": 36,
+          "answer_count": 36,
+          "warn_count": 0,
+          "abstain_count": 24,
+          "abstain_precision": 0.75,
+          "abstain_recall": 1.0,
+          "abstain_f1": 0.8571428571428571
+        }
+      },
+      {
+        "fold": 3,
+        "train_task_count": 80,
+        "test_task_count": 20,
+        "train_run_count": 240,
+        "test_run_count": 60,
+        "fitted_answer_threshold": 0.1559,
+        "fitted_abstain_threshold": 0.3214,
+        "train_target_precision_met": false,
+        "held_out_metrics": {
+          "sample_count": 60,
+          "task_success_rate": 0.9666666666666667,
+          "selective_accuracy_strict": 1.0,
+          "non_abstained_count": 40,
+          "answer_count": 39,
+          "warn_count": 1,
+          "abstain_count": 20,
+          "abstain_precision": 0.9,
+          "abstain_recall": 1.0,
+          "abstain_f1": 0.9473684210526316
+        }
+      },
+      {
+        "fold": 4,
+        "train_task_count": 80,
+        "test_task_count": 20,
+        "train_run_count": 240,
+        "test_run_count": 60,
+        "fitted_answer_threshold": 0.25,
+        "fitted_abstain_threshold": 0.3214,
+        "train_target_precision_met": false,
+        "held_out_metrics": {
+          "sample_count": 60,
+          "task_success_rate": 0.9,
+          "selective_accuracy_strict": 0.9705882352941176,
+          "non_abstained_count": 34,
+          "answer_count": 34,
+          "warn_count": 0,
+          "abstain_count": 26,
+          "abstain_precision": 0.8076923076923077,
+          "abstain_recall": 1.0,
+          "abstain_f1": 0.8936170212765957
+        }
+      },
+      {
+        "fold": 5,
+        "train_task_count": 80,
+        "test_task_count": 20,
+        "train_run_count": 240,
+        "test_run_count": 60,
+        "fitted_answer_threshold": 0.25,
+        "fitted_abstain_threshold": 0.3214,
+        "train_target_precision_met": false,
+        "held_out_metrics": {
+          "sample_count": 60,
+          "task_success_rate": 0.8666666666666667,
+          "selective_accuracy_strict": 1.0,
+          "non_abstained_count": 34,
+          "answer_count": 34,
+          "warn_count": 0,
+          "abstain_count": 26,
+          "abstain_precision": 0.6923076923076923,
+          "abstain_recall": 1.0,
+          "abstain_f1": 0.8181818181818181
+        }
+      }
+    ]
+  }
+}

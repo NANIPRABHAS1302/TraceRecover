@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600" role="img" aria-labelledby="chart-title chart-desc">
+<title id="chart-title">Average task latency</title>
+<desc id="chart-desc">Mean end-to-end ReactAgent.run duration; values are converted from saved seconds to milliseconds.</desc>
+<style>text{font-family:Segoe UI,Arial,sans-serif;fill:#222}.grid{stroke:#d9d9d9;stroke-width:1}.axis{stroke:#444;stroke-width:1.4}.line{fill:none;stroke-width:2.5}.point{stroke:#fff;stroke-width:1.5}.label{font-size:12px}.small{font-size:11px}</style>
+<text x="480.0" y="38" text-anchor="middle" font-size="22" font-weight="600">Average task latency</text>
+<text x="480.0" y="62" text-anchor="middle" font-size="12" fill="#555">Mean end-to-end ReactAgent.run duration; values are converted from saved seconds to milliseconds.</text>
+<line class="grid" x1="100.0" y1="478.0" x2="780.0" y2="478.0"/>
+<text class="label" x="88.0" y="482.0" text-anchor="end">0</text>
+<line class="grid" x1="100.0" y1="400.0" x2="780.0" y2="400.0"/>
+<text class="label" x="88.0" y="404.0" text-anchor="end">2</text>
+<line class="grid" x1="100.0" y1="322.0" x2="780.0" y2="322.0"/>
+<text class="label" x="88.0" y="326.0" text-anchor="end">4</text>
+<line class="grid" x1="100.0" y1="244.0" x2="780.0" y2="244.0"/>
+<text class="label" x="88.0" y="248.0" text-anchor="end">5</text>
+<line class="grid" x1="100.0" y1="166.0" x2="780.0" y2="166.0"/>
+<text class="label" x="88.0" y="170.0" text-anchor="end">7</text>
+<line class="grid" x1="100.0" y1="88.0" x2="780.0" y2="88.0"/>
+<text class="label" x="88.0" y="92.0" text-anchor="end">9</text>
+<line class="axis" x1="100.0" y1="88.0" x2="100.0" y2="478.0"/>
+<line class="axis" x1="100.0" y1="478.0" x2="780.0" y2="478.0"/>
+<line class="grid" x1="100.0" y1="478.0" x2="100.0" y2="483.0"/>
+<text class="label" x="100.0" y="502.0" text-anchor="middle">0%</text>
+<line class="grid" x1="440.0" y1="478.0" x2="440.0" y2="483.0"/>
+<text class="label" x="440.0" y="502.0" text-anchor="middle">20%</text>
+<line class="grid" x1="780.0" y1="478.0" x2="780.0" y2="483.0"/>
+<text class="label" x="780.0" y="502.0" text-anchor="middle">40%</text>
+<text class="label" x="440.0" y="530.0" text-anchor="middle">Injected tool failure rate</text>
+<text class="label" transform="translate(28 283.0) rotate(-90)" text-anchor="middle">Average latency (milliseconds)</text>
+<circle class="point" cx="100.0" cy="382.3" r="5" fill="#4c78a8"><title>Baseline at 0%: 2.209; 100/100</title></circle>
+<text class="small" x="107.0" y="373.3">100/100</text>
+<circle class="point" cx="440.0" cy="384.1" r="5" fill="#4c78a8"><title>Baseline at 20%: 2.167; 100/100</title></circle>
+<text class="small" x="447.0" y="375.1">100/100</text>
+<circle class="point" cx="780.0" cy="371.0" r="5" fill="#4c78a8"><title>Baseline at 40%: 2.47; 100/100</title></circle>
+<text class="small" x="787.0" y="362.0">100/100</text>
+<polyline class="line" stroke="#4c78a8" points="100.0,382.3 440.0,384.1 780.0,371.0"/>
+<circle class="point" cx="100.0" cy="185.5" r="5" fill="#f58518"><title>TraceRecover at 0%: 6.749; 100/100</title></circle>
+<text class="small" x="107.0" y="163.5">100/100</text>
+<circle class="point" cx="440.0" cy="170.1" r="5" fill="#f58518"><title>TraceRecover at 20%: 7.105; 100/100</title></circle>
+<text class="small" x="447.0" y="148.1">100/100</text>
+<circle class="point" cx="780.0" cy="146.3" r="5" fill="#f58518"><title>TraceRecover at 40%: 7.655; 100/100</title></circle>
+<text class="small" x="787.0" y="124.3">100/100</text>
+<polyline class="line" stroke="#f58518" points="100.0,185.5 440.0,170.1 780.0,146.3"/>
+<line x1="806" y1="108.0" x2="832" y2="108.0" stroke="#4c78a8" stroke-width="3"/>
+<circle cx="819" cy="108.0" r="4" fill="#4c78a8"/>
+<text class="label" x="840" y="112.0">Baseline</text>
+<line x1="806" y1="134.0" x2="832" y2="134.0" stroke="#f58518" stroke-width="3"/>
+<circle cx="819" cy="134.0" r="4" fill="#f58518"/>
+<text class="label" x="840" y="138.0">TraceRecover</text>
+</svg>

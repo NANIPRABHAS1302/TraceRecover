@@ -1,0 +1,15 @@
+{
+  "run_id": "unseen-eval-20261124T160705Z-d1d97a",
+  "dataset_id": "unseen-v3.0-seed2026-20261124T160705Z-fe61cc",
+  "dataset_version": "3.0-unseen",
+  "dataset_sha256": "de21f3274a6c421f7201b088e228dce4d859683433ef5e579c0a0ad10aecbfcf",
+  "seed": 2026,
+  "num_tasks": 26,
+  "provider": "local",
+  "provider_scope": "offline_deterministic_local",
+  "failure_rate_percent": 0.0,
+  "enable_external_search": false,
+  "search_provider": "auto",
+  "use_nli": false,
+  "created_at": "2026-11-24T16:07:06.006715+00:00"
+}

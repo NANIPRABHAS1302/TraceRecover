@@ -1,0 +1,45 @@
+services:
+  - type: web
+    name: tracerecover-dashboard
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    healthCheckPath: /api/health
+    autoDeploy: false
+    disk:
+      name: tracerecover-data
+      mountPath: /var/data
+      sizeGB: 2
+    envVars:
+      - key: LLM_PROVIDER
+        value: local
+      - key: TRACERECOVER_RESULTS_DIR
+        value: /var/data/results
+      - key: TRACERECOVER_LOGS_DIR
+        value: /var/data/logs
+      - key: TRACERECOVER_DATASET_VERSIONS_DIR
+        value: /var/data/versions
+      - key: TRACERECOVER_CONVERSATIONS_DIR
+        value: /var/data/conversations
+      - key: TRACERECOVER_UNSEEN_DATASETS_DIR
+        value: /var/data/unseen_benchmarks
+      - key: TRACERECOVER_SEARCH_PROVIDER
+        value: auto
+      - key: TRACERECOVER_ENABLE_DOCS
+        value: "false"
+      - key: TRACERECOVER_RATE_LIMIT_RUN
+        value: "60"
+      - key: TRACERECOVER_RATE_LIMIT_EXPERIMENTS
+        value: "10"
+      - key: TRACERECOVER_MAX_REQUEST_BYTES
+        value: "65536"
+      - key: TRACERECOVER_CORS_ORIGINS
+        sync: false
+      - key: TRACERECOVER_ADMIN_TOKEN
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false

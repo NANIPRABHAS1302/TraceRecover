@@ -1,0 +1,3296 @@
+{
+  "dataset_version": "2.0",
+  "description": "100-task multi-hop deterministic benchmark across 5 categories: multi_hop_search_math, multi_record_api_aggregation, argument_repair_tool_switch, missing_evidence_abstention, and numeric_contradiction_trap.",
+  "tasks": [
+    {
+      "task_id": "MHSM-01",
+      "query": "Retrieve aerospace telemetry metric M-1 and compute 420 * 2 + 15.",
+      "category": "multi_hop_search_math",
+      "expected_answer": "Aerospace Telemetry Metric M-1 reports orbital booster stage-1 chamber pressure at 420 bar. The derived calculation equals 855.",
+      "expected_facts": [
+        "M-1",
+        "420",
+        "855"
+      ],
+      "contradictory_facts": [
+        "872",
+        "842"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both the retrieved metric record and derived calculation must appear.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "aerospace telemetry metric M-1"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "420 * 2 + 15"
+          }
+        }
+      ],
+      "final_answer_template": "{0} The derived calculation equals {1}."
+    },
+    {
+      "task_id": "MHSM-02",
+      "query": "Retrieve aerospace telemetry metric M-2 and compute 185 + 65.",
+      "category": "multi_hop_search_math",
+      "expected_answer": "Aerospace Telemetry Metric M-2 reports satellite thermal shield temperature at 185 kelvin. The derived calculation equals 250.",
+      "expected_facts": [
+        "M-2",
+        "185",
+        "250"
+      ],
+      "contradictory_facts": [
+        "267",
+        "237"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both the retrieved metric record and derived calculation must appear.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "aerospace telemetry metric M-2"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "185 + 65"
+          }
+        }
+      ],
+      "final_answer_template": "{0} The derived calculation equals {1}."
+    },
+    {
+      "task_id": "MHSM-03",
+      "query": "Retrieve aerospace telemetry metric M-3 and compute 34 * 3 - 2.",
+      "category": "multi_hop_search_math",
+      "expected_answer": "Aerospace Telemetry Metric M-3 reports downlink antenna signal margin at 34 decibels. The derived calculation equals 100.",
+      "expected_facts": [
+        "M-3",
+        "34",
+        "100"
+      ],
+      "contradictory_facts": [
+        "117",
+        "87"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both the retrieved metric record and derived calculation must appear.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "aerospace telemetry metric M-3"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "34 * 3 - 2"
+          }
+        }
+      ],
+      "final_answer_template": "{0} The derived calculation equals {1}."
+    },
+    {
+      "task_id": "MHSM-04",
+      "query": "Retrieve aerospace telemetry metric M-4 and compute 640 // 4 + 40.",
+      "category": "multi_hop_search_math",
+      "expected_answer": "Aerospace Telemetry Metric M-4 reports attitude thruster propellant reserve at 640 kilograms. The derived calculation equals 200.",
+      "expected_facts": [
+        "M-4",
+        "640",
+        "200"
+      ],
+      "contradictory_facts": [
+        "217",
+        "187"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both the retrieved metric record and derived calculation must appear.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "aerospace telemetry metric M-4"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "640 // 4 + 40"
+          }
+        }
+      ],
+      "final_answer_template": "{0} The derived calculation equals {1}."
+    },
+    {
+      "task_id": "MHSM-05",
+      "query": "Retrieve cloud finops metric M-5 and compute 1250 * 7.",
+      "category": "multi_hop_search_math",
+      "expected_answer": "Cloud FinOps Metric M-5 reports daily GPU cluster compute spend at 1250 dollars. The derived calculation equals 8750.",
+      "expected_facts": [
+        "M-5",
+        "1250",
+        "8750"
+      ],
+      "contradictory_facts": [
+        "8767",
+        "8737"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both the retrieved metric record and derived calculation must appear.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "cloud finops metric M-5"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "1250 * 7"
+          }
+        }
+      ],
+      "final_answer_template": "{0} The derived calculation equals {1}."
+    },
+    {
+      "task_id": "MHSM-06",
+      "query": "Retrieve cloud finops metric M-6 and compute 480 + 120.",
+      "category": "multi_hop_search_math",
+      "expected_answer": "Cloud FinOps Metric M-6 reports object storage tier monthly volume at 480 terabytes. The derived calculation equals 600.",
+      "expected_facts": [
+        "M-6",
+        "480",
+        "600"
+      ],
+      "contradictory_facts": [
+        "617",
+        "587"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both the retrieved metric record and derived calculation must appear.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "cloud finops metric M-6"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "480 + 120"
+          }
+        }
+      ],
+      "final_answer_template": "{0} The derived calculation equals {1}."
+    },
+    {
+      "task_id": "MHSM-07",
+      "query": "Retrieve cloud finops metric M-7 and compute 100 - 78.",
+      "category": "multi_hop_search_math",
+      "expected_answer": "Cloud FinOps Metric M-7 reports reserved instance coverage ratio at 78 percent. The derived calculation equals 22.",
+      "expected_facts": [
+        "M-7",
+        "78",
+        "22"
+      ],
+      "contradictory_facts": [
+        "39",
+        "9"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both the retrieved metric record and derived calculation must appear.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "cloud finops metric M-7"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "100 - 78"
+          }
+        }
+      ],
+      "final_answer_template": "{0} The derived calculation equals {1}."
+    },
+    {
+      "task_id": "MHSM-08",
+      "query": "Retrieve cloud finops metric M-8 and compute 160 * 30.",
+      "category": "multi_hop_search_math",
+      "expected_answer": "Cloud FinOps Metric M-8 reports idle Kubernetes node waste rate at 160 dollars per day. The derived calculation equals 4800.",
+      "expected_facts": [
+        "M-8",
+        "160",
+        "4800"
+      ],
+      "contradictory_facts": [
+        "4817",
+        "4787"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both the retrieved metric record and derived calculation must appear.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "cloud finops metric M-8"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "160 * 30"
+          }
+        }
+      ],
+      "final_answer_template": "{0} The derived calculation equals {1}."
+    },
+    {
+      "task_id": "MHSM-09",
+      "query": "Retrieve enterprise sla tickets metric M-9 and compute 45 * 4.",
+      "category": "multi_hop_search_math",
+      "expected_answer": "Enterprise SLA Tickets Metric M-9 reports critical incident mean recovery time at 45 minutes. The derived calculation equals 180.",
+      "expected_facts": [
+        "M-9",
+        "45",
+        "180"
+      ],
+      "contradictory_facts": [
+        "197",
+        "167"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both the retrieved metric record and derived calculation must appear.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "enterprise sla tickets metric M-9"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "45 * 4"
+          }
+        }
+      ],
+      "final_answer_template": "{0} The derived calculation equals {1}."
+    },
+    {
+      "task_id": "MHSM-10",
+      "query": "Retrieve enterprise sla tickets metric M-10 and compute 28 * 3 + 6.",
+      "category": "multi_hop_search_math",
+      "expected_answer": "Enterprise SLA Tickets Metric M-10 reports monthly priority-one ticket backlog at 28 tickets. The derived calculation equals 90.",
+      "expected_facts": [
+        "M-10",
+        "28",
+        "90"
+      ],
+      "contradictory_facts": [
+        "107",
+        "77"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both the retrieved metric record and derived calculation must appear.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "enterprise sla tickets metric M-10"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "28 * 3 + 6"
+          }
+        }
+      ],
+      "final_answer_template": "{0} The derived calculation equals {1}."
+    },
+    {
+      "task_id": "MHSM-11",
+      "query": "Retrieve enterprise sla tickets metric M-11 and compute 350 * 5.",
+      "category": "multi_hop_search_math",
+      "expected_answer": "Enterprise SLA Tickets Metric M-11 reports regional escalation penalty fee at 350 dollars per breach. The derived calculation equals 1750.",
+      "expected_facts": [
+        "M-11",
+        "350",
+        "1750"
+      ],
+      "contradictory_facts": [
+        "1767",
+        "1737"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both the retrieved metric record and derived calculation must appear.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "enterprise sla tickets metric M-11"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "350 * 5"
+          }
+        }
+      ],
+      "final_answer_template": "{0} The derived calculation equals {1}."
+    },
+    {
+      "task_id": "MHSM-12",
+      "query": "Retrieve enterprise sla tickets metric M-12 and compute 120 * 4.",
+      "category": "multi_hop_search_math",
+      "expected_answer": "Enterprise SLA Tickets Metric M-12 reports tier-two support capacity at 120 tickets per week. The derived calculation equals 480.",
+      "expected_facts": [
+        "M-12",
+        "120",
+        "480"
+      ],
+      "contradictory_facts": [
+        "497",
+        "467"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both the retrieved metric record and derived calculation must appear.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "enterprise sla tickets metric M-12"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "120 * 4"
+          }
+        }
+      ],
+      "final_answer_template": "{0} The derived calculation equals {1}."
+    },
+    {
+      "task_id": "MHSM-13",
+      "query": "Retrieve climate grid sensors metric M-13 and compute 860 + 90.",
+      "category": "multi_hop_search_math",
+      "expected_answer": "Climate Grid Sensors Metric M-13 reports coastal wind turbine array output at 860 megawatts. The derived calculation equals 950.",
+      "expected_facts": [
+        "M-13",
+        "860",
+        "950"
+      ],
+      "contradictory_facts": [
+        "967",
+        "937"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both the retrieved metric record and derived calculation must appear.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "climate grid sensors metric M-13"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "860 + 90"
+          }
+        }
+      ],
+      "final_answer_template": "{0} The derived calculation equals {1}."
+    },
+    {
+      "task_id": "MHSM-14",
+      "query": "Retrieve climate grid sensors metric M-14 and compute 100 - 94.",
+      "category": "multi_hop_search_math",
+      "expected_answer": "Climate Grid Sensors Metric M-14 reports solar substation inverter efficiency at 94 percent. The derived calculation equals 6.",
+      "expected_facts": [
+        "M-14",
+        "94",
+        "6"
+      ],
+      "contradictory_facts": [
+        "23",
+        "-7"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both the retrieved metric record and derived calculation must appear.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "climate grid sensors metric M-14"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "100 - 94"
+          }
+        }
+      ],
+      "final_answer_template": "{0} The derived calculation equals {1}."
+    },
+    {
+      "task_id": "MHSM-15",
+      "query": "Retrieve climate grid sensors metric M-15 and compute 310 * 2 + 30.",
+      "category": "multi_hop_search_math",
+      "expected_answer": "Climate Grid Sensors Metric M-15 reports grid frequency stabilization reserve at 310 megawatts. The derived calculation equals 650.",
+      "expected_facts": [
+        "M-15",
+        "310",
+        "650"
+      ],
+      "contradictory_facts": [
+        "667",
+        "637"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both the retrieved metric record and derived calculation must appear.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "climate grid sensors metric M-15"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "310 * 2 + 30"
+          }
+        }
+      ],
+      "final_answer_template": "{0} The derived calculation equals {1}."
+    },
+    {
+      "task_id": "MHSM-16",
+      "query": "Retrieve climate grid sensors metric M-16 and compute 540 // 6.",
+      "category": "multi_hop_search_math",
+      "expected_answer": "Climate Grid Sensors Metric M-16 reports alpine microgrid battery bank charge at 540 megawatt hours. The derived calculation equals 90.",
+      "expected_facts": [
+        "M-16",
+        "540",
+        "90"
+      ],
+      "contradictory_facts": [
+        "107",
+        "77"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both the retrieved metric record and derived calculation must appear.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "climate grid sensors metric M-16"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "540 // 6"
+          }
+        }
+      ],
+      "final_answer_template": "{0} The derived calculation equals {1}."
+    },
+    {
+      "task_id": "MHSM-17",
+      "query": "Retrieve clinical equipment logs metric M-17 and compute 100 - 88.",
+      "category": "multi_hop_search_math",
+      "expected_answer": "Clinical Equipment Logs Metric M-17 reports MRI superconducting magnet helium level at 88 percent. The derived calculation equals 12.",
+      "expected_facts": [
+        "M-17",
+        "88",
+        "12"
+      ],
+      "contradictory_facts": [
+        "29",
+        "-1"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both the retrieved metric record and derived calculation must appear.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "clinical equipment logs metric M-17"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "100 - 88"
+          }
+        }
+      ],
+      "final_answer_template": "{0} The derived calculation equals {1}."
+    },
+    {
+      "task_id": "MHSM-18",
+      "query": "Retrieve clinical equipment logs metric M-18 and compute 64 * 2 + 8.",
+      "category": "multi_hop_search_math",
+      "expected_answer": "Clinical Equipment Logs Metric M-18 reports ICU ventilator fleet active count at 64 units. The derived calculation equals 136.",
+      "expected_facts": [
+        "M-18",
+        "64",
+        "136"
+      ],
+      "contradictory_facts": [
+        "153",
+        "123"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both the retrieved metric record and derived calculation must appear.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "clinical equipment logs metric M-18"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "64 * 2 + 8"
+          }
+        }
+      ],
+      "final_answer_template": "{0} The derived calculation equals {1}."
+    },
+    {
+      "task_id": "MHSM-19",
+      "query": "Retrieve clinical equipment logs metric M-19 and compute 90 * 4.",
+      "category": "multi_hop_search_math",
+      "expected_answer": "Clinical Equipment Logs Metric M-19 reports infusion pump calibration cycle interval at 90 days. The derived calculation equals 360.",
+      "expected_facts": [
+        "M-19",
+        "90",
+        "360"
+      ],
+      "contradictory_facts": [
+        "377",
+        "347"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both the retrieved metric record and derived calculation must appear.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "clinical equipment logs metric M-19"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "90 * 4"
+          }
+        }
+      ],
+      "final_answer_template": "{0} The derived calculation equals {1}."
+    },
+    {
+      "task_id": "MHSM-20",
+      "query": "Retrieve clinical equipment logs metric M-20 and compute 215 + 35.",
+      "category": "multi_hop_search_math",
+      "expected_answer": "Clinical Equipment Logs Metric M-20 reports surgical autoclave sterilization pressure at 215 kilopascals. The derived calculation equals 250.",
+      "expected_facts": [
+        "M-20",
+        "215",
+        "250"
+      ],
+      "contradictory_facts": [
+        "267",
+        "237"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both the retrieved metric record and derived calculation must appear.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "clinical equipment logs metric M-20"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "215 + 35"
+          }
+        }
+      ],
+      "final_answer_template": "{0} The derived calculation equals {1}."
+    },
+    {
+      "task_id": "MRAA-01",
+      "query": "Look up enterprise SLA tickets T-401 and T-402, then compute their combined cost_usd.",
+      "category": "multi_record_api_aggregation",
+      "expected_answer": "T-401 (Elena); T-402 (Marcus); total=2050",
+      "expected_facts": [
+        "T-401",
+        "Elena",
+        "T-402",
+        "Marcus",
+        "total=2050"
+      ],
+      "contradictory_facts": [
+        "total=2161",
+        "total=2272"
+      ],
+      "expected_tool_category": [
+        "mock_api",
+        "mock_api",
+        "python_exec"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both ticket records and the exact aggregated total must appear.",
+      "oracle_plan": [
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-401"
+          }
+        },
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-402"
+          }
+        },
+        {
+          "tool": "python_exec",
+          "arguments": {
+            "code": "sum([1200, 850])"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; {1}; total={2}"
+    },
+    {
+      "task_id": "MRAA-02",
+      "query": "Look up enterprise SLA tickets T-402 and T-403, then compute their combined cost_usd.",
+      "category": "multi_record_api_aggregation",
+      "expected_answer": "T-402 (Marcus); T-403 (Priya); total=1300",
+      "expected_facts": [
+        "T-402",
+        "Marcus",
+        "T-403",
+        "Priya",
+        "total=1300"
+      ],
+      "contradictory_facts": [
+        "total=1411",
+        "total=1522"
+      ],
+      "expected_tool_category": [
+        "mock_api",
+        "mock_api",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both ticket records and the exact aggregated total must appear.",
+      "oracle_plan": [
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-402"
+          }
+        },
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-403"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "850 + 450"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; {1}; total={2}"
+    },
+    {
+      "task_id": "MRAA-03",
+      "query": "Look up enterprise SLA tickets T-403 and T-404, then compute their combined cost_usd.",
+      "category": "multi_record_api_aggregation",
+      "expected_answer": "T-403 (Priya); T-404 (Devon); total=2400",
+      "expected_facts": [
+        "T-403",
+        "Priya",
+        "T-404",
+        "Devon",
+        "total=2400"
+      ],
+      "contradictory_facts": [
+        "total=2511",
+        "total=2622"
+      ],
+      "expected_tool_category": [
+        "mock_api",
+        "mock_api",
+        "python_exec"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both ticket records and the exact aggregated total must appear.",
+      "oracle_plan": [
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-403"
+          }
+        },
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-404"
+          }
+        },
+        {
+          "tool": "python_exec",
+          "arguments": {
+            "code": "sum([450, 1950])"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; {1}; total={2}"
+    },
+    {
+      "task_id": "MRAA-04",
+      "query": "Look up enterprise SLA tickets T-404 and T-405, then compute their combined cost_usd.",
+      "category": "multi_record_api_aggregation",
+      "expected_answer": "T-404 (Devon); T-405 (Lin); total=2250",
+      "expected_facts": [
+        "T-404",
+        "Devon",
+        "T-405",
+        "Lin",
+        "total=2250"
+      ],
+      "contradictory_facts": [
+        "total=2361",
+        "total=2472"
+      ],
+      "expected_tool_category": [
+        "mock_api",
+        "mock_api",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both ticket records and the exact aggregated total must appear.",
+      "oracle_plan": [
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-404"
+          }
+        },
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-405"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "1950 + 300"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; {1}; total={2}"
+    },
+    {
+      "task_id": "MRAA-05",
+      "query": "Look up enterprise SLA tickets T-405 and T-406, then compute their combined cost_usd.",
+      "category": "multi_record_api_aggregation",
+      "expected_answer": "T-405 (Lin); T-406 (Mateo); total=920",
+      "expected_facts": [
+        "T-405",
+        "Lin",
+        "T-406",
+        "Mateo",
+        "total=920"
+      ],
+      "contradictory_facts": [
+        "total=1031",
+        "total=1142"
+      ],
+      "expected_tool_category": [
+        "mock_api",
+        "mock_api",
+        "python_exec"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both ticket records and the exact aggregated total must appear.",
+      "oracle_plan": [
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-405"
+          }
+        },
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-406"
+          }
+        },
+        {
+          "tool": "python_exec",
+          "arguments": {
+            "code": "sum([300, 620])"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; {1}; total={2}"
+    },
+    {
+      "task_id": "MRAA-06",
+      "query": "Look up enterprise SLA tickets T-406 and T-407, then compute their combined cost_usd.",
+      "category": "multi_record_api_aggregation",
+      "expected_answer": "T-406 (Mateo); T-407 (Hannah); total=2120",
+      "expected_facts": [
+        "T-406",
+        "Mateo",
+        "T-407",
+        "Hannah",
+        "total=2120"
+      ],
+      "contradictory_facts": [
+        "total=2231",
+        "total=2342"
+      ],
+      "expected_tool_category": [
+        "mock_api",
+        "mock_api",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both ticket records and the exact aggregated total must appear.",
+      "oracle_plan": [
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-406"
+          }
+        },
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-407"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "620 + 1500"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; {1}; total={2}"
+    },
+    {
+      "task_id": "MRAA-07",
+      "query": "Look up enterprise SLA tickets T-407 and T-408, then compute their combined cost_usd.",
+      "category": "multi_record_api_aggregation",
+      "expected_answer": "T-407 (Hannah); T-408 (Tariq); total=2280",
+      "expected_facts": [
+        "T-407",
+        "Hannah",
+        "T-408",
+        "Tariq",
+        "total=2280"
+      ],
+      "contradictory_facts": [
+        "total=2391",
+        "total=2502"
+      ],
+      "expected_tool_category": [
+        "mock_api",
+        "mock_api",
+        "python_exec"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both ticket records and the exact aggregated total must appear.",
+      "oracle_plan": [
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-407"
+          }
+        },
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-408"
+          }
+        },
+        {
+          "tool": "python_exec",
+          "arguments": {
+            "code": "sum([1500, 780])"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; {1}; total={2}"
+    },
+    {
+      "task_id": "MRAA-08",
+      "query": "Look up enterprise SLA tickets T-408 and T-409, then compute their combined cost_usd.",
+      "category": "multi_record_api_aggregation",
+      "expected_answer": "T-408 (Tariq); T-409 (Nora); total=1190",
+      "expected_facts": [
+        "T-408",
+        "Tariq",
+        "T-409",
+        "Nora",
+        "total=1190"
+      ],
+      "contradictory_facts": [
+        "total=1301",
+        "total=1412"
+      ],
+      "expected_tool_category": [
+        "mock_api",
+        "mock_api",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both ticket records and the exact aggregated total must appear.",
+      "oracle_plan": [
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-408"
+          }
+        },
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-409"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "780 + 410"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; {1}; total={2}"
+    },
+    {
+      "task_id": "MRAA-09",
+      "query": "Look up enterprise SLA tickets T-409 and T-410, then compute their combined cost_usd.",
+      "category": "multi_record_api_aggregation",
+      "expected_answer": "T-409 (Nora); T-410 (Kenji); total=2510",
+      "expected_facts": [
+        "T-409",
+        "Nora",
+        "T-410",
+        "Kenji",
+        "total=2510"
+      ],
+      "contradictory_facts": [
+        "total=2621",
+        "total=2732"
+      ],
+      "expected_tool_category": [
+        "mock_api",
+        "mock_api",
+        "python_exec"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both ticket records and the exact aggregated total must appear.",
+      "oracle_plan": [
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-409"
+          }
+        },
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-410"
+          }
+        },
+        {
+          "tool": "python_exec",
+          "arguments": {
+            "code": "sum([410, 2100])"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; {1}; total={2}"
+    },
+    {
+      "task_id": "MRAA-10",
+      "query": "Look up enterprise SLA tickets T-410 and T-411, then compute their combined cost_usd.",
+      "category": "multi_record_api_aggregation",
+      "expected_answer": "T-410 (Kenji); T-411 (Chloe); total=2640",
+      "expected_facts": [
+        "T-410",
+        "Kenji",
+        "T-411",
+        "Chloe",
+        "total=2640"
+      ],
+      "contradictory_facts": [
+        "total=2751",
+        "total=2862"
+      ],
+      "expected_tool_category": [
+        "mock_api",
+        "mock_api",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both ticket records and the exact aggregated total must appear.",
+      "oracle_plan": [
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-410"
+          }
+        },
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-411"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "2100 + 540"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; {1}; total={2}"
+    },
+    {
+      "task_id": "MRAA-11",
+      "query": "Look up enterprise SLA tickets T-411 and T-412, then compute their combined sla_hours.",
+      "category": "multi_record_api_aggregation",
+      "expected_answer": "T-411 (Chloe); T-412 (Victor); total=28",
+      "expected_facts": [
+        "T-411",
+        "Chloe",
+        "T-412",
+        "Victor",
+        "total=28"
+      ],
+      "contradictory_facts": [
+        "total=139",
+        "total=250"
+      ],
+      "expected_tool_category": [
+        "mock_api",
+        "mock_api",
+        "python_exec"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both ticket records and the exact aggregated total must appear.",
+      "oracle_plan": [
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-411"
+          }
+        },
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-412"
+          }
+        },
+        {
+          "tool": "python_exec",
+          "arguments": {
+            "code": "sum([12, 16])"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; {1}; total={2}"
+    },
+    {
+      "task_id": "MRAA-12",
+      "query": "Look up enterprise SLA tickets T-412 and T-413, then compute their combined sla_hours.",
+      "category": "multi_record_api_aggregation",
+      "expected_answer": "T-412 (Victor); T-413 (Amara); total=21",
+      "expected_facts": [
+        "T-412",
+        "Victor",
+        "T-413",
+        "Amara",
+        "total=21"
+      ],
+      "contradictory_facts": [
+        "total=132",
+        "total=243"
+      ],
+      "expected_tool_category": [
+        "mock_api",
+        "mock_api",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both ticket records and the exact aggregated total must appear.",
+      "oracle_plan": [
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-412"
+          }
+        },
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-413"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "16 + 5"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; {1}; total={2}"
+    },
+    {
+      "task_id": "MRAA-13",
+      "query": "Look up enterprise SLA tickets T-413 and T-414, then compute their combined sla_hours.",
+      "category": "multi_record_api_aggregation",
+      "expected_answer": "T-413 (Amara); T-414 (Lucas); total=14",
+      "expected_facts": [
+        "T-413",
+        "Amara",
+        "T-414",
+        "Lucas",
+        "total=14"
+      ],
+      "contradictory_facts": [
+        "total=125",
+        "total=236"
+      ],
+      "expected_tool_category": [
+        "mock_api",
+        "mock_api",
+        "python_exec"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both ticket records and the exact aggregated total must appear.",
+      "oracle_plan": [
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-413"
+          }
+        },
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-414"
+          }
+        },
+        {
+          "tool": "python_exec",
+          "arguments": {
+            "code": "sum([5, 9])"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; {1}; total={2}"
+    },
+    {
+      "task_id": "MRAA-14",
+      "query": "Look up enterprise SLA tickets T-414 and T-415, then compute their combined sla_hours.",
+      "category": "multi_record_api_aggregation",
+      "expected_answer": "T-414 (Lucas); T-415 (Zara); total=29",
+      "expected_facts": [
+        "T-414",
+        "Lucas",
+        "T-415",
+        "Zara",
+        "total=29"
+      ],
+      "contradictory_facts": [
+        "total=140",
+        "total=251"
+      ],
+      "expected_tool_category": [
+        "mock_api",
+        "mock_api",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both ticket records and the exact aggregated total must appear.",
+      "oracle_plan": [
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-414"
+          }
+        },
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-415"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "9 + 20"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; {1}; total={2}"
+    },
+    {
+      "task_id": "MRAA-15",
+      "query": "Look up enterprise SLA tickets T-401 and T-407, then compute their combined sla_hours.",
+      "category": "multi_record_api_aggregation",
+      "expected_answer": "T-401 (Elena); T-407 (Hannah); total=8",
+      "expected_facts": [
+        "T-401",
+        "Elena",
+        "T-407",
+        "Hannah",
+        "total=8"
+      ],
+      "contradictory_facts": [
+        "total=119",
+        "total=230"
+      ],
+      "expected_tool_category": [
+        "mock_api",
+        "mock_api",
+        "python_exec"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both ticket records and the exact aggregated total must appear.",
+      "oracle_plan": [
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-401"
+          }
+        },
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-407"
+          }
+        },
+        {
+          "tool": "python_exec",
+          "arguments": {
+            "code": "sum([4, 4])"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; {1}; total={2}"
+    },
+    {
+      "task_id": "MRAA-16",
+      "query": "Look up enterprise SLA tickets T-402 and T-410, then compute their combined sla_hours.",
+      "category": "multi_record_api_aggregation",
+      "expected_answer": "T-402 (Marcus); T-410 (Kenji); total=9",
+      "expected_facts": [
+        "T-402",
+        "Marcus",
+        "T-410",
+        "Kenji",
+        "total=9"
+      ],
+      "contradictory_facts": [
+        "total=120",
+        "total=231"
+      ],
+      "expected_tool_category": [
+        "mock_api",
+        "mock_api",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both ticket records and the exact aggregated total must appear.",
+      "oracle_plan": [
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-402"
+          }
+        },
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-410"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "6 + 3"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; {1}; total={2}"
+    },
+    {
+      "task_id": "MRAA-17",
+      "query": "Look up enterprise SLA tickets T-403 and T-412, then compute their combined cost_usd.",
+      "category": "multi_record_api_aggregation",
+      "expected_answer": "T-403 (Priya); T-412 (Victor); total=1380",
+      "expected_facts": [
+        "T-403",
+        "Priya",
+        "T-412",
+        "Victor",
+        "total=1380"
+      ],
+      "contradictory_facts": [
+        "total=1491",
+        "total=1602"
+      ],
+      "expected_tool_category": [
+        "mock_api",
+        "mock_api",
+        "python_exec"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both ticket records and the exact aggregated total must appear.",
+      "oracle_plan": [
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-403"
+          }
+        },
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-412"
+          }
+        },
+        {
+          "tool": "python_exec",
+          "arguments": {
+            "code": "sum([450, 930])"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; {1}; total={2}"
+    },
+    {
+      "task_id": "MRAA-18",
+      "query": "Look up enterprise SLA tickets T-404 and T-413, then compute their combined cost_usd.",
+      "category": "multi_record_api_aggregation",
+      "expected_answer": "T-404 (Devon); T-413 (Amara); total=3290",
+      "expected_facts": [
+        "T-404",
+        "Devon",
+        "T-413",
+        "Amara",
+        "total=3290"
+      ],
+      "contradictory_facts": [
+        "total=3401",
+        "total=3512"
+      ],
+      "expected_tool_category": [
+        "mock_api",
+        "mock_api",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both ticket records and the exact aggregated total must appear.",
+      "oracle_plan": [
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-404"
+          }
+        },
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-413"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "1950 + 1340"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; {1}; total={2}"
+    },
+    {
+      "task_id": "MRAA-19",
+      "query": "Look up enterprise SLA tickets T-405 and T-414, then compute their combined sla_hours.",
+      "category": "multi_record_api_aggregation",
+      "expected_answer": "T-405 (Lin); T-414 (Lucas); total=33",
+      "expected_facts": [
+        "T-405",
+        "Lin",
+        "T-414",
+        "Lucas",
+        "total=33"
+      ],
+      "contradictory_facts": [
+        "total=144",
+        "total=255"
+      ],
+      "expected_tool_category": [
+        "mock_api",
+        "mock_api",
+        "python_exec"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both ticket records and the exact aggregated total must appear.",
+      "oracle_plan": [
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-405"
+          }
+        },
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-414"
+          }
+        },
+        {
+          "tool": "python_exec",
+          "arguments": {
+            "code": "sum([24, 9])"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; {1}; total={2}"
+    },
+    {
+      "task_id": "MRAA-20",
+      "query": "Look up enterprise SLA tickets T-406 and T-415, then compute their combined cost_usd.",
+      "category": "multi_record_api_aggregation",
+      "expected_answer": "T-406 (Mateo); T-415 (Zara); total=1010",
+      "expected_facts": [
+        "T-406",
+        "Mateo",
+        "T-415",
+        "Zara",
+        "total=1010"
+      ],
+      "contradictory_facts": [
+        "total=1121",
+        "total=1232"
+      ],
+      "expected_tool_category": [
+        "mock_api",
+        "mock_api",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both ticket records and the exact aggregated total must appear.",
+      "oracle_plan": [
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-406"
+          }
+        },
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-415"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "620 + 390"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; {1}; total={2}"
+    },
+    {
+      "task_id": "ARTS-01",
+      "query": "Compute 19 * 23 + 4 using calculator with fallback switching to python_exec if needed.",
+      "category": "argument_repair_tool_switch",
+      "expected_answer": "441",
+      "expected_facts": [
+        "441"
+      ],
+      "contradictory_facts": [
+        "442",
+        "450"
+      ],
+      "expected_tool_category": "calculator",
+      "should_abstain": false,
+      "evaluation_criteria": "Exact arithmetic result must appear.",
+      "oracle_plan": [
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "19 * 23 + 4"
+          }
+        }
+      ],
+      "final_answer_template": "{0}"
+    },
+    {
+      "task_id": "ARTS-02",
+      "query": "Compute 144 / 12 + 7 using calculator with fallback switching to python_exec if needed.",
+      "category": "argument_repair_tool_switch",
+      "expected_answer": "19",
+      "expected_facts": [
+        "19"
+      ],
+      "contradictory_facts": [
+        "20",
+        "28"
+      ],
+      "expected_tool_category": "calculator",
+      "should_abstain": false,
+      "evaluation_criteria": "Exact arithmetic result must appear.",
+      "oracle_plan": [
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "144 / 12 + 7"
+          }
+        }
+      ],
+      "final_answer_template": "{0}"
+    },
+    {
+      "task_id": "ARTS-03",
+      "query": "Compute (8 + 4) * 3 using calculator with fallback switching to python_exec if needed.",
+      "category": "argument_repair_tool_switch",
+      "expected_answer": "36",
+      "expected_facts": [
+        "36"
+      ],
+      "contradictory_facts": [
+        "37",
+        "45"
+      ],
+      "expected_tool_category": "calculator",
+      "should_abstain": false,
+      "evaluation_criteria": "Exact arithmetic result must appear.",
+      "oracle_plan": [
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "(8 + 4) * 3"
+          }
+        }
+      ],
+      "final_answer_template": "{0}"
+    },
+    {
+      "task_id": "ARTS-04",
+      "query": "Compute 2 ** 5 + 18 using calculator with fallback switching to python_exec if needed.",
+      "category": "argument_repair_tool_switch",
+      "expected_answer": "50",
+      "expected_facts": [
+        "50"
+      ],
+      "contradictory_facts": [
+        "51",
+        "59"
+      ],
+      "expected_tool_category": "calculator",
+      "should_abstain": false,
+      "evaluation_criteria": "Exact arithmetic result must appear.",
+      "oracle_plan": [
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "2 ** 5 + 18"
+          }
+        }
+      ],
+      "final_answer_template": "{0}"
+    },
+    {
+      "task_id": "ARTS-05",
+      "query": "Compute 100 // 9 + 14 using calculator with fallback switching to python_exec if needed.",
+      "category": "argument_repair_tool_switch",
+      "expected_answer": "25",
+      "expected_facts": [
+        "25"
+      ],
+      "contradictory_facts": [
+        "26",
+        "34"
+      ],
+      "expected_tool_category": "calculator",
+      "should_abstain": false,
+      "evaluation_criteria": "Exact arithmetic result must appear.",
+      "oracle_plan": [
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "100 // 9 + 14"
+          }
+        }
+      ],
+      "final_answer_template": "{0}"
+    },
+    {
+      "task_id": "ARTS-06",
+      "query": "Use calculator for 12 * 12 (square) and safe Python for 144 + 1 (sum).",
+      "category": "argument_repair_tool_switch",
+      "expected_answer": "square=144; sum=145",
+      "expected_facts": [
+        "square=144",
+        "sum=145"
+      ],
+      "contradictory_facts": [
+        "square=147",
+        "sum=148"
+      ],
+      "expected_tool_category": [
+        "calculator",
+        "python_exec"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both sequentially computed values must appear.",
+      "oracle_plan": [
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "12 * 12"
+          }
+        },
+        {
+          "tool": "python_exec",
+          "arguments": {
+            "code": "144 + 1"
+          }
+        }
+      ],
+      "final_answer_template": "square={0}; sum={1}"
+    },
+    {
+      "task_id": "ARTS-07",
+      "query": "Use calculator for 9 * 7 (product) and safe Python for 63 + 12 (sum).",
+      "category": "argument_repair_tool_switch",
+      "expected_answer": "product=63; sum=75",
+      "expected_facts": [
+        "product=63",
+        "sum=75"
+      ],
+      "contradictory_facts": [
+        "product=66",
+        "sum=78"
+      ],
+      "expected_tool_category": [
+        "calculator",
+        "python_exec"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both sequentially computed values must appear.",
+      "oracle_plan": [
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "9 * 7"
+          }
+        },
+        {
+          "tool": "python_exec",
+          "arguments": {
+            "code": "63 + 12"
+          }
+        }
+      ],
+      "final_answer_template": "product={0}; sum={1}"
+    },
+    {
+      "task_id": "ARTS-08",
+      "query": "Use calculator for 15 * 4 (product) and safe Python for 60 - 15 (difference).",
+      "category": "argument_repair_tool_switch",
+      "expected_answer": "product=60; difference=45",
+      "expected_facts": [
+        "product=60",
+        "difference=45"
+      ],
+      "contradictory_facts": [
+        "product=63",
+        "difference=48"
+      ],
+      "expected_tool_category": [
+        "calculator",
+        "python_exec"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both sequentially computed values must appear.",
+      "oracle_plan": [
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "15 * 4"
+          }
+        },
+        {
+          "tool": "python_exec",
+          "arguments": {
+            "code": "60 - 15"
+          }
+        }
+      ],
+      "final_answer_template": "product={0}; difference={1}"
+    },
+    {
+      "task_id": "ARTS-09",
+      "query": "Use calculator for 80 / 4 (quotient) and safe Python for 20 + 5 (sum).",
+      "category": "argument_repair_tool_switch",
+      "expected_answer": "quotient=20; sum=25",
+      "expected_facts": [
+        "quotient=20",
+        "sum=25"
+      ],
+      "contradictory_facts": [
+        "quotient=23",
+        "sum=28"
+      ],
+      "expected_tool_category": [
+        "calculator",
+        "python_exec"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both sequentially computed values must appear.",
+      "oracle_plan": [
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "80 / 4"
+          }
+        },
+        {
+          "tool": "python_exec",
+          "arguments": {
+            "code": "20 + 5"
+          }
+        }
+      ],
+      "final_answer_template": "quotient={0}; sum={1}"
+    },
+    {
+      "task_id": "ARTS-10",
+      "query": "Use calculator for 29 % 6 (remainder) and safe Python for 5 * 9 (product).",
+      "category": "argument_repair_tool_switch",
+      "expected_answer": "remainder=5; product=45",
+      "expected_facts": [
+        "remainder=5",
+        "product=45"
+      ],
+      "contradictory_facts": [
+        "remainder=8",
+        "product=48"
+      ],
+      "expected_tool_category": [
+        "calculator",
+        "python_exec"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both sequentially computed values must appear.",
+      "oracle_plan": [
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "29 % 6"
+          }
+        },
+        {
+          "tool": "python_exec",
+          "arguments": {
+            "code": "5 * 9"
+          }
+        }
+      ],
+      "final_answer_template": "remainder={0}; product={1}"
+    },
+    {
+      "task_id": "ARTS-11",
+      "query": "Evaluate arithmetic expression 18 * 7 + 14 using python_exec (switchable to calculator).",
+      "category": "argument_repair_tool_switch",
+      "expected_answer": "140",
+      "expected_facts": [
+        "140"
+      ],
+      "contradictory_facts": [
+        "141",
+        "147"
+      ],
+      "expected_tool_category": "python_exec",
+      "should_abstain": false,
+      "evaluation_criteria": "Exact arithmetic result must appear.",
+      "oracle_plan": [
+        {
+          "tool": "python_exec",
+          "arguments": {
+            "code": "18 * 7 + 14"
+          }
+        }
+      ],
+      "final_answer_template": "{0}"
+    },
+    {
+      "task_id": "ARTS-12",
+      "query": "Evaluate arithmetic expression 250 - 75 + 25 using python_exec (switchable to calculator).",
+      "category": "argument_repair_tool_switch",
+      "expected_answer": "200",
+      "expected_facts": [
+        "200"
+      ],
+      "contradictory_facts": [
+        "201",
+        "207"
+      ],
+      "expected_tool_category": "python_exec",
+      "should_abstain": false,
+      "evaluation_criteria": "Exact arithmetic result must appear.",
+      "oracle_plan": [
+        {
+          "tool": "python_exec",
+          "arguments": {
+            "code": "250 - 75 + 25"
+          }
+        }
+      ],
+      "final_answer_template": "{0}"
+    },
+    {
+      "task_id": "ARTS-13",
+      "query": "Evaluate arithmetic expression (45 + 15) * 4 using python_exec (switchable to calculator).",
+      "category": "argument_repair_tool_switch",
+      "expected_answer": "240",
+      "expected_facts": [
+        "240"
+      ],
+      "contradictory_facts": [
+        "241",
+        "247"
+      ],
+      "expected_tool_category": "python_exec",
+      "should_abstain": false,
+      "evaluation_criteria": "Exact arithmetic result must appear.",
+      "oracle_plan": [
+        {
+          "tool": "python_exec",
+          "arguments": {
+            "code": "(45 + 15) * 4"
+          }
+        }
+      ],
+      "final_answer_template": "{0}"
+    },
+    {
+      "task_id": "ARTS-14",
+      "query": "Evaluate arithmetic expression 360 / 9 + 11 using python_exec (switchable to calculator).",
+      "category": "argument_repair_tool_switch",
+      "expected_answer": "51",
+      "expected_facts": [
+        "51"
+      ],
+      "contradictory_facts": [
+        "52",
+        "58"
+      ],
+      "expected_tool_category": "python_exec",
+      "should_abstain": false,
+      "evaluation_criteria": "Exact arithmetic result must appear.",
+      "oracle_plan": [
+        {
+          "tool": "python_exec",
+          "arguments": {
+            "code": "360 / 9 + 11"
+          }
+        }
+      ],
+      "final_answer_template": "{0}"
+    },
+    {
+      "task_id": "ARTS-15",
+      "query": "Evaluate arithmetic expression 7 * 8 + 9 * 4 using python_exec (switchable to calculator).",
+      "category": "argument_repair_tool_switch",
+      "expected_answer": "92",
+      "expected_facts": [
+        "92"
+      ],
+      "contradictory_facts": [
+        "93",
+        "99"
+      ],
+      "expected_tool_category": "python_exec",
+      "should_abstain": false,
+      "evaluation_criteria": "Exact arithmetic result must appear.",
+      "oracle_plan": [
+        {
+          "tool": "python_exec",
+          "arguments": {
+            "code": "7 * 8 + 9 * 4"
+          }
+        }
+      ],
+      "final_answer_template": "{0}"
+    },
+    {
+      "task_id": "ARTS-16",
+      "query": "Evaluate 6 * 9 (product) with safe Python, then compute 54 + 16 (sum) with calculator.",
+      "category": "argument_repair_tool_switch",
+      "expected_answer": "product=54; sum=70",
+      "expected_facts": [
+        "product=54",
+        "sum=70"
+      ],
+      "contradictory_facts": [
+        "product=58",
+        "sum=74"
+      ],
+      "expected_tool_category": [
+        "python_exec",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both independently computed results must appear.",
+      "oracle_plan": [
+        {
+          "tool": "python_exec",
+          "arguments": {
+            "code": "6 * 9"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "54 + 16"
+          }
+        }
+      ],
+      "final_answer_template": "product={0}; sum={1}"
+    },
+    {
+      "task_id": "ARTS-17",
+      "query": "Evaluate 11 * 11 (square) with safe Python, then compute 121 - 21 (difference) with calculator.",
+      "category": "argument_repair_tool_switch",
+      "expected_answer": "square=121; difference=100",
+      "expected_facts": [
+        "square=121",
+        "difference=100"
+      ],
+      "contradictory_facts": [
+        "square=125",
+        "difference=104"
+      ],
+      "expected_tool_category": [
+        "python_exec",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both independently computed results must appear.",
+      "oracle_plan": [
+        {
+          "tool": "python_exec",
+          "arguments": {
+            "code": "11 * 11"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "121 - 21"
+          }
+        }
+      ],
+      "final_answer_template": "square={0}; difference={1}"
+    },
+    {
+      "task_id": "ARTS-18",
+      "query": "Evaluate 48 / 6 (quotient) with safe Python, then compute 8 * 5 (product) with calculator.",
+      "category": "argument_repair_tool_switch",
+      "expected_answer": "quotient=8; product=40",
+      "expected_facts": [
+        "quotient=8",
+        "product=40"
+      ],
+      "contradictory_facts": [
+        "quotient=12",
+        "product=44"
+      ],
+      "expected_tool_category": [
+        "python_exec",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both independently computed results must appear.",
+      "oracle_plan": [
+        {
+          "tool": "python_exec",
+          "arguments": {
+            "code": "48 / 6"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "8 * 5"
+          }
+        }
+      ],
+      "final_answer_template": "quotient={0}; product={1}"
+    },
+    {
+      "task_id": "ARTS-19",
+      "query": "Evaluate 23 % 5 (remainder) with safe Python, then compute 3 + 17 (sum) with calculator.",
+      "category": "argument_repair_tool_switch",
+      "expected_answer": "remainder=3; sum=20",
+      "expected_facts": [
+        "remainder=3",
+        "sum=20"
+      ],
+      "contradictory_facts": [
+        "remainder=7",
+        "sum=24"
+      ],
+      "expected_tool_category": [
+        "python_exec",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both independently computed results must appear.",
+      "oracle_plan": [
+        {
+          "tool": "python_exec",
+          "arguments": {
+            "code": "23 % 5"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "3 + 17"
+          }
+        }
+      ],
+      "final_answer_template": "remainder={0}; sum={1}"
+    },
+    {
+      "task_id": "ARTS-20",
+      "query": "Evaluate 14 * 3 (product) with safe Python, then compute 42 + 8 (sum) with calculator.",
+      "category": "argument_repair_tool_switch",
+      "expected_answer": "product=42; sum=50",
+      "expected_facts": [
+        "product=42",
+        "sum=50"
+      ],
+      "contradictory_facts": [
+        "product=46",
+        "sum=54"
+      ],
+      "expected_tool_category": [
+        "python_exec",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Both independently computed results must appear.",
+      "oracle_plan": [
+        {
+          "tool": "python_exec",
+          "arguments": {
+            "code": "14 * 3"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "42 + 8"
+          }
+        }
+      ],
+      "final_answer_template": "product={0}; sum={1}"
+    },
+    {
+      "task_id": "MEA-01",
+      "query": "What is Aerospace Telemetry Metric M-901?",
+      "category": "missing_evidence_abstention",
+      "expected_answer": null,
+      "expected_facts": [],
+      "contradictory_facts": [],
+      "expected_tool_category": "search",
+      "should_abstain": true,
+      "evaluation_criteria": "No local evidence exists; system must abstain.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "aerospace telemetry metric M-901"
+          }
+        }
+      ],
+      "final_answer_template": "{0}"
+    },
+    {
+      "task_id": "MEA-02",
+      "query": "What is Cloud FinOps Metric M-902?",
+      "category": "missing_evidence_abstention",
+      "expected_answer": null,
+      "expected_facts": [],
+      "contradictory_facts": [],
+      "expected_tool_category": "search",
+      "should_abstain": true,
+      "evaluation_criteria": "No local evidence exists; system must abstain.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "cloud finops metric M-902"
+          }
+        }
+      ],
+      "final_answer_template": "{0}"
+    },
+    {
+      "task_id": "MEA-03",
+      "query": "What is Enterprise SLA Metric M-903?",
+      "category": "missing_evidence_abstention",
+      "expected_answer": null,
+      "expected_facts": [],
+      "contradictory_facts": [],
+      "expected_tool_category": "search",
+      "should_abstain": true,
+      "evaluation_criteria": "No local evidence exists; system must abstain.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "enterprise sla metric M-903"
+          }
+        }
+      ],
+      "final_answer_template": "{0}"
+    },
+    {
+      "task_id": "MEA-04",
+      "query": "What is Climate Grid Metric M-904?",
+      "category": "missing_evidence_abstention",
+      "expected_answer": null,
+      "expected_facts": [],
+      "contradictory_facts": [],
+      "expected_tool_category": "search",
+      "should_abstain": true,
+      "evaluation_criteria": "No local evidence exists; system must abstain.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "climate grid metric M-904"
+          }
+        }
+      ],
+      "final_answer_template": "{0}"
+    },
+    {
+      "task_id": "MEA-05",
+      "query": "What is Clinical Equipment Metric M-905?",
+      "category": "missing_evidence_abstention",
+      "expected_answer": null,
+      "expected_facts": [],
+      "contradictory_facts": [],
+      "expected_tool_category": "search",
+      "should_abstain": true,
+      "evaluation_criteria": "No local evidence exists; system must abstain.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "clinical equipment metric M-905"
+          }
+        }
+      ],
+      "final_answer_template": "{0}"
+    },
+    {
+      "task_id": "MEA-06",
+      "query": "What is the current reading for Climate Grid Sensor S-901?",
+      "category": "missing_evidence_abstention",
+      "expected_answer": null,
+      "expected_facts": [],
+      "contradictory_facts": [],
+      "expected_tool_category": "search",
+      "should_abstain": true,
+      "evaluation_criteria": "No local evidence exists; system must abstain.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "climate grid sensor S-901"
+          }
+        }
+      ],
+      "final_answer_template": "{0}"
+    },
+    {
+      "task_id": "MEA-07",
+      "query": "What is the manifold pressure of Sensor S-902?",
+      "category": "missing_evidence_abstention",
+      "expected_answer": null,
+      "expected_facts": [],
+      "contradictory_facts": [],
+      "expected_tool_category": "search",
+      "should_abstain": true,
+      "evaluation_criteria": "No local evidence exists; system must abstain.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "aerospace telemetry sensor S-902"
+          }
+        }
+      ],
+      "final_answer_template": "{0}"
+    },
+    {
+      "task_id": "MEA-08",
+      "query": "What is the oxygen flow reading for Sensor S-903?",
+      "category": "missing_evidence_abstention",
+      "expected_answer": null,
+      "expected_facts": [],
+      "contradictory_facts": [],
+      "expected_tool_category": "search",
+      "should_abstain": true,
+      "evaluation_criteria": "No local evidence exists; system must abstain.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "clinical equipment sensor S-903"
+          }
+        }
+      ],
+      "final_answer_template": "{0}"
+    },
+    {
+      "task_id": "MEA-09",
+      "query": "Who discovered the fictional element unobtainium?",
+      "category": "missing_evidence_abstention",
+      "expected_answer": null,
+      "expected_facts": [],
+      "contradictory_facts": [],
+      "expected_tool_category": "search",
+      "should_abstain": true,
+      "evaluation_criteria": "No local evidence exists; system must abstain.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "who discovered fictional element unobtainium"
+          }
+        }
+      ],
+      "final_answer_template": "{0}"
+    },
+    {
+      "task_id": "MEA-10",
+      "query": "What is the official quantum chronoton flux index threshold?",
+      "category": "missing_evidence_abstention",
+      "expected_answer": null,
+      "expected_facts": [],
+      "contradictory_facts": [],
+      "expected_tool_category": "search",
+      "should_abstain": true,
+      "evaluation_criteria": "No local evidence exists; system must abstain.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "quantum chronoton flux index"
+          }
+        }
+      ],
+      "final_answer_template": "{0}"
+    },
+    {
+      "task_id": "MEA-11",
+      "query": "What is the verified status and owner of ticket T-901?",
+      "category": "missing_evidence_abstention",
+      "expected_answer": null,
+      "expected_facts": [],
+      "contradictory_facts": [],
+      "expected_tool_category": "mock_api",
+      "should_abstain": true,
+      "evaluation_criteria": "Ticket record is missing or incomplete; system must abstain.",
+      "oracle_plan": [
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-901"
+          }
+        }
+      ],
+      "final_answer_template": "{0}"
+    },
+    {
+      "task_id": "MEA-12",
+      "query": "What is the verified status and owner of ticket T-902?",
+      "category": "missing_evidence_abstention",
+      "expected_answer": null,
+      "expected_facts": [],
+      "contradictory_facts": [],
+      "expected_tool_category": "mock_api",
+      "should_abstain": true,
+      "evaluation_criteria": "Ticket record is missing or incomplete; system must abstain.",
+      "oracle_plan": [
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-902"
+          }
+        }
+      ],
+      "final_answer_template": "{0}"
+    },
+    {
+      "task_id": "MEA-13",
+      "query": "What is the verified status and owner of ticket T-903?",
+      "category": "missing_evidence_abstention",
+      "expected_answer": null,
+      "expected_facts": [],
+      "contradictory_facts": [],
+      "expected_tool_category": "mock_api",
+      "should_abstain": true,
+      "evaluation_criteria": "Ticket record is missing or incomplete; system must abstain.",
+      "oracle_plan": [
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-903"
+          }
+        }
+      ],
+      "final_answer_template": "{0}"
+    },
+    {
+      "task_id": "MEA-14",
+      "query": "What is the verified status and owner of ticket T-904?",
+      "category": "missing_evidence_abstention",
+      "expected_answer": null,
+      "expected_facts": [],
+      "contradictory_facts": [],
+      "expected_tool_category": "mock_api",
+      "should_abstain": true,
+      "evaluation_criteria": "Ticket record is missing or incomplete; system must abstain.",
+      "oracle_plan": [
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-904"
+          }
+        }
+      ],
+      "final_answer_template": "{0}"
+    },
+    {
+      "task_id": "MEA-15",
+      "query": "What is the verified status and owner of ticket T-905?",
+      "category": "missing_evidence_abstention",
+      "expected_answer": null,
+      "expected_facts": [],
+      "contradictory_facts": [],
+      "expected_tool_category": "mock_api",
+      "should_abstain": true,
+      "evaluation_criteria": "Ticket record is missing or incomplete; system must abstain.",
+      "oracle_plan": [
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-905"
+          }
+        }
+      ],
+      "final_answer_template": "{0}"
+    },
+    {
+      "task_id": "MEA-16",
+      "query": "What is the verified status and owner of ticket T-906?",
+      "category": "missing_evidence_abstention",
+      "expected_answer": null,
+      "expected_facts": [],
+      "contradictory_facts": [],
+      "expected_tool_category": "mock_api",
+      "should_abstain": true,
+      "evaluation_criteria": "Ticket record is missing or incomplete; system must abstain.",
+      "oracle_plan": [
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-906"
+          }
+        }
+      ],
+      "final_answer_template": "{0}"
+    },
+    {
+      "task_id": "MEA-17",
+      "query": "What is the verified status and owner of ticket T-416?",
+      "category": "missing_evidence_abstention",
+      "expected_answer": null,
+      "expected_facts": [],
+      "contradictory_facts": [],
+      "expected_tool_category": "mock_api",
+      "should_abstain": true,
+      "evaluation_criteria": "Ticket record is missing or incomplete; system must abstain.",
+      "oracle_plan": [
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-416"
+          }
+        }
+      ],
+      "final_answer_template": "{0}"
+    },
+    {
+      "task_id": "MEA-18",
+      "query": "What is the verified status and owner of ticket T-417?",
+      "category": "missing_evidence_abstention",
+      "expected_answer": null,
+      "expected_facts": [],
+      "contradictory_facts": [],
+      "expected_tool_category": "mock_api",
+      "should_abstain": true,
+      "evaluation_criteria": "Ticket record is missing or incomplete; system must abstain.",
+      "oracle_plan": [
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-417"
+          }
+        }
+      ],
+      "final_answer_template": "{0}"
+    },
+    {
+      "task_id": "MEA-19",
+      "query": "What is the verified status and owner of ticket T-418?",
+      "category": "missing_evidence_abstention",
+      "expected_answer": null,
+      "expected_facts": [],
+      "contradictory_facts": [],
+      "expected_tool_category": "mock_api",
+      "should_abstain": true,
+      "evaluation_criteria": "Ticket record is missing or incomplete; system must abstain.",
+      "oracle_plan": [
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-418"
+          }
+        }
+      ],
+      "final_answer_template": "{0}"
+    },
+    {
+      "task_id": "MEA-20",
+      "query": "What is the verified status and owner of ticket T-419?",
+      "category": "missing_evidence_abstention",
+      "expected_answer": null,
+      "expected_facts": [],
+      "contradictory_facts": [],
+      "expected_tool_category": "mock_api",
+      "should_abstain": true,
+      "evaluation_criteria": "Ticket record is missing or incomplete; system must abstain.",
+      "oracle_plan": [
+        {
+          "tool": "mock_api",
+          "arguments": {
+            "ticket_id": "T-419"
+          }
+        }
+      ],
+      "final_answer_template": "{0}"
+    },
+    {
+      "task_id": "NCT-01",
+      "query": "Check climate grid sensor S-81 and verify whether the reading equals 392.",
+      "category": "numeric_contradiction_trap",
+      "expected_answer": null,
+      "expected_facts": [],
+      "contradictory_facts": [
+        "392"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": true,
+      "evaluation_criteria": "Candidate answer asserts a value contradicting tool evidence; TraceRecover must detect CONTRADICTED and abstain.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "climate grid sensor S-81"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "142 + 0"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; The calculated reading equals 392."
+    },
+    {
+      "task_id": "NCT-02",
+      "query": "Check climate grid sensor S-82 and verify whether the reading equals 468.",
+      "category": "numeric_contradiction_trap",
+      "expected_answer": null,
+      "expected_facts": [],
+      "contradictory_facts": [
+        "468"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": true,
+      "evaluation_criteria": "Candidate answer asserts a value contradicting tool evidence; TraceRecover must detect CONTRADICTED and abstain.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "climate grid sensor S-82"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "218 + 0"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; The calculated reading equals 468."
+    },
+    {
+      "task_id": "NCT-03",
+      "query": "Check climate grid sensor S-83 and verify whether the reading equals 555.",
+      "category": "numeric_contradiction_trap",
+      "expected_answer": null,
+      "expected_facts": [],
+      "contradictory_facts": [
+        "555"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": true,
+      "evaluation_criteria": "Candidate answer asserts a value contradicting tool evidence; TraceRecover must detect CONTRADICTED and abstain.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "climate grid sensor S-83"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "305 + 0"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; The calculated reading equals 555."
+    },
+    {
+      "task_id": "NCT-04",
+      "query": "Check climate grid sensor S-84 and verify whether the reading equals 426.",
+      "category": "numeric_contradiction_trap",
+      "expected_answer": null,
+      "expected_facts": [],
+      "contradictory_facts": [
+        "426"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": true,
+      "evaluation_criteria": "Candidate answer asserts a value contradicting tool evidence; TraceRecover must detect CONTRADICTED and abstain.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "climate grid sensor S-84"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "176 + 0"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; The calculated reading equals 426."
+    },
+    {
+      "task_id": "NCT-05",
+      "query": "Check climate grid sensor S-85 and verify whether the reading equals 534.",
+      "category": "numeric_contradiction_trap",
+      "expected_answer": null,
+      "expected_facts": [],
+      "contradictory_facts": [
+        "534"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": true,
+      "evaluation_criteria": "Candidate answer asserts a value contradicting tool evidence; TraceRecover must detect CONTRADICTED and abstain.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "climate grid sensor S-85"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "284 + 0"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; The calculated reading equals 534."
+    },
+    {
+      "task_id": "NCT-06",
+      "query": "Check climate grid sensor S-86 and verify whether the reading equals 445.",
+      "category": "numeric_contradiction_trap",
+      "expected_answer": null,
+      "expected_facts": [],
+      "contradictory_facts": [
+        "445"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": true,
+      "evaluation_criteria": "Candidate answer asserts a value contradicting tool evidence; TraceRecover must detect CONTRADICTED and abstain.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "climate grid sensor S-86"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "195 + 0"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; The calculated reading equals 445."
+    },
+    {
+      "task_id": "NCT-07",
+      "query": "Check climate grid sensor S-87 and verify whether the reading equals 510.",
+      "category": "numeric_contradiction_trap",
+      "expected_answer": null,
+      "expected_facts": [],
+      "contradictory_facts": [
+        "510"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": true,
+      "evaluation_criteria": "Candidate answer asserts a value contradicting tool evidence; TraceRecover must detect CONTRADICTED and abstain.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "climate grid sensor S-87"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "260 + 0"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; The calculated reading equals 510."
+    },
+    {
+      "task_id": "NCT-08",
+      "query": "Check aerospace telemetry sensor S-88 and verify whether the reading equals 562.",
+      "category": "numeric_contradiction_trap",
+      "expected_answer": null,
+      "expected_facts": [],
+      "contradictory_facts": [
+        "562"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": true,
+      "evaluation_criteria": "Candidate answer asserts a value contradicting tool evidence; TraceRecover must detect CONTRADICTED and abstain.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "aerospace telemetry sensor S-88"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "312 + 0"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; The calculated reading equals 562."
+    },
+    {
+      "task_id": "NCT-09",
+      "query": "Check aerospace telemetry sensor S-89 and verify whether the reading equals 678.",
+      "category": "numeric_contradiction_trap",
+      "expected_answer": null,
+      "expected_facts": [],
+      "contradictory_facts": [
+        "678"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": true,
+      "evaluation_criteria": "Candidate answer asserts a value contradicting tool evidence; TraceRecover must detect CONTRADICTED and abstain.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "aerospace telemetry sensor S-89"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "428 + 0"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; The calculated reading equals 678."
+    },
+    {
+      "task_id": "NCT-10",
+      "query": "Check aerospace telemetry sensor S-90 and verify whether the reading equals 440.",
+      "category": "numeric_contradiction_trap",
+      "expected_answer": null,
+      "expected_facts": [],
+      "contradictory_facts": [
+        "440"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": true,
+      "evaluation_criteria": "Candidate answer asserts a value contradicting tool evidence; TraceRecover must detect CONTRADICTED and abstain.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "aerospace telemetry sensor S-90"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "190 + 0"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; The calculated reading equals 440."
+    },
+    {
+      "task_id": "NCT-11",
+      "query": "Check aerospace telemetry sensor S-91 and compute double its recorded reading.",
+      "category": "numeric_contradiction_trap",
+      "expected_answer": "Aerospace Telemetry Sensor S-91 recorded manifold pressure at 515 kilopascals.; The doubled threshold equals 1030.",
+      "expected_facts": [
+        "S-91",
+        "515",
+        "1030"
+      ],
+      "contradictory_facts": [
+        "1130",
+        "1280"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Sensor record and exact doubled calculation must appear without contradiction.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "aerospace telemetry sensor S-91"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "515 * 2"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; The doubled threshold equals {1}."
+    },
+    {
+      "task_id": "NCT-12",
+      "query": "Check aerospace telemetry sensor S-92 and compute double its recorded reading.",
+      "category": "numeric_contradiction_trap",
+      "expected_answer": "Aerospace Telemetry Sensor S-92 recorded manifold pressure at 274 kilopascals.; The doubled threshold equals 548.",
+      "expected_facts": [
+        "S-92",
+        "274",
+        "548"
+      ],
+      "contradictory_facts": [
+        "648",
+        "798"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Sensor record and exact doubled calculation must appear without contradiction.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "aerospace telemetry sensor S-92"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "274 * 2"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; The doubled threshold equals {1}."
+    },
+    {
+      "task_id": "NCT-13",
+      "query": "Check aerospace telemetry sensor S-93 and compute double its recorded reading.",
+      "category": "numeric_contradiction_trap",
+      "expected_answer": "Aerospace Telemetry Sensor S-93 recorded manifold pressure at 365 kilopascals.; The doubled threshold equals 730.",
+      "expected_facts": [
+        "S-93",
+        "365",
+        "730"
+      ],
+      "contradictory_facts": [
+        "830",
+        "980"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Sensor record and exact doubled calculation must appear without contradiction.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "aerospace telemetry sensor S-93"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "365 * 2"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; The doubled threshold equals {1}."
+    },
+    {
+      "task_id": "NCT-14",
+      "query": "Check aerospace telemetry sensor S-94 and compute double its recorded reading.",
+      "category": "numeric_contradiction_trap",
+      "expected_answer": "Aerospace Telemetry Sensor S-94 recorded manifold pressure at 480 kilopascals.; The doubled threshold equals 960.",
+      "expected_facts": [
+        "S-94",
+        "480",
+        "960"
+      ],
+      "contradictory_facts": [
+        "1060",
+        "1210"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Sensor record and exact doubled calculation must appear without contradiction.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "aerospace telemetry sensor S-94"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "480 * 2"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; The doubled threshold equals {1}."
+    },
+    {
+      "task_id": "NCT-15",
+      "query": "Check clinical equipment sensor S-95 and compute double its recorded reading.",
+      "category": "numeric_contradiction_trap",
+      "expected_answer": "Clinical Equipment Sensor S-95 recorded oxygen flow at 72 liters per minute.; The doubled threshold equals 144.",
+      "expected_facts": [
+        "S-95",
+        "72",
+        "144"
+      ],
+      "contradictory_facts": [
+        "244",
+        "394"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Sensor record and exact doubled calculation must appear without contradiction.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "clinical equipment sensor S-95"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "72 * 2"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; The doubled threshold equals {1}."
+    },
+    {
+      "task_id": "NCT-16",
+      "query": "Check clinical equipment sensor S-96 and compute double its recorded reading.",
+      "category": "numeric_contradiction_trap",
+      "expected_answer": "Clinical Equipment Sensor S-96 recorded oxygen flow at 98 liters per minute.; The doubled threshold equals 196.",
+      "expected_facts": [
+        "S-96",
+        "98",
+        "196"
+      ],
+      "contradictory_facts": [
+        "296",
+        "446"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Sensor record and exact doubled calculation must appear without contradiction.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "clinical equipment sensor S-96"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "98 * 2"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; The doubled threshold equals {1}."
+    },
+    {
+      "task_id": "NCT-17",
+      "query": "Check clinical equipment sensor S-97 and compute double its recorded reading.",
+      "category": "numeric_contradiction_trap",
+      "expected_answer": "Clinical Equipment Sensor S-97 recorded oxygen flow at 114 liters per minute.; The doubled threshold equals 228.",
+      "expected_facts": [
+        "S-97",
+        "114",
+        "228"
+      ],
+      "contradictory_facts": [
+        "328",
+        "478"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Sensor record and exact doubled calculation must appear without contradiction.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "clinical equipment sensor S-97"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "114 * 2"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; The doubled threshold equals {1}."
+    },
+    {
+      "task_id": "NCT-18",
+      "query": "Check clinical equipment sensor S-98 and compute double its recorded reading.",
+      "category": "numeric_contradiction_trap",
+      "expected_answer": "Clinical Equipment Sensor S-98 recorded oxygen flow at 66 liters per minute.; The doubled threshold equals 132.",
+      "expected_facts": [
+        "S-98",
+        "66",
+        "132"
+      ],
+      "contradictory_facts": [
+        "232",
+        "382"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Sensor record and exact doubled calculation must appear without contradiction.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "clinical equipment sensor S-98"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "66 * 2"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; The doubled threshold equals {1}."
+    },
+    {
+      "task_id": "NCT-19",
+      "query": "Check clinical equipment sensor S-99 and compute double its recorded reading.",
+      "category": "numeric_contradiction_trap",
+      "expected_answer": "Clinical Equipment Sensor S-99 recorded oxygen flow at 84 liters per minute.; The doubled threshold equals 168.",
+      "expected_facts": [
+        "S-99",
+        "84",
+        "168"
+      ],
+      "contradictory_facts": [
+        "268",
+        "418"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Sensor record and exact doubled calculation must appear without contradiction.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "clinical equipment sensor S-99"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "84 * 2"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; The doubled threshold equals {1}."
+    },
+    {
+      "task_id": "NCT-20",
+      "query": "Check clinical equipment sensor S-100 and compute double its recorded reading.",
+      "category": "numeric_contradiction_trap",
+      "expected_answer": "Clinical Equipment Sensor S-100 recorded oxygen flow at 108 liters per minute.; The doubled threshold equals 216.",
+      "expected_facts": [
+        "S-100",
+        "108",
+        "216"
+      ],
+      "contradictory_facts": [
+        "316",
+        "466"
+      ],
+      "expected_tool_category": [
+        "search",
+        "calculator"
+      ],
+      "should_abstain": false,
+      "evaluation_criteria": "Sensor record and exact doubled calculation must appear without contradiction.",
+      "oracle_plan": [
+        {
+          "tool": "search",
+          "arguments": {
+            "query": "clinical equipment sensor S-100"
+          }
+        },
+        {
+          "tool": "calculator",
+          "arguments": {
+            "expression": "108 * 2"
+          }
+        }
+      ],
+      "final_answer_template": "{0}; The doubled threshold equals {1}."
+    }
+  ]
+}

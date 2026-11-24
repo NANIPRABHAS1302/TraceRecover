@@ -1,0 +1,29 @@
+# Secrets and local environment configuration
+.env
+.env.*
+!.env.example
+
+# Python virtual environments
+venv/
+.venv/
+env/
+
+# Python caches and build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Runtime execution logs and temporary outputs
+logs/
+data/versions/
+data/unseen_benchmarks/
+*.log
+.DS_Store
+Thumbs.db
+
+# Frontend dependencies
+frontend/node_modules/

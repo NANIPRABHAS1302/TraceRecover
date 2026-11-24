@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600" role="img" aria-labelledby="chart-title chart-desc">
+<title id="chart-title">Ablation task success</title>
+<desc id="chart-desc">Grouped bars show task-success rates for TraceRecover and three single-component ablations at each injected failure rate. Bar labels show successes over tasks.</desc>
+<style>text{font-family:Segoe UI,Arial,sans-serif;fill:#222}.grid{stroke:#d9d9d9;stroke-width:1}.axis{stroke:#444;stroke-width:1.4}.label{font-size:12px}.small{font-size:10px}</style>
+<text x="480" y="38" text-anchor="middle" font-size="22" font-weight="600">Ablation task success</text>
+<text x="480" y="62" text-anchor="middle" font-size="12">Task success rate; labels show successes / tasks</text>
+<line class="grid" x1="100.0" y1="478.0" x2="780.0" y2="478.0"/>
+<text class="label" x="88.0" y="482.0" text-anchor="end">0.0</text>
+<line class="grid" x1="100.0" y1="400.0" x2="780.0" y2="400.0"/>
+<text class="label" x="88.0" y="404.0" text-anchor="end">0.2</text>
+<line class="grid" x1="100.0" y1="322.0" x2="780.0" y2="322.0"/>
+<text class="label" x="88.0" y="326.0" text-anchor="end">0.4</text>
+<line class="grid" x1="100.0" y1="244.0" x2="780.0" y2="244.0"/>
+<text class="label" x="88.0" y="248.0" text-anchor="end">0.6</text>
+<line class="grid" x1="100.0" y1="166.0" x2="780.0" y2="166.0"/>
+<text class="label" x="88.0" y="170.0" text-anchor="end">0.8</text>
+<line class="grid" x1="100.0" y1="88.0" x2="780.0" y2="88.0"/>
+<text class="label" x="88.0" y="92.0" text-anchor="end">1.0</text>
+<line class="axis" x1="100.0" y1="88.0" x2="100.0" y2="478.0"/>
+<line class="axis" x1="100.0" y1="478.0" x2="780.0" y2="478.0"/>
+<text class="label" transform="translate(28 283.0) rotate(-90)" text-anchor="middle">Task success rate</text>
+<rect x="169.3" y="88.0" width="20.0" height="390.0" fill="#f58518"><title>Full TraceRecover, 0% failure: 30/30 (1.000)</title></rect>
+<text class="small" x="179.3" y="100.0" text-anchor="middle">30/30</text>
+<rect x="191.3" y="88.0" width="20.0" height="390.0" fill="#54a24b"><title>Without grounding, 0% failure: 30/30 (1.000)</title></rect>
+<text class="small" x="201.3" y="100.0" text-anchor="middle">30/30</text>
+<rect x="213.3" y="101.0" width="20.0" height="377.0" fill="#e45756"><title>Without uncertainty, 0% failure: 29/30 (0.967)</title></rect>
+<text class="small" x="223.3" y="100.0" text-anchor="middle">29/30</text>
+<rect x="235.3" y="88.0" width="20.0" height="390.0" fill="#b279a2"><title>Without localization, 0% failure: 30/30 (1.000)</title></rect>
+<text class="small" x="245.3" y="100.0" text-anchor="middle">30/30</text>
+<text class="label" x="213.3" y="502.0" text-anchor="middle">0%</text>
+<rect x="396.0" y="140.0" width="20.0" height="338.0" fill="#f58518"><title>Full TraceRecover, 20% failure: 26/30 (0.867)</title></rect>
+<text class="small" x="406.0" y="135.0" text-anchor="middle">26/30</text>
+<rect x="418.0" y="140.0" width="20.0" height="338.0" fill="#54a24b"><title>Without grounding, 20% failure: 26/30 (0.867)</title></rect>
+<text class="small" x="428.0" y="135.0" text-anchor="middle">26/30</text>
+<rect x="440.0" y="153.0" width="20.0" height="325.0" fill="#e45756"><title>Without uncertainty, 20% failure: 25/30 (0.833)</title></rect>
+<text class="small" x="450.0" y="148.0" text-anchor="middle">25/30</text>
+<rect x="462.0" y="179.0" width="20.0" height="299.0" fill="#b279a2"><title>Without localization, 20% failure: 23/30 (0.767)</title></rect>
+<text class="small" x="472.0" y="174.0" text-anchor="middle">23/30</text>
+<text class="label" x="440.0" y="502.0" text-anchor="middle">20%</text>
+<rect x="622.7" y="153.0" width="20.0" height="325.0" fill="#f58518"><title>Full TraceRecover, 40% failure: 25/30 (0.833)</title></rect>
+<text class="small" x="632.7" y="148.0" text-anchor="middle">25/30</text>
+<rect x="644.7" y="153.0" width="20.0" height="325.0" fill="#54a24b"><title>Without grounding, 40% failure: 25/30 (0.833)</title></rect>
+<text class="small" x="654.7" y="148.0" text-anchor="middle">25/30</text>
+<rect x="666.7" y="166.0" width="20.0" height="312.0" fill="#e45756"><title>Without uncertainty, 40% failure: 24/30 (0.800)</title></rect>
+<text class="small" x="676.7" y="161.0" text-anchor="middle">24/30</text>
+<rect x="688.7" y="231.0" width="20.0" height="247.0" fill="#b279a2"><title>Without localization, 40% failure: 19/30 (0.633)</title></rect>
+<text class="small" x="698.7" y="226.0" text-anchor="middle">19/30</text>
+<text class="label" x="666.7" y="502.0" text-anchor="middle">40%</text>
+<text class="label" x="440.0" y="530.0" text-anchor="middle">Injected tool failure rate</text>
+<rect x="806" y="101.0" width="18" height="14" fill="#f58518"/>
+<text class="label" x="834" y="112.0">Full TraceRecover</text>
+<rect x="806" y="127.0" width="18" height="14" fill="#54a24b"/>
+<text class="label" x="834" y="138.0">Without grounding</text>
+<rect x="806" y="153.0" width="18" height="14" fill="#e45756"/>
+<text class="label" x="834" y="164.0">Without uncertainty</text>
+<rect x="806" y="179.0" width="18" height="14" fill="#b279a2"/>
+<text class="label" x="834" y="190.0">Without localization</text>
+</svg>

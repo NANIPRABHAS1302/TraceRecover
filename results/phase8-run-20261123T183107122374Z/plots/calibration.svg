@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600" role="img" aria-labelledby="chart-title chart-desc">
+<title id="chart-title">TraceRecover calibration diagram</title>
+<desc id="chart-desc">Confidence is one minus the heuristic uncertainty score. Points show empirical success by equal-width confidence bins; the diagonal is perfect empirical agreement, not proof of statistical calibration.</desc>
+<style>text{font-family:Segoe UI,Arial,sans-serif;fill:#222}.grid{stroke:#d9d9d9;stroke-width:1}.axis{stroke:#444;stroke-width:1.4}.ideal{stroke:#666;stroke-dasharray:6 5;stroke-width:1.5}.line{fill:none;stroke-width:2}.point{stroke:#fff;stroke-width:1.5}.label{font-size:12px}.small{font-size:11px}</style>
+<text x="480" y="38" text-anchor="middle" font-size="22" font-weight="600">TraceRecover calibration diagram</text>
+<text x="480" y="62" text-anchor="middle" font-size="12">Empirical diagnostic; heuristic confidence is not a calibrated probability</text>
+<line class="grid" x1="100.0" y1="478.0" x2="780.0" y2="478.0"/>
+<line class="grid" x1="100.0" y1="88.0" x2="100.0" y2="478.0"/>
+<text class="label" x="88.0" y="482.0" text-anchor="end">0.0</text>
+<text class="label" x="100.0" y="500.0" text-anchor="middle">0.0</text>
+<line class="grid" x1="100.0" y1="400.0" x2="780.0" y2="400.0"/>
+<line class="grid" x1="236.0" y1="88.0" x2="236.0" y2="478.0"/>
+<text class="label" x="88.0" y="404.0" text-anchor="end">0.2</text>
+<text class="label" x="236.0" y="500.0" text-anchor="middle">0.2</text>
+<line class="grid" x1="100.0" y1="322.0" x2="780.0" y2="322.0"/>
+<line class="grid" x1="372.0" y1="88.0" x2="372.0" y2="478.0"/>
+<text class="label" x="88.0" y="326.0" text-anchor="end">0.4</text>
+<text class="label" x="372.0" y="500.0" text-anchor="middle">0.4</text>
+<line class="grid" x1="100.0" y1="244.0" x2="780.0" y2="244.0"/>
+<line class="grid" x1="508.0" y1="88.0" x2="508.0" y2="478.0"/>
+<text class="label" x="88.0" y="248.0" text-anchor="end">0.6</text>
+<text class="label" x="508.0" y="500.0" text-anchor="middle">0.6</text>
+<line class="grid" x1="100.0" y1="166.0" x2="780.0" y2="166.0"/>
+<line class="grid" x1="644.0" y1="88.0" x2="644.0" y2="478.0"/>
+<text class="label" x="88.0" y="170.0" text-anchor="end">0.8</text>
+<text class="label" x="644.0" y="500.0" text-anchor="middle">0.8</text>
+<line class="grid" x1="100.0" y1="88.0" x2="780.0" y2="88.0"/>
+<line class="grid" x1="780.0" y1="88.0" x2="780.0" y2="478.0"/>
+<text class="label" x="88.0" y="92.0" text-anchor="end">1.0</text>
+<text class="label" x="780.0" y="500.0" text-anchor="middle">1.0</text>
+<line class="axis" x1="100.0" y1="88.0" x2="100.0" y2="478.0"/>
+<line class="axis" x1="100.0" y1="478.0" x2="780.0" y2="478.0"/>
+<line class="ideal" x1="100.0" y1="478.0" x2="780.0" y2="88.0"/>
+<text class="label" x="440.0" y="530.0" text-anchor="middle">Mean heuristic confidence</text>
+<text class="label" transform="translate(28 283.0) rotate(-90)" text-anchor="middle">Observed task success</text>
+<circle class="point" cx="100.0" cy="88.0" r="5" fill="#4c78a8"><title>0% failure, bin 0, n=10, confidence=0.000, accuracy=1.000</title></circle>
+<text class="small" x="106.0" y="100.0">n=10</text>
+<circle class="point" cx="342.9" cy="380.5" r="5" fill="#4c78a8"><title>0% failure, bin 3, n=40, confidence=0.357, accuracy=0.250</title></circle>
+<text class="small" x="348.9" y="373.5">n=40</text>
+<circle class="point" cx="561.4" cy="88.0" r="5" fill="#4c78a8"><title>0% failure, bin 6, n=10, confidence=0.679, accuracy=1.000</title></circle>
+<text class="small" x="567.4" y="100.0">n=10</text>
+<circle class="point" cx="780.0" cy="88.0" r="5" fill="#4c78a8"><title>0% failure, bin 9, n=40, confidence=1.000, accuracy=1.000</title></circle>
+<text class="small" x="786.0" y="100.0">n=40</text>
+<polyline class="line" stroke="#4c78a8" points="100.0,88.0 342.9,380.5 561.4,88.0 780.0,88.0"/>
+<line x1="806" y1="108.0" x2="832" y2="108.0" stroke="#4c78a8" stroke-width="3"/>
+<circle cx="819" cy="108.0" r="4" fill="#4c78a8"/>
+<text class="label" x="840" y="112.0">0% failure</text>
+<circle class="point" cx="113.2" cy="272.7" r="5" fill="#f58518"><title>20% failure, bin 0, n=19, confidence=0.019, accuracy=0.526</title></circle>
+<text class="small" x="119.2" y="265.7">n=19</text>
+<circle class="point" cx="233.3" cy="478.0" r="5" fill="#f58518"><title>20% failure, bin 1, n=1, confidence=0.196, accuracy=0.000</title></circle>
+<text class="small" x="239.3" y="471.0">n=1</text>
+<circle class="point" cx="341.8" cy="369.7" r="5" fill="#f58518"><title>20% failure, bin 3, n=36, confidence=0.356, accuracy=0.278</title></circle>
+<text class="small" x="347.8" y="362.7">n=36</text>
+<circle class="point" cx="555.8" cy="88.0" r="5" fill="#f58518"><title>20% failure, bin 6, n=10, confidence=0.670, accuracy=1.000</title></circle>
+<text class="small" x="561.8" y="100.0">n=10</text>
+<circle class="point" cx="640.7" cy="88.0" r="5" fill="#f58518"><title>20% failure, bin 7, n=1, confidence=0.795, accuracy=1.000</title></circle>
+<text class="small" x="646.7" y="100.0">n=1</text>
+<circle class="point" cx="690.7" cy="283.0" r="5" fill="#f58518"><title>20% failure, bin 8, n=2, confidence=0.869, accuracy=0.500</title></circle>
+<text class="small" x="696.7" y="276.0">n=2</text>
+<circle class="point" cx="769.2" cy="88.0" r="5" fill="#f58518"><title>20% failure, bin 9, n=31, confidence=0.984, accuracy=1.000</title></circle>
+<text class="small" x="775.2" y="100.0">n=31</text>
+<polyline class="line" stroke="#f58518" points="113.2,272.7 233.3,478.0 341.8,369.7 555.8,88.0 640.7,88.0 690.7,283.0 769.2,88.0"/>
+<line x1="806" y1="134.0" x2="832" y2="134.0" stroke="#f58518" stroke-width="3"/>
+<circle cx="819" cy="134.0" r="4" fill="#f58518"/>
+<text class="label" x="840" y="138.0">20% failure</text>
+<circle class="point" cx="111.6" cy="324.4" r="5" fill="#54a24b"><title>40% failure, bin 0, n=33, confidence=0.017, accuracy=0.394</title></circle>
+<text class="small" x="117.6" y="317.4">n=33</text>
+<circle class="point" cx="260.0" cy="478.0" r="5" fill="#54a24b"><title>40% failure, bin 2, n=1, confidence=0.235, accuracy=0.000</title></circle>
+<text class="small" x="266.0" y="471.0">n=1</text>
+<circle class="point" cx="338.1" cy="374.0" r="5" fill="#54a24b"><title>40% failure, bin 3, n=30, confidence=0.350, accuracy=0.267</title></circle>
+<text class="small" x="344.1" y="367.0">n=30</text>
+<circle class="point" cx="494.0" cy="88.0" r="5" fill="#54a24b"><title>40% failure, bin 5, n=1, confidence=0.579, accuracy=1.000</title></circle>
+<text class="small" x="500.0" y="100.0">n=1</text>
+<circle class="point" cx="547.4" cy="88.0" r="5" fill="#54a24b"><title>40% failure, bin 6, n=8, confidence=0.658, accuracy=1.000</title></circle>
+<text class="small" x="553.4" y="100.0">n=8</text>
+<circle class="point" cx="686.8" cy="88.0" r="5" fill="#54a24b"><title>40% failure, bin 8, n=5, confidence=0.863, accuracy=1.000</title></circle>
+<text class="small" x="692.8" y="100.0">n=5</text>
+<circle class="point" cx="768.6" cy="88.0" r="5" fill="#54a24b"><title>40% failure, bin 9, n=22, confidence=0.983, accuracy=1.000</title></circle>
+<text class="small" x="774.6" y="100.0">n=22</text>
+<polyline class="line" stroke="#54a24b" points="111.6,324.4 260.0,478.0 338.1,374.0 494.0,88.0 547.4,88.0 686.8,88.0 768.6,88.0"/>
+<line x1="806" y1="160.0" x2="832" y2="160.0" stroke="#54a24b" stroke-width="3"/>
+<circle cx="819" cy="160.0" r="4" fill="#54a24b"/>
+<text class="label" x="840" y="164.0">40% failure</text>
+<line class="ideal" x1="806" y1="190" x2="832" y2="190"/>
+<text class="label" x="840" y="194">Ideal agreement</text>
+<text class="small" x="806" y="230">Samples: 300</text>
+<text class="small" x="806" y="250">Bins: 10 equal-width</text>
+</svg>

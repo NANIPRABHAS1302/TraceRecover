@@ -1,0 +1,1143 @@
+{
+  "dataset_version": "1.0",
+  "dataset_sha256": "8984d109312989a2dcc626487e5c74f2d79699e62752f16ee09fcc3e10a46b95",
+  "random_seed": 42,
+  "task_count": 30,
+  "failure_rates_percent": [
+    0.0,
+    20.0,
+    40.0
+  ],
+  "confidence_interval_method": "Wilson score interval, 95%, reported for task success only; no significance tests performed.",
+  "comparisons": [
+    {
+      "failure_rate_percent": 0.0,
+      "baseline": {
+        "task_count": 30,
+        "task_success": {
+          "rate": 1.0,
+          "successes": 30,
+          "denominator": 30,
+          "confidence_interval_95": {
+            "lower": 0.8864829086095221,
+            "upper": 1.0
+          }
+        },
+        "recovery": {
+          "rate": 0.0,
+          "successful_recoveries": 0,
+          "detected_failures": 1,
+          "denominator": 1,
+          "detected_injected_failures": 0,
+          "detected_natural_failures": 1,
+          "injected_tool_failures": 0,
+          "injected_recovery_failures": 0
+        },
+        "hallucination": {
+          "rate": 0.0,
+          "hallucinating_answers": 0,
+          "answers_with_factual_claims": 30,
+          "denominator": 30,
+          "unsupported_claims": 0,
+          "contradicted_claims": 0
+        },
+        "ece": {
+          "ece": null,
+          "sample_count": 0,
+          "bin_count": 10,
+          "binning": "equal-width [0,1], last bin includes 1",
+          "bins": []
+        },
+        "abstention": {
+          "correct_abstentions": 0,
+          "incorrect_abstentions": 0,
+          "missed_abstentions": 2,
+          "abstention_precision": null,
+          "abstention_recall": 0.0,
+          "ground_truth_abstention_tasks": 2,
+          "predicted_abstentions": 0
+        },
+        "latency": {
+          "average_seconds": 0.0020342333333398226,
+          "median_seconds": 0.0019458000000440734,
+          "sample_count": 30
+        }
+      },
+      "tracerecover": {
+        "task_count": 30,
+        "task_success": {
+          "rate": 1.0,
+          "successes": 30,
+          "denominator": 30,
+          "confidence_interval_95": {
+            "lower": 0.8864829086095221,
+            "upper": 1.0
+          }
+        },
+        "recovery": {
+          "rate": 0.0,
+          "successful_recoveries": 0,
+          "detected_failures": 1,
+          "denominator": 1,
+          "detected_injected_failures": 0,
+          "detected_natural_failures": 1,
+          "injected_tool_failures": 0,
+          "injected_recovery_failures": 0
+        },
+        "hallucination": {
+          "rate": 0.0,
+          "hallucinating_answers": 0,
+          "answers_with_factual_claims": 28,
+          "denominator": 28,
+          "unsupported_claims": 0,
+          "contradicted_claims": 0
+        },
+        "ece": {
+          "ece": 0.05476190476190476,
+          "sample_count": 30,
+          "bin_count": 10,
+          "binning": "equal-width [0,1], last bin includes 1",
+          "bins": [
+            {
+              "bin": 0,
+              "lower_bound": 0.0,
+              "upper_bound": 0.1,
+              "sample_count": 1,
+              "average_confidence": 0.0,
+              "accuracy": 1.0
+            },
+            {
+              "bin": 3,
+              "lower_bound": 0.3,
+              "upper_bound": 0.4,
+              "sample_count": 1,
+              "average_confidence": 0.3571428571428572,
+              "accuracy": 1.0
+            },
+            {
+              "bin": 9,
+              "lower_bound": 0.9,
+              "upper_bound": 1.0,
+              "sample_count": 28,
+              "average_confidence": 1.0,
+              "accuracy": 1.0
+            }
+          ]
+        },
+        "abstention": {
+          "correct_abstentions": 2,
+          "incorrect_abstentions": 0,
+          "missed_abstentions": 0,
+          "abstention_precision": 1.0,
+          "abstention_recall": 1.0,
+          "ground_truth_abstention_tasks": 2,
+          "predicted_abstentions": 2
+        },
+        "latency": {
+          "average_seconds": 0.007952533333343581,
+          "median_seconds": 0.0072942500000294785,
+          "sample_count": 30
+        }
+      },
+      "tracerecover_minus_baseline": {
+        "task_success_rate": 0.0,
+        "hallucination_rate": 0.0,
+        "average_latency_seconds": 0.005918300000003759,
+        "ece": null
+      }
+    },
+    {
+      "failure_rate_percent": 20.0,
+      "baseline": {
+        "task_count": 30,
+        "task_success": {
+          "rate": 0.7666666666666667,
+          "successes": 23,
+          "denominator": 30,
+          "confidence_interval_95": {
+            "lower": 0.5907132766967574,
+            "upper": 0.8820776078949878
+          }
+        },
+        "recovery": {
+          "rate": 0.0,
+          "successful_recoveries": 0,
+          "detected_failures": 8,
+          "denominator": 8,
+          "detected_injected_failures": 7,
+          "detected_natural_failures": 1,
+          "injected_tool_failures": 7,
+          "injected_recovery_failures": 0
+        },
+        "hallucination": {
+          "rate": 0.2,
+          "hallucinating_answers": 6,
+          "answers_with_factual_claims": 30,
+          "denominator": 30,
+          "unsupported_claims": 6,
+          "contradicted_claims": 0
+        },
+        "ece": {
+          "ece": null,
+          "sample_count": 0,
+          "bin_count": 10,
+          "binning": "equal-width [0,1], last bin includes 1",
+          "bins": []
+        },
+        "abstention": {
+          "correct_abstentions": 0,
+          "incorrect_abstentions": 0,
+          "missed_abstentions": 2,
+          "abstention_precision": null,
+          "abstention_recall": 0.0,
+          "ground_truth_abstention_tasks": 2,
+          "predicted_abstentions": 0
+        },
+        "latency": {
+          "average_seconds": 0.0019961533333306154,
+          "median_seconds": 0.0019740000000751934,
+          "sample_count": 30
+        }
+      },
+      "tracerecover": {
+        "task_count": 30,
+        "task_success": {
+          "rate": 0.8666666666666667,
+          "successes": 26,
+          "denominator": 30,
+          "confidence_interval_95": {
+            "lower": 0.7031831605558306,
+            "upper": 0.9469043057578189
+          }
+        },
+        "recovery": {
+          "rate": 0.375,
+          "successful_recoveries": 3,
+          "detected_failures": 8,
+          "denominator": 8,
+          "detected_injected_failures": 7,
+          "detected_natural_failures": 1,
+          "injected_tool_failures": 7,
+          "injected_recovery_failures": 2
+        },
+        "hallucination": {
+          "rate": 0.0,
+          "hallucinating_answers": 0,
+          "answers_with_factual_claims": 24,
+          "denominator": 24,
+          "unsupported_claims": 0,
+          "contradicted_claims": 0
+        },
+        "ece": {
+          "ece": 0.07273576097105504,
+          "sample_count": 30,
+          "bin_count": 10,
+          "binning": "equal-width [0,1], last bin includes 1",
+          "bins": [
+            {
+              "bin": 0,
+              "lower_bound": 0.0,
+              "upper_bound": 0.1,
+              "sample_count": 4,
+              "average_confidence": 0.0,
+              "accuracy": 0.25
+            },
+            {
+              "bin": 1,
+              "lower_bound": 0.1,
+              "upper_bound": 0.2,
+              "sample_count": 1,
+              "average_confidence": 0.1470588235294118,
+              "accuracy": 0.0
+            },
+            {
+              "bin": 3,
+              "lower_bound": 0.3,
+              "upper_bound": 0.4,
+              "sample_count": 1,
+              "average_confidence": 0.3571428571428572,
+              "accuracy": 1.0
+            },
+            {
+              "bin": 8,
+              "lower_bound": 0.8,
+              "upper_bound": 0.9,
+              "sample_count": 2,
+              "average_confidence": 0.8529411764705883,
+              "accuracy": 1.0
+            },
+            {
+              "bin": 9,
+              "lower_bound": 0.9,
+              "upper_bound": 1.0,
+              "sample_count": 22,
+              "average_confidence": 0.9955436720142603,
+              "accuracy": 1.0
+            }
+          ]
+        },
+        "abstention": {
+          "correct_abstentions": 2,
+          "incorrect_abstentions": 4,
+          "missed_abstentions": 0,
+          "abstention_precision": 0.3333333333333333,
+          "abstention_recall": 1.0,
+          "ground_truth_abstention_tasks": 2,
+          "predicted_abstentions": 6
+        },
+        "latency": {
+          "average_seconds": 0.01198575333332883,
+          "median_seconds": 0.008543449999990571,
+          "sample_count": 30
+        }
+      },
+      "tracerecover_minus_baseline": {
+        "task_success_rate": 0.09999999999999998,
+        "hallucination_rate": -0.2,
+        "average_latency_seconds": 0.009989599999998214,
+        "ece": null
+      }
+    },
+    {
+      "failure_rate_percent": 40.0,
+      "baseline": {
+        "task_count": 30,
+        "task_success": {
+          "rate": 0.6333333333333333,
+          "successes": 19,
+          "denominator": 30,
+          "confidence_interval_95": {
+            "lower": 0.45513246433604937,
+            "upper": 0.7812629779598231
+          }
+        },
+        "recovery": {
+          "rate": 0.0,
+          "successful_recoveries": 0,
+          "detected_failures": 13,
+          "denominator": 13,
+          "detected_injected_failures": 13,
+          "detected_natural_failures": 0,
+          "injected_tool_failures": 13,
+          "injected_recovery_failures": 0
+        },
+        "hallucination": {
+          "rate": 0.3333333333333333,
+          "hallucinating_answers": 10,
+          "answers_with_factual_claims": 30,
+          "denominator": 30,
+          "unsupported_claims": 11,
+          "contradicted_claims": 0
+        },
+        "ece": {
+          "ece": null,
+          "sample_count": 0,
+          "bin_count": 10,
+          "binning": "equal-width [0,1], last bin includes 1",
+          "bins": []
+        },
+        "abstention": {
+          "correct_abstentions": 0,
+          "incorrect_abstentions": 0,
+          "missed_abstentions": 2,
+          "abstention_precision": null,
+          "abstention_recall": 0.0,
+          "ground_truth_abstention_tasks": 2,
+          "predicted_abstentions": 0
+        },
+        "latency": {
+          "average_seconds": 0.0020443899999956256,
+          "median_seconds": 0.001947799999925337,
+          "sample_count": 30
+        }
+      },
+      "tracerecover": {
+        "task_count": 30,
+        "task_success": {
+          "rate": 0.8333333333333334,
+          "successes": 25,
+          "denominator": 30,
+          "confidence_interval_95": {
+            "lower": 0.6643529481431982,
+            "upper": 0.9266356575964831
+          }
+        },
+        "recovery": {
+          "rate": 0.5,
+          "successful_recoveries": 6,
+          "detected_failures": 12,
+          "denominator": 12,
+          "detected_injected_failures": 12,
+          "detected_natural_failures": 0,
+          "injected_tool_failures": 12,
+          "injected_recovery_failures": 4
+        },
+        "hallucination": {
+          "rate": 0.0,
+          "hallucinating_answers": 0,
+          "answers_with_factual_claims": 23,
+          "denominator": 23,
+          "unsupported_claims": 0,
+          "contradicted_claims": 0
+        },
+        "ece": {
+          "ece": 0.08936974789915966,
+          "sample_count": 30,
+          "bin_count": 10,
+          "binning": "equal-width [0,1], last bin includes 1",
+          "bins": [
+            {
+              "bin": 0,
+              "lower_bound": 0.0,
+              "upper_bound": 0.1,
+              "sample_count": 5,
+              "average_confidence": 0.0,
+              "accuracy": 0.2
+            },
+            {
+              "bin": 1,
+              "lower_bound": 0.1,
+              "upper_bound": 0.2,
+              "sample_count": 1,
+              "average_confidence": 0.1470588235294118,
+              "accuracy": 0.0
+            },
+            {
+              "bin": 3,
+              "lower_bound": 0.3,
+              "upper_bound": 0.4,
+              "sample_count": 1,
+              "average_confidence": 0.3571428571428572,
+              "accuracy": 1.0
+            },
+            {
+              "bin": 7,
+              "lower_bound": 0.7,
+              "upper_bound": 0.8,
+              "sample_count": 1,
+              "average_confidence": 0.7950980392156863,
+              "accuracy": 1.0
+            },
+            {
+              "bin": 8,
+              "lower_bound": 0.8,
+              "upper_bound": 0.9,
+              "sample_count": 4,
+              "average_confidence": 0.8529411764705883,
+              "accuracy": 1.0
+            },
+            {
+              "bin": 9,
+              "lower_bound": 0.9,
+              "upper_bound": 1.0,
+              "sample_count": 18,
+              "average_confidence": 0.9945533769063181,
+              "accuracy": 1.0
+            }
+          ]
+        },
+        "abstention": {
+          "correct_abstentions": 2,
+          "incorrect_abstentions": 5,
+          "missed_abstentions": 0,
+          "abstention_precision": 0.2857142857142857,
+          "abstention_recall": 1.0,
+          "ground_truth_abstention_tasks": 2,
+          "predicted_abstentions": 7
+        },
+        "latency": {
+          "average_seconds": 0.010012889999992088,
+          "median_seconds": 0.00928195000000187,
+          "sample_count": 30
+        }
+      },
+      "tracerecover_minus_baseline": {
+        "task_success_rate": 0.20000000000000007,
+        "hallucination_rate": -0.3333333333333333,
+        "average_latency_seconds": 0.007968499999996463,
+        "ece": null
+      }
+    }
+  ],
+  "ablation_metrics": {
+    "without_grounding": [
+      {
+        "failure_rate_percent": 0.0,
+        "metrics": {
+          "task_count": 30,
+          "task_success": {
+            "rate": 1.0,
+            "successes": 30,
+            "denominator": 30,
+            "confidence_interval_95": {
+              "lower": 0.8864829086095221,
+              "upper": 1.0
+            }
+          },
+          "recovery": {
+            "rate": 0.0,
+            "successful_recoveries": 0,
+            "detected_failures": 1,
+            "denominator": 1,
+            "detected_injected_failures": 0,
+            "detected_natural_failures": 1,
+            "injected_tool_failures": 0,
+            "injected_recovery_failures": 0
+          },
+          "hallucination": {
+            "rate": 0.0,
+            "hallucinating_answers": 0,
+            "answers_with_factual_claims": 29,
+            "denominator": 29,
+            "unsupported_claims": 0,
+            "contradicted_claims": 0
+          },
+          "ece": {
+            "ece": 0.03333333333333333,
+            "sample_count": 30,
+            "bin_count": 10,
+            "binning": "equal-width [0,1], last bin includes 1",
+            "bins": [
+              {
+                "bin": 0,
+                "lower_bound": 0.0,
+                "upper_bound": 0.1,
+                "sample_count": 1,
+                "average_confidence": 0.0,
+                "accuracy": 1.0
+              },
+              {
+                "bin": 9,
+                "lower_bound": 0.9,
+                "upper_bound": 1.0,
+                "sample_count": 29,
+                "average_confidence": 1.0,
+                "accuracy": 1.0
+              }
+            ]
+          },
+          "abstention": {
+            "correct_abstentions": 1,
+            "incorrect_abstentions": 0,
+            "missed_abstentions": 1,
+            "abstention_precision": 1.0,
+            "abstention_recall": 0.5,
+            "ground_truth_abstention_tasks": 2,
+            "predicted_abstentions": 1
+          },
+          "latency": {
+            "average_seconds": 0.006626646666681306,
+            "median_seconds": 0.006720900000004804,
+            "sample_count": 30
+          }
+        }
+      },
+      {
+        "failure_rate_percent": 20.0,
+        "metrics": {
+          "task_count": 30,
+          "task_success": {
+            "rate": 0.8666666666666667,
+            "successes": 26,
+            "denominator": 30,
+            "confidence_interval_95": {
+              "lower": 0.7031831605558306,
+              "upper": 0.9469043057578189
+            }
+          },
+          "recovery": {
+            "rate": 0.375,
+            "successful_recoveries": 3,
+            "detected_failures": 8,
+            "denominator": 8,
+            "detected_injected_failures": 7,
+            "detected_natural_failures": 1,
+            "injected_tool_failures": 7,
+            "injected_recovery_failures": 2
+          },
+          "hallucination": {
+            "rate": 0.0,
+            "hallucinating_answers": 0,
+            "answers_with_factual_claims": 25,
+            "denominator": 25,
+            "unsupported_claims": 0,
+            "contradicted_claims": 0
+          },
+          "ece": {
+            "ece": 0.07152777777777777,
+            "sample_count": 30,
+            "bin_count": 10,
+            "binning": "equal-width [0,1], last bin includes 1",
+            "bins": [
+              {
+                "bin": 0,
+                "lower_bound": 0.0,
+                "upper_bound": 0.1,
+                "sample_count": 4,
+                "average_confidence": 0.0,
+                "accuracy": 0.25
+              },
+              {
+                "bin": 3,
+                "lower_bound": 0.3,
+                "upper_bound": 0.4,
+                "sample_count": 1,
+                "average_confidence": 0.3125,
+                "accuracy": 0.0
+              },
+              {
+                "bin": 6,
+                "lower_bound": 0.6,
+                "upper_bound": 0.7,
+                "sample_count": 2,
+                "average_confidence": 0.6875,
+                "accuracy": 1.0
+              },
+              {
+                "bin": 7,
+                "lower_bound": 0.7,
+                "upper_bound": 0.8,
+                "sample_count": 1,
+                "average_confidence": 0.7916666666666665,
+                "accuracy": 1.0
+              },
+              {
+                "bin": 9,
+                "lower_bound": 0.9,
+                "upper_bound": 1.0,
+                "sample_count": 22,
+                "average_confidence": 1.0,
+                "accuracy": 1.0
+              }
+            ]
+          },
+          "abstention": {
+            "correct_abstentions": 1,
+            "incorrect_abstentions": 4,
+            "missed_abstentions": 1,
+            "abstention_precision": 0.2,
+            "abstention_recall": 0.5,
+            "ground_truth_abstention_tasks": 2,
+            "predicted_abstentions": 5
+          },
+          "latency": {
+            "average_seconds": 0.0062725833333464225,
+            "median_seconds": 0.006007800000077168,
+            "sample_count": 30
+          }
+        }
+      },
+      {
+        "failure_rate_percent": 40.0,
+        "metrics": {
+          "task_count": 30,
+          "task_success": {
+            "rate": 0.8333333333333334,
+            "successes": 25,
+            "denominator": 30,
+            "confidence_interval_95": {
+              "lower": 0.6643529481431982,
+              "upper": 0.9266356575964831
+            }
+          },
+          "recovery": {
+            "rate": 0.5,
+            "successful_recoveries": 6,
+            "detected_failures": 12,
+            "denominator": 12,
+            "detected_injected_failures": 12,
+            "detected_natural_failures": 0,
+            "injected_tool_failures": 12,
+            "injected_recovery_failures": 4
+          },
+          "hallucination": {
+            "rate": 0.0,
+            "hallucinating_answers": 0,
+            "answers_with_factual_claims": 24,
+            "denominator": 24,
+            "unsupported_claims": 0,
+            "contradicted_claims": 0
+          },
+          "ece": {
+            "ece": 0.106875,
+            "sample_count": 30,
+            "bin_count": 10,
+            "binning": "equal-width [0,1], last bin includes 1",
+            "bins": [
+              {
+                "bin": 0,
+                "lower_bound": 0.0,
+                "upper_bound": 0.1,
+                "sample_count": 5,
+                "average_confidence": 0.0,
+                "accuracy": 0.2
+              },
+              {
+                "bin": 3,
+                "lower_bound": 0.3,
+                "upper_bound": 0.4,
+                "sample_count": 1,
+                "average_confidence": 0.3125,
+                "accuracy": 0.0
+              },
+              {
+                "bin": 5,
+                "lower_bound": 0.5,
+                "upper_bound": 0.6,
+                "sample_count": 1,
+                "average_confidence": 0.5645833333333332,
+                "accuracy": 1.0
+              },
+              {
+                "bin": 6,
+                "lower_bound": 0.6,
+                "upper_bound": 0.7,
+                "sample_count": 4,
+                "average_confidence": 0.6875,
+                "accuracy": 1.0
+              },
+              {
+                "bin": 7,
+                "lower_bound": 0.7,
+                "upper_bound": 0.8,
+                "sample_count": 1,
+                "average_confidence": 0.7916666666666665,
+                "accuracy": 1.0
+              },
+              {
+                "bin": 9,
+                "lower_bound": 0.9,
+                "upper_bound": 1.0,
+                "sample_count": 18,
+                "average_confidence": 1.0,
+                "accuracy": 1.0
+              }
+            ]
+          },
+          "abstention": {
+            "correct_abstentions": 1,
+            "incorrect_abstentions": 5,
+            "missed_abstentions": 1,
+            "abstention_precision": 0.16666666666666666,
+            "abstention_recall": 0.5,
+            "ground_truth_abstention_tasks": 2,
+            "predicted_abstentions": 6
+          },
+          "latency": {
+            "average_seconds": 0.007155063333323141,
+            "median_seconds": 0.006652850000023136,
+            "sample_count": 30
+          }
+        }
+      }
+    ],
+    "without_uncertainty": [
+      {
+        "failure_rate_percent": 0.0,
+        "metrics": {
+          "task_count": 30,
+          "task_success": {
+            "rate": 0.9666666666666667,
+            "successes": 29,
+            "denominator": 30,
+            "confidence_interval_95": {
+              "lower": 0.8332924860304112,
+              "upper": 0.9940915620051425
+            }
+          },
+          "recovery": {
+            "rate": 0.0,
+            "successful_recoveries": 0,
+            "detected_failures": 1,
+            "denominator": 1,
+            "detected_injected_failures": 0,
+            "detected_natural_failures": 1,
+            "injected_tool_failures": 0,
+            "injected_recovery_failures": 0
+          },
+          "hallucination": {
+            "rate": 0.03333333333333333,
+            "hallucinating_answers": 1,
+            "answers_with_factual_claims": 30,
+            "denominator": 30,
+            "unsupported_claims": 1,
+            "contradicted_claims": 0
+          },
+          "ece": {
+            "ece": null,
+            "sample_count": 0,
+            "bin_count": 10,
+            "binning": "equal-width [0,1], last bin includes 1",
+            "bins": []
+          },
+          "abstention": {
+            "correct_abstentions": 0,
+            "incorrect_abstentions": 0,
+            "missed_abstentions": 2,
+            "abstention_precision": null,
+            "abstention_recall": 0.0,
+            "ground_truth_abstention_tasks": 2,
+            "predicted_abstentions": 0
+          },
+          "latency": {
+            "average_seconds": 0.006003766666674437,
+            "median_seconds": 0.005747050000024956,
+            "sample_count": 30
+          }
+        }
+      },
+      {
+        "failure_rate_percent": 20.0,
+        "metrics": {
+          "task_count": 30,
+          "task_success": {
+            "rate": 0.8333333333333334,
+            "successes": 25,
+            "denominator": 30,
+            "confidence_interval_95": {
+              "lower": 0.6643529481431982,
+              "upper": 0.9266356575964831
+            }
+          },
+          "recovery": {
+            "rate": 0.375,
+            "successful_recoveries": 3,
+            "detected_failures": 8,
+            "denominator": 8,
+            "detected_injected_failures": 7,
+            "detected_natural_failures": 1,
+            "injected_tool_failures": 7,
+            "injected_recovery_failures": 2
+          },
+          "hallucination": {
+            "rate": 0.16666666666666666,
+            "hallucinating_answers": 5,
+            "answers_with_factual_claims": 30,
+            "denominator": 30,
+            "unsupported_claims": 5,
+            "contradicted_claims": 0
+          },
+          "ece": {
+            "ece": null,
+            "sample_count": 0,
+            "bin_count": 10,
+            "binning": "equal-width [0,1], last bin includes 1",
+            "bins": []
+          },
+          "abstention": {
+            "correct_abstentions": 0,
+            "incorrect_abstentions": 0,
+            "missed_abstentions": 2,
+            "abstention_precision": null,
+            "abstention_recall": 0.0,
+            "ground_truth_abstention_tasks": 2,
+            "predicted_abstentions": 0
+          },
+          "latency": {
+            "average_seconds": 0.006342830000001716,
+            "median_seconds": 0.006008200000053421,
+            "sample_count": 30
+          }
+        }
+      },
+      {
+        "failure_rate_percent": 40.0,
+        "metrics": {
+          "task_count": 30,
+          "task_success": {
+            "rate": 0.8,
+            "successes": 24,
+            "denominator": 30,
+            "confidence_interval_95": {
+              "lower": 0.6269395261897256,
+              "upper": 0.9049502189759876
+            }
+          },
+          "recovery": {
+            "rate": 0.5,
+            "successful_recoveries": 6,
+            "detected_failures": 12,
+            "denominator": 12,
+            "detected_injected_failures": 12,
+            "detected_natural_failures": 0,
+            "injected_tool_failures": 12,
+            "injected_recovery_failures": 4
+          },
+          "hallucination": {
+            "rate": 0.2,
+            "hallucinating_answers": 6,
+            "answers_with_factual_claims": 30,
+            "denominator": 30,
+            "unsupported_claims": 6,
+            "contradicted_claims": 0
+          },
+          "ece": {
+            "ece": null,
+            "sample_count": 0,
+            "bin_count": 10,
+            "binning": "equal-width [0,1], last bin includes 1",
+            "bins": []
+          },
+          "abstention": {
+            "correct_abstentions": 0,
+            "incorrect_abstentions": 0,
+            "missed_abstentions": 2,
+            "abstention_precision": null,
+            "abstention_recall": 0.0,
+            "ground_truth_abstention_tasks": 2,
+            "predicted_abstentions": 0
+          },
+          "latency": {
+            "average_seconds": 0.006071653333344784,
+            "median_seconds": 0.005673999999942225,
+            "sample_count": 30
+          }
+        }
+      }
+    ],
+    "without_localization": [
+      {
+        "failure_rate_percent": 0.0,
+        "metrics": {
+          "task_count": 30,
+          "task_success": {
+            "rate": 1.0,
+            "successes": 30,
+            "denominator": 30,
+            "confidence_interval_95": {
+              "lower": 0.8864829086095221,
+              "upper": 1.0
+            }
+          },
+          "recovery": {
+            "rate": 0.0,
+            "successful_recoveries": 0,
+            "detected_failures": 1,
+            "denominator": 1,
+            "detected_injected_failures": 0,
+            "detected_natural_failures": 1,
+            "injected_tool_failures": 0,
+            "injected_recovery_failures": 0
+          },
+          "hallucination": {
+            "rate": 0.0,
+            "hallucinating_answers": 0,
+            "answers_with_factual_claims": 28,
+            "denominator": 28,
+            "unsupported_claims": 0,
+            "contradicted_claims": 0
+          },
+          "ece": {
+            "ece": 0.05476190476190476,
+            "sample_count": 30,
+            "bin_count": 10,
+            "binning": "equal-width [0,1], last bin includes 1",
+            "bins": [
+              {
+                "bin": 0,
+                "lower_bound": 0.0,
+                "upper_bound": 0.1,
+                "sample_count": 1,
+                "average_confidence": 0.0,
+                "accuracy": 1.0
+              },
+              {
+                "bin": 3,
+                "lower_bound": 0.3,
+                "upper_bound": 0.4,
+                "sample_count": 1,
+                "average_confidence": 0.3571428571428572,
+                "accuracy": 1.0
+              },
+              {
+                "bin": 9,
+                "lower_bound": 0.9,
+                "upper_bound": 1.0,
+                "sample_count": 28,
+                "average_confidence": 1.0,
+                "accuracy": 1.0
+              }
+            ]
+          },
+          "abstention": {
+            "correct_abstentions": 2,
+            "incorrect_abstentions": 0,
+            "missed_abstentions": 0,
+            "abstention_precision": 1.0,
+            "abstention_recall": 1.0,
+            "ground_truth_abstention_tasks": 2,
+            "predicted_abstentions": 2
+          },
+          "latency": {
+            "average_seconds": 0.006652386666678467,
+            "median_seconds": 0.006583549999959359,
+            "sample_count": 30
+          }
+        }
+      },
+      {
+        "failure_rate_percent": 20.0,
+        "metrics": {
+          "task_count": 30,
+          "task_success": {
+            "rate": 0.7666666666666667,
+            "successes": 23,
+            "denominator": 30,
+            "confidence_interval_95": {
+              "lower": 0.5907132766967574,
+              "upper": 0.8820776078949878
+            }
+          },
+          "recovery": {
+            "rate": 0.0,
+            "successful_recoveries": 0,
+            "detected_failures": 8,
+            "denominator": 8,
+            "detected_injected_failures": 7,
+            "detected_natural_failures": 1,
+            "injected_tool_failures": 7,
+            "injected_recovery_failures": 0
+          },
+          "hallucination": {
+            "rate": 0.0,
+            "hallucinating_answers": 0,
+            "answers_with_factual_claims": 21,
+            "denominator": 21,
+            "unsupported_claims": 0,
+            "contradicted_claims": 0
+          },
+          "ece": {
+            "ece": 0.0511904761904762,
+            "sample_count": 30,
+            "bin_count": 10,
+            "binning": "equal-width [0,1], last bin includes 1",
+            "bins": [
+              {
+                "bin": 0,
+                "lower_bound": 0.0,
+                "upper_bound": 0.1,
+                "sample_count": 5,
+                "average_confidence": 0.0,
+                "accuracy": 0.2
+              },
+              {
+                "bin": 3,
+                "lower_bound": 0.3,
+                "upper_bound": 0.4,
+                "sample_count": 4,
+                "average_confidence": 0.3839285714285715,
+                "accuracy": 0.25
+              },
+              {
+                "bin": 9,
+                "lower_bound": 0.9,
+                "upper_bound": 1.0,
+                "sample_count": 21,
+                "average_confidence": 1.0,
+                "accuracy": 1.0
+              }
+            ]
+          },
+          "abstention": {
+            "correct_abstentions": 2,
+            "incorrect_abstentions": 7,
+            "missed_abstentions": 0,
+            "abstention_precision": 0.2222222222222222,
+            "abstention_recall": 1.0,
+            "ground_truth_abstention_tasks": 2,
+            "predicted_abstentions": 9
+          },
+          "latency": {
+            "average_seconds": 0.006428313333329546,
+            "median_seconds": 0.006545000000073742,
+            "sample_count": 30
+          }
+        }
+      },
+      {
+        "failure_rate_percent": 40.0,
+        "metrics": {
+          "task_count": 30,
+          "task_success": {
+            "rate": 0.6333333333333333,
+            "successes": 19,
+            "denominator": 30,
+            "confidence_interval_95": {
+              "lower": 0.45513246433604937,
+              "upper": 0.7812629779598231
+            }
+          },
+          "recovery": {
+            "rate": 0.0,
+            "successful_recoveries": 0,
+            "detected_failures": 13,
+            "denominator": 13,
+            "detected_injected_failures": 13,
+            "detected_natural_failures": 0,
+            "injected_tool_failures": 13,
+            "injected_recovery_failures": 0
+          },
+          "hallucination": {
+            "rate": 0.0,
+            "hallucinating_answers": 0,
+            "answers_with_factual_claims": 17,
+            "denominator": 17,
+            "unsupported_claims": 0,
+            "contradicted_claims": 0
+          },
+          "ece": {
+            "ece": 0.0511904761904762,
+            "sample_count": 30,
+            "bin_count": 10,
+            "binning": "equal-width [0,1], last bin includes 1",
+            "bins": [
+              {
+                "bin": 0,
+                "lower_bound": 0.0,
+                "upper_bound": 0.1,
+                "sample_count": 9,
+                "average_confidence": 0.0,
+                "accuracy": 0.1111111111111111
+              },
+              {
+                "bin": 3,
+                "lower_bound": 0.3,
+                "upper_bound": 0.4,
+                "sample_count": 4,
+                "average_confidence": 0.3839285714285715,
+                "accuracy": 0.25
+              },
+              {
+                "bin": 9,
+                "lower_bound": 0.9,
+                "upper_bound": 1.0,
+                "sample_count": 17,
+                "average_confidence": 1.0,
+                "accuracy": 1.0
+              }
+            ]
+          },
+          "abstention": {
+            "correct_abstentions": 2,
+            "incorrect_abstentions": 11,
+            "missed_abstentions": 0,
+            "abstention_precision": 0.15384615384615385,
+            "abstention_recall": 1.0,
+            "ground_truth_abstention_tasks": 2,
+            "predicted_abstentions": 13
+          },
+          "latency": {
+            "average_seconds": 0.006957863333324591,
+            "median_seconds": 0.006681199999945875,
+            "sample_count": 30
+          }
+        }
+      }
+    ]
+  },
+  "limitations": [
+    "Small deterministic dataset limits external validity.",
+    "The dataset-authored action plan controls tool selection and does not evaluate free-form planner quality.",
+    "Local heuristic confidence is not a calibrated probability; ECE is reported only as an empirical diagnostic."
+  ]
+}

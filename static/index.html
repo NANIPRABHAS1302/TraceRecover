@@ -1,0 +1,3014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TraceRecover — Agent Reliability &amp; Observability Platform</title>
+  <style>
+    :root {
+      --bg: #F8FAFC;
+      --surface: #FFFFFF;
+      --surface-alt: #F1F5F9;
+      --border: #E2E8F0;
+      --border-strong: #CBD5E1;
+      --text: #0F172A;
+      --text-secondary: #475569;
+      --text-muted: #64748B;
+      --accent: #2563EB;
+      --accent-hover: #1D4ED8;
+      --accent-soft: #EFF6FF;
+      --accent-border: #BFDBFE;
+      --green: #047857;
+      --green-bg: #ECFDF5;
+      --green-border: #A7F3D0;
+      --amber: #B45309;
+      --amber-bg: #FFFBEB;
+      --amber-border: #FDE68A;
+      --red: #BE123C;
+      --red-bg: #FFF1F2;
+      --red-border: #FECDD3;
+      --radius: 10px;
+      --radius-sm: 8px;
+      --shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+      --sidebar-w: 248px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    .num { font-variant-numeric: tabular-nums; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+    .muted { color: var(--text-secondary); }
+    .small { font-size: 13px; }
+
+    /* App Shell Layout (Sidebar + Topbar + Content) */
+    #root {
+      min-height: 100vh;
+      display: flex;
+      background: var(--bg);
+    }
+
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 50;
+      transition: transform 0.2s ease;
+    }
+
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 18px 18px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #FFFFFF;
+      font-weight: 700;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .brand-title { font-size: 16px; font-weight: 700; margin: 0; color: var(--text); }
+    .brand-tag { font-size: 12px; color: var(--text-muted); margin: 0; }
+
+    .sidebar-nav {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .nav-group-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      padding: 10px 10px 4px;
+    }
+
+    .nav-item {
+      appearance: none;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-secondary);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 9px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      width: 100%;
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .nav-item:hover { background: var(--surface-alt); color: var(--text); }
+    .nav-item.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-color: var(--accent-border);
+    }
+
+    .sidebar-footer {
+      border-top: 1px solid var(--border);
+      padding: 12px 14px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      background: var(--surface-alt);
+    }
+
+    .sidebar-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.35);
+      z-index: 45;
+    }
+    .sidebar-backdrop.open { display: block; }
+
+    .main-shell {
+      flex: 1;
+      margin-left: var(--sidebar-w);
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      position: sticky;
+      top: 0;
+      z-index: 35;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .menu-btn {
+      display: none;
+      appearance: none;
+      border: 1px solid var(--border-strong);
+      background: var(--surface);
+      color: var(--text);
+      border-radius: var(--radius-sm);
+      padding: 6px 10px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .page-heading { font-size: 17px; font-weight: 700; margin: 0; color: var(--text); }
+    .page-sub { font-size: 12px; color: var(--text-muted); margin: 0; }
+
+    .topbar-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    @media (max-width: 960px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .main-shell { margin-left: 0; }
+      .menu-btn { display: inline-flex; align-items: center; justify-content: center; }
+      .topbar { padding: 12px 16px; }
+    }
+
+    .content-wrap {
+      padding: 22px 24px 48px;
+      max-width: 1280px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 720px) {
+      .content-wrap { padding: 16px 14px 36px; }
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .stack > * + * { margin-top: 18px; }
+
+    /* Inputs & Controls */
+    .select-compact, .input-control, .select-control, .textarea-control {
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 14px;
+      padding: 7px 11px;
+      outline: none;
+      font-family: inherit;
+      max-width: 100%;
+    }
+    .select-control, .input-control { width: 100%; padding: 9px 12px; font-size: 14px; }
+    .textarea-control { width: 100%; padding: 10px 12px; font-size: 14px; resize: vertical; }
+    .select-compact:focus, .input-control:focus, .select-control:focus, .textarea-control:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    /* Cards & Grids */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      min-width: 0;
+      max-width: 100%;
+    }
+    .card-title { margin: 0 0 4px; font-size: 16px; font-weight: 700; color: var(--text); }
+    .section-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+    @media (max-width: 1100px) { .grid-4, .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 720px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: minmax(0, 1fr); } }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: 14px;
+      align-items: end;
+    }
+    .col-12 { grid-column: span 12; }
+    .col-8 { grid-column: span 8; }
+    .col-6 { grid-column: span 6; }
+    .col-4 { grid-column: span 4; }
+    .col-3 { grid-column: span 3; }
+    .col-2 { grid-column: span 2; }
+    @media (max-width: 820px) { .col-8, .col-6, .col-4, .col-3, .col-2 { grid-column: span 12; } }
+
+    .field-label { display: block; font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
+    .check-group { display: flex; flex-wrap: wrap; gap: 8px; }
+    .check-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 11px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      font-size: 13px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    /* KPIs & Pills */
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      box-shadow: var(--shadow);
+    }
+    .kpi-label { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 5px; }
+    .kpi-value { font-size: 26px; font-weight: 700; color: var(--text); line-height: 1.2; font-variant-numeric: tabular-nums; }
+    .kpi-sub { margin-top: 5px; font-size: 12.5px; color: var(--text-muted); }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      border: 1px solid transparent;
+    }
+    .pill-green { background: var(--green-bg); color: var(--green); border-color: var(--green-border); }
+    .pill-amber { background: var(--amber-bg); color: var(--amber); border-color: var(--amber-border); }
+    .pill-red { background: var(--red-bg); color: var(--red); border-color: var(--red-border); }
+    .pill-blue { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-border); }
+    .pill-slate { background: var(--surface-alt); color: var(--text-secondary); border-color: var(--border-strong); }
+
+    /* Buttons */
+    .btn {
+      appearance: none;
+      border: 1px solid var(--border-strong);
+      background: var(--surface);
+      color: var(--text);
+      border-radius: var(--radius-sm);
+      padding: 8px 14px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      text-decoration: none;
+    }
+    .btn:hover:not(:disabled) { background: var(--surface-alt); border-color: #94A3B8; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); border-color: var(--accent); color: #FFFFFF; }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
+    .btn-sm { padding: 5px 10px; font-size: 13px; }
+
+    /* Notices */
+    .notice {
+      border-radius: var(--radius);
+      padding: 13px 16px;
+      font-size: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .notice-info { background: var(--accent-soft); border: 1px solid var(--accent-border); color: #1E3A8A; }
+    .notice-error { background: var(--red-bg); border: 1px solid var(--red-border); color: var(--red); }
+    .notice-success { background: var(--green-bg); border: 1px solid var(--green-border); color: var(--green); }
+
+    /* Tables */
+    .table-wrap {
+      overflow-x: auto;
+      max-width: 100%;
+      min-width: 0;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; text-align: left; }
+    thead th {
+      background: var(--surface-alt);
+      color: var(--text-secondary);
+      font-size: 11.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 10px 13px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    tbody td { padding: 10px 13px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr.highlight-row { background: var(--accent-soft); font-weight: 600; }
+    tbody tr.clickable { cursor: pointer; }
+    tbody tr.clickable:hover { background: #F8FAFC; }
+    tbody tr.selected-row { background: #EFF6FF; }
+
+    /* Stage Blocks, Observations & Replay Timeline */
+    .stage-block { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 15px; background: var(--surface); min-width: 0; max-width: 100%; }
+    .stage-label { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); margin-bottom: 8px; }
+    .obs-card { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 11px 13px; background: var(--surface-alt); margin-bottom: 9px; }
+    .obs-card:last-child { margin-bottom: 0; }
+    .obs-card.committed { background: var(--green-bg); border-color: var(--green-border); }
+    .obs-card.discarded { background: var(--red-bg); border-color: var(--red-border); }
+
+    .decision-box { border-radius: var(--radius); padding: 16px 18px; border: 1.5px solid var(--border); }
+    .decision-box.ANSWER { background: var(--green-bg); border-color: var(--green-border); }
+    .decision-box.WARN { background: var(--amber-bg); border-color: var(--amber-border); }
+    .decision-box.ABSTAIN { background: var(--red-bg); border-color: var(--red-border); }
+    .decision-box.NOT_APPLICABLE { background: var(--surface-alt); border-color: var(--border-strong); }
+    .decision-output {
+      margin-top: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      white-space: pre-wrap;
+      font-size: 14.5px;
+    }
+
+    .replay-rail {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 14px 0;
+    }
+    .replay-node {
+      appearance: none;
+      border: 1px solid var(--border-strong);
+      background: var(--surface);
+      color: var(--text-secondary);
+      border-radius: var(--radius-sm);
+      padding: 7px 11px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .replay-node.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #FFFFFF;
+    }
+    .replay-node.committed { border-left: 3px solid var(--green); }
+    .replay-node.discarded { border-left: 3px solid var(--red); }
+
+    .chart-box { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; background: var(--surface); }
+    .chart-box img { width: 100%; max-height: 280px; object-fit: contain; display: block; }
+
+    .empty-state {
+      text-align: center;
+      padding: 30px 18px;
+      color: var(--text-secondary);
+      border: 1px dashed var(--border-strong);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+
+    .progress-track { height: 8px; border-radius: 999px; background: var(--surface-alt); overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 999px; background: var(--accent); }
+
+    pre.json-dump {
+      background: #F8FAFC;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      font-size: 12px;
+      overflow-x: auto;
+      max-height: 360px;
+      color: var(--text);
+      margin: 0;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      border-top-color: #FFFFFF;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
+
+    <!-- LEFT SIDEBAR WITH ALL 10 REQUIRED SECTIONS -->
+    <aside id="app-sidebar" class="sidebar" aria-label="Primary Navigation">
+      <div class="sidebar-brand">
+        <div class="brand-logo" aria-hidden="true">TR</div>
+        <div>
+          <p class="brand-title">TraceRecover</p>
+          <p class="brand-tag">Agent Reliability Platform</p>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-group-label">Dashboard</div>
+        <button class="nav-item active" data-nav="overview" type="button">1. Overview</button>
+        <button class="nav-item" data-nav="experiments" type="button">2. Experiments</button>
+        <button class="nav-item" data-nav="analytics" type="button">3. Results &amp; Analytics</button>
+
+        <div class="nav-group-label">Agent &amp; Traceability</div>
+        <button class="nav-item" data-nav="demo" type="button">4. Live Demo</button>
+        <button class="nav-item" data-nav="replay" type="button">5. Execution Replay</button>
+        <button class="nav-item" data-nav="evidence" type="button">6. Evidence Inspector</button>
+        <button class="nav-item" data-nav="datasets" type="button">7. Datasets</button>
+        <button class="nav-item" data-nav="logs" type="button">8. Execution Logs</button>
+
+        <div class="nav-group-label">Publications &amp; System</div>
+        <button class="nav-item" data-nav="reports" type="button">9. Research Reports</button>
+        <button class="nav-item" data-nav="settings" type="button">10. Settings</button>
+
+        <div class="nav-group-label">Open-Ended &amp; Generalization</div>
+        <button class="nav-item" data-nav="workspace" type="button">11. Query Workspace</button>
+        <button class="nav-item" data-nav="unseen" type="button">12. Unseen Eval Lab</button>
+        <button class="nav-item" data-nav="compare" type="button">13. Provider Compare</button>
+      </nav>
+
+      <div class="sidebar-footer" id="sidebar-footer-status">
+        <div><strong>Status:</strong> Checking...</div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT SHELL -->
+    <div class="main-shell">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button id="mobile-menu-btn" class="menu-btn" type="button" aria-label="Open navigation menu">☰</button>
+          <div>
+            <h1 id="topbar-title" class="page-heading">Overview</h1>
+            <p class="page-sub">An Evidence-Grounded Self-Healing and Uncertainty-Aware Framework for Reliable Tool-Augmented LLM Agents</p>
+          </div>
+        </div>
+
+        <div class="topbar-actions">
+          <span id="health-pill" class="pill pill-green">Checking system...</span>
+          <select id="global-run-select" class="select-compact" aria-label="Select benchmark experiment run">
+            <option value="">Loading runs...</option>
+          </select>
+          <button id="export-csv-btn" class="btn btn-sm" type="button">CSV</button>
+          <button id="export-json-btn" class="btn btn-sm" type="button">JSON</button>
+          <button id="export-pdf-btn" class="btn btn-sm btn-primary" type="button">Export PDF</button>
+        </div>
+      </header>
+
+      <main class="content-wrap">
+
+        <!-- 1. OVERVIEW -->
+        <section id="tab-overview" class="tab-panel active stack">
+          <div id="overview-scope-banner" class="notice notice-info">
+            <div><strong>Evaluation Scope:</strong> Loading active benchmark metadata...</div>
+            <span class="pill pill-blue">Seed: —</span>
+          </div>
+
+          <div class="grid-4" id="overview-kpis"></div>
+
+          <div class="grid-2">
+            <div class="card">
+              <div class="section-header" style="margin-bottom:10px;">
+                <div>
+                  <h3 class="card-title">Baseline vs. TraceRecover Performance</h3>
+                  <p class="small muted">Task Success and Hallucination Rates across 0%, 20%, and 40% faults</p>
+                </div>
+              </div>
+              <div id="overview-comparison-chart"></div>
+            </div>
+
+            <div class="card">
+              <div class="section-header" style="margin-bottom:10px;">
+                <div>
+                  <h3 class="card-title">Regime Breakdown (Exact Counts)</h3>
+                  <p class="small muted">Measured directly from saved result files</p>
+                </div>
+              </div>
+              <div class="table-wrap" id="overview-regime-table"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="section-header">
+              <div>
+                <h3 class="card-title">Installed Benchmark &amp; Telemetry Datasets</h3>
+                <p class="small muted">Quick summary (open <strong>Datasets</strong> in the sidebar for task filtering &amp; schema import)</p>
+              </div>
+              <button class="btn btn-sm" type="button" onclick="switchTab('datasets')">Open Dataset Manager →</button>
+            </div>
+            <div class="grid-4" id="overview-datasets-grid"></div>
+          </div>
+        </section>
+
+        <!-- 2. EXPERIMENTS -->
+        <section id="tab-experiments" class="tab-panel stack">
+          <div class="card">
+            <div class="section-header">
+              <div>
+                <h2 style="font-size:18px; margin:0;">Run New Benchmark Experiment</h2>
+                <p class="small muted">Executes the real deterministic evaluation suite into a fresh timestamped folder without overwriting flagship runs.</p>
+              </div>
+              <span id="exp-auth-badge" class="pill pill-slate">Checking auth policy...</span>
+            </div>
+
+            <form id="run-experiment-form" class="form-grid">
+              <div class="col-4">
+                <label class="field-label">Fault Injection Rates (%)</label>
+                <div class="check-group">
+                  <label class="check-chip"><input type="checkbox" name="exp-rate" value="0" checked /> 0%</label>
+                  <label class="check-chip"><input type="checkbox" name="exp-rate" value="20" checked /> 20%</label>
+                  <label class="check-chip"><input type="checkbox" name="exp-rate" value="40" checked /> 40%</label>
+                </div>
+              </div>
+              <div class="col-3">
+                <label class="field-label" for="exp-num-tasks">Tasks per Rate</label>
+                <select id="exp-num-tasks" class="select-control">
+                  <option value="10">10 tasks (Quick)</option>
+                  <option value="20" selected>20 tasks (Stratified)</option>
+                  <option value="50">50 tasks (Half)</option>
+                  <option value="100">100 tasks (Full)</option>
+                </select>
+              </div>
+              <div class="col-3">
+                <label class="field-label" for="exp-seed">Random Seed</label>
+                <input id="exp-seed" class="input-control num" type="number" min="0" value="42" />
+              </div>
+              <div class="col-2">
+                <label class="field-label" for="exp-ans-thresh">Answer Thr.</label>
+                <input id="exp-ans-thresh" class="input-control num" type="number" step="0.05" min="0" max="0.9" value="0.15" />
+              </div>
+              <div class="col-3">
+                <label class="field-label" for="exp-abs-thresh">Abstain Thr.</label>
+                <input id="exp-abs-thresh" class="input-control num" type="number" step="0.05" min="0.1" max="1" value="0.55" />
+              </div>
+              <div class="col-3">
+                <label class="check-chip" style="width:100%;">
+                  <input id="exp-run-stat" type="checkbox" checked />
+                  Statistical Validation
+                </label>
+              </div>
+              <div id="exp-admin-wrap" class="col-4" style="display:none;">
+                <label class="field-label" for="exp-admin-token">Admin Token (Memory Only)</label>
+                <input id="exp-admin-token" class="input-control" type="password" placeholder="TRACERECOVER_ADMIN_TOKEN" autocomplete="off" />
+              </div>
+              <div class="col-12" style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px;">
+                <span class="small muted">Runs Baseline, Full TraceRecover, and 3 Controlled Ablations via local deterministic provider.</span>
+                <button id="run-experiment-btn" class="btn btn-primary" type="submit">Run Benchmark Experiment</button>
+              </div>
+            </form>
+            <div id="exp-run-feedback" style="margin-top:12px;"></div>
+          </div>
+
+          <div class="card">
+            <div class="section-header">
+              <div>
+                <h3 class="card-title">Experiment History (<span id="exp-history-count">0</span> runs)</h3>
+                <p class="small muted">Click Inspect to view analytics or replay individual benchmark tasks</p>
+              </div>
+              <button id="refresh-experiments-btn" class="btn btn-sm" type="button">Refresh</button>
+            </div>
+            <div class="table-wrap" id="exp-history-table"></div>
+          </div>
+
+          <div class="grid-2">
+            <div class="card">
+              <h3 class="card-title">Reproducibility Manifest</h3>
+              <div id="exp-repro-details" style="margin-top:12px;"></div>
+            </div>
+            <div class="card">
+              <h3 class="card-title">Ablation Comparison (Selected Run)</h3>
+              <div class="table-wrap" id="exp-ablation-table" style="margin-top:12px;"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. RESULTS & ANALYTICS -->
+        <section id="tab-analytics" class="tab-panel stack">
+          <div class="card">
+            <div class="form-grid">
+              <div class="col-4">
+                <label class="field-label" for="analytics-run-filter">Experiment Run</label>
+                <select id="analytics-run-filter" class="select-control"></select>
+              </div>
+              <div class="col-4">
+                <label class="field-label" for="analytics-rate-filter">Fault Injection Rate</label>
+                <select id="analytics-rate-filter" class="select-control">
+                  <option value="all">All Fault Rates (0%, 20%, 40%)</option>
+                  <option value="0">0% Faults (Clean)</option>
+                  <option value="20">20% Faults (Moderate)</option>
+                  <option value="40">40% Faults (Severe)</option>
+                </select>
+              </div>
+              <div class="col-4">
+                <label class="field-label" for="analytics-cat-filter">Dataset Category</label>
+                <select id="analytics-cat-filter" class="select-control">
+                  <option value="all">All Task Categories</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div id="analytics-best-config" class="card"></div>
+
+          <div class="grid-2">
+            <div class="card">
+              <h3 class="card-title">Task Success Rate Across Regimes &amp; Ablations</h3>
+              <p class="small muted" style="margin-bottom:10px;">Measured on matched benchmark tasks</p>
+              <div id="analytics-svg-success"></div>
+            </div>
+            <div class="card">
+              <h3 class="card-title">Category-Wise Success Comparison</h3>
+              <p class="small muted" style="margin-bottom:10px;">Baseline vs. TraceRecover across categories</p>
+              <div id="analytics-svg-category"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="section-header">
+              <div>
+                <h3 class="card-title">System &amp; Ablation Metrics (With Exact Denominators)</h3>
+                <p class="small muted">Includes 95% Wilson CI, Recovery, Hallucination, ECE, Brier Score, Abstention P/R, and Latency</p>
+              </div>
+            </div>
+            <div class="table-wrap" id="analytics-metrics-table"></div>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">Category-Wise Performance &amp; Answer Coverage</h3>
+            <div class="table-wrap" id="analytics-category-table" style="margin-top:12px;"></div>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">Statistical Significance &amp; Zero-Leakage 5-Fold Validation</h3>
+            <div id="analytics-stat-section" style="margin-top:12px;"></div>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title" style="margin-bottom:12px;">Saved Benchmark Plots (SVG)</h3>
+            <div class="grid-3" id="analytics-plots-grid"></div>
+          </div>
+        </section>
+
+        <!-- 4. LIVE DEMO -->
+        <section id="tab-demo" class="tab-panel stack">
+          <div class="card">
+            <div class="section-header">
+              <div>
+                <h2 style="font-size:18px; margin:0;">Live TraceRecover Agent Execution</h2>
+                <p class="small muted">Executes the actual Python <code>ReactAgent</code> via FastAPI using server-side credentials.</p>
+              </div>
+              <div id="demo-preset-bar" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+            </div>
+
+            <form id="live-demo-form" class="form-grid">
+              <div class="col-8">
+                <label class="field-label" for="demo-question">User Question</label>
+                <textarea id="demo-question" class="textarea-control" rows="2" required>What is the capital of France?</textarea>
+              </div>
+              <div class="col-4">
+                <label class="field-label" for="demo-provider">LLM Provider (Server Key Status)</label>
+                <select id="demo-provider" class="select-control"></select>
+              </div>
+              <div class="col-4">
+                <label class="field-label" for="demo-fault-rate">Fault Injection Rate: <strong id="demo-fault-label" class="num">0%</strong></label>
+                <input id="demo-fault-rate" type="range" min="0" max="100" step="10" value="0" style="width:100%; accent-color:var(--accent);" />
+              </div>
+              <div class="col-2">
+                <label class="field-label" for="demo-seed">RNG Seed</label>
+                <input id="demo-seed" class="input-control num" type="number" min="0" value="42" />
+              </div>
+              <div class="col-6">
+                <label class="field-label">Enabled Fault Modes</label>
+                <div class="check-group">
+                  <label class="check-chip"><input type="checkbox" name="demo-ft" value="timeout" checked /> Timeout</label>
+                  <label class="check-chip"><input type="checkbox" name="demo-ft" value="wrong_output" checked /> Wrong Output</label>
+                  <label class="check-chip"><input type="checkbox" name="demo-ft" value="empty_result" checked /> Empty Result</label>
+                  <label class="check-chip"><input type="checkbox" name="demo-ft" value="bad_arguments" checked /> Bad Args</label>
+                </div>
+              </div>
+              <div class="col-12" style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; padding-top:6px; border-top:1px solid var(--border);">
+                <div class="check-group">
+                  <label class="check-chip"><input id="demo-recovery" type="checkbox" checked /> Recovery</label>
+                  <label class="check-chip"><input id="demo-grounding" type="checkbox" checked /> Grounding</label>
+                  <label class="check-chip"><input id="demo-nli" type="checkbox" checked /> DeBERTa NLI</label>
+                  <label class="check-chip"><input id="demo-uncertainty" type="checkbox" checked /> Uncertainty Gate</label>
+                </div>
+                <button id="demo-submit-btn" class="btn btn-primary" type="submit">Execute Agent</button>
+              </div>
+            </form>
+            <div id="demo-error" style="margin-top:12px;"></div>
+          </div>
+
+          <div id="demo-output-container">
+            <div class="empty-state">
+              <strong>No live execution in this session yet.</strong>
+              <p class="small muted" style="margin:6px 0 0;">Click a preset button above or enter a question and click <strong>Execute Agent</strong>.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. EXECUTION REPLAY -->
+        <section id="tab-replay" class="tab-panel stack">
+          <div class="card">
+            <div class="section-header">
+              <div>
+                <h2 style="font-size:18px; margin:0;">Execution Replay (Stored Traces — No Re-Execution)</h2>
+                <p class="small muted">Step deterministically through previously recorded traces showing planning, tool calls, committed/discarded provenance, recovery, evidence grounding, and decision.</p>
+              </div>
+              <button id="replay-refresh-btn" class="btn btn-sm" type="button">Refresh Sources</button>
+            </div>
+
+            <div class="form-grid">
+              <div class="col-3">
+                <label class="field-label" for="replay-source-type">Trace Source</label>
+                <select id="replay-source-type" class="select-control">
+                  <option value="live">Live Demo / API Traces</option>
+                  <option value="eval">100-Task Benchmark Traces</option>
+                </select>
+              </div>
+              <div class="col-7" style="grid-column: span 7;">
+                <label class="field-label" for="replay-trace-select">Select Recorded Trace</label>
+                <select id="replay-trace-select" class="select-control"></select>
+              </div>
+              <div class="col-2">
+                <button id="replay-load-btn" class="btn btn-primary" type="button" style="width:100%;">Load Trace</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" id="replay-player-card">
+            <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; padding-bottom:12px; border-bottom:1px solid var(--border);">
+              <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                <button id="replay-restart-btn" class="btn btn-sm" type="button">Restart</button>
+                <button id="replay-prev-btn" class="btn btn-sm" type="button">Previous</button>
+                <button id="replay-play-btn" class="btn btn-sm btn-primary" type="button">Play</button>
+                <button id="replay-pause-btn" class="btn btn-sm" type="button" disabled>Pause</button>
+                <button id="replay-next-btn" class="btn btn-sm" type="button">Next</button>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <label class="small muted" for="replay-speed">Speed:</label>
+                <select id="replay-speed" class="select-compact">
+                  <option value="1400">1x</option>
+                  <option value="900">1.5x</option>
+                  <option value="500">2.5x</option>
+                </select>
+                <span id="replay-counter" class="pill pill-blue num">Frame 0 of 0</span>
+              </div>
+            </div>
+
+            <div id="replay-rail" class="replay-rail"></div>
+            <div id="replay-stage-content">
+              <div class="empty-state">Load any recorded trace above to step through its execution timeline.</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. EVIDENCE INSPECTOR -->
+        <section id="tab-evidence" class="tab-panel stack">
+          <div class="card">
+            <div class="section-header" style="margin-bottom:0;">
+              <div>
+                <h2 style="font-size:18px; margin:0;">Evidence &amp; Provenance Inspector</h2>
+                <p class="small muted">Inspect why a response was accepted (ANSWER), flagged (WARN), or rejected (ABSTAIN) using committed vs. discarded evidence.</p>
+              </div>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <select id="evidence-trace-select" class="select-compact" style="max-width:340px;" aria-label="Select trace to inspect"></select>
+                <button id="evidence-replay-jump" class="btn btn-sm" type="button">Replay This Trace →</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="evidence-inspector-panel">
+            <div class="empty-state">Select a recorded execution trace above to examine committed vs. discarded observations and claim grounding.</div>
+          </div>
+        </section>
+
+        <!-- 7. DATASETS -->
+        <section id="tab-datasets" class="tab-panel stack">
+          <div class="card">
+            <div class="section-header">
+              <div>
+                <h2 style="font-size:18px; margin:0;">Dataset Catalog &amp; Integrity Verification</h2>
+                <p class="small muted">SHA-256 checksums, task counts, categories, associated benchmark runs, and version history</p>
+              </div>
+              <button id="datasets-refresh-btn" class="btn btn-sm" type="button">Refresh Catalog</button>
+            </div>
+            <div class="grid-2" id="datasets-catalog-grid"></div>
+          </div>
+
+          <div class="card">
+            <div class="section-header">
+              <div>
+                <h3 class="card-title">Task Inspection Explorer</h3>
+                <p id="dataset-tasks-meta" class="small muted">Filter benchmark tasks and inspect oracle plans, expected facts, and contradiction traps</p>
+              </div>
+              <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                <select id="ds-inspect-select" class="select-compact" aria-label="Select dataset"></select>
+                <select id="ds-cat-filter" class="select-compact"><option value="all">All Categories</option></select>
+                <select id="ds-abs-filter" class="select-compact">
+                  <option value="all">All Labels</option>
+                  <option value="false">Answerable Only</option>
+                  <option value="true">Should Abstain Only</option>
+                </select>
+                <input id="ds-search" class="select-compact" type="text" placeholder="Search task ID or query..." style="width:200px;" />
+              </div>
+            </div>
+            <div class="table-wrap" id="ds-tasks-table"></div>
+            <div id="ds-task-detail" style="margin-top:14px;"></div>
+          </div>
+
+          <div class="grid-2">
+            <div class="card">
+              <div class="section-header">
+                <div>
+                  <h3 class="card-title">Safe Dataset Schema Validation &amp; Versioned Import</h3>
+                  <p class="small muted">Validates schema before importing into <code>data/versions/</code> without modifying canonical <code>eval/tasks.json</code>.</p>
+                </div>
+                <button id="ds-load-sample-btn" class="btn btn-sm" type="button">Load Valid Sample</button>
+              </div>
+              <div class="form-grid">
+                <div class="col-6">
+                  <label class="field-label" for="ds-import-name">Dataset Name</label>
+                  <input id="ds-import-name" class="input-control" type="text" value="Custom Evaluation Probe" />
+                </div>
+                <div class="col-6">
+                  <label class="field-label" for="ds-import-version">Version Tag</label>
+                  <input id="ds-import-version" class="input-control" type="text" value="2.1-custom" />
+                </div>
+                <div class="col-12">
+                  <label class="field-label" for="ds-import-json">Tasks JSON Array</label>
+                  <textarea id="ds-import-json" class="textarea-control mono" rows="6" placeholder='[{"task_id": "CUSTOM-01", ...}]'></textarea>
+                </div>
+                <div class="col-12" id="ds-admin-wrap" style="display:none;">
+                  <label class="field-label" for="ds-admin-token">Admin Token (required when TRACERECOVER_ADMIN_TOKEN is set)</label>
+                  <input id="ds-admin-token" class="input-control" type="password" autocomplete="off" />
+                </div>
+                <div class="col-12" style="display:flex; gap:10px; justify-content:flex-end;">
+                  <button id="ds-validate-btn" class="btn" type="button">Validate Schema</button>
+                  <button id="ds-import-btn" class="btn btn-primary" type="button">Import Versioned Dataset</button>
+                </div>
+              </div>
+              <div id="ds-import-feedback" style="margin-top:12px;"></div>
+            </div>
+
+            <div class="card">
+              <h3 class="card-title">Dataset Version History</h3>
+              <p class="small muted" style="margin-bottom:12px;">Chronological record of imported custom benchmark versions</p>
+              <div class="table-wrap" id="ds-history-table"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 8. EXECUTION LOGS -->
+        <section id="tab-logs" class="tab-panel stack">
+          <div class="card">
+            <div class="section-header">
+              <div>
+                <h2 style="font-size:18px; margin:0;">Execution Logs (<code>logs/</code>)</h2>
+                <p id="logs-meta" class="small muted">Real JSONL execution traces stored on disk</p>
+              </div>
+              <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                <input id="logs-search" class="select-compact" type="text" placeholder="Search question, trace ID, tool..." style="width:220px;" />
+                <select id="logs-decision" class="select-compact">
+                  <option value="ALL">All Decisions</option>
+                  <option value="ANSWER">ANSWER</option>
+                  <option value="WARN">WARN</option>
+                  <option value="ABSTAIN">ABSTAIN</option>
+                  <option value="NOT_APPLICABLE">Raw / Disabled</option>
+                </select>
+                <button id="logs-refresh-btn" class="btn btn-sm" type="button">Refresh</button>
+              </div>
+            </div>
+            <div class="table-wrap" id="logs-table-wrap"></div>
+          </div>
+        </section>
+
+        <!-- 9. RESEARCH REPORTS -->
+        <section id="tab-reports" class="tab-panel stack">
+          <div class="card">
+            <div class="section-header">
+              <div>
+                <h2 style="font-size:18px; margin:0;">Research Report Export Center</h2>
+                <p class="small muted">Export reproducible experiment bundles in CSV, JSON, Markdown, or formatted publication PDF with vector charts.</p>
+              </div>
+              <select id="reports-run-select" class="select-compact" aria-label="Select run for export"></select>
+            </div>
+
+            <div class="grid-4">
+              <div class="stage-block">
+                <div class="stage-label">Tabular Metrics</div>
+                <strong style="display:block; margin-bottom:6px;">CSV Dataset (.csv)</strong>
+                <p class="small muted" style="margin:0 0 12px;">Raw <code>metrics_summary.csv</code> across all systems and ablations.</p>
+                <button class="btn btn-sm" type="button" onclick="downloadExport('csv')" style="width:100%;">Download CSV</button>
+              </div>
+              <div class="stage-block">
+                <div class="stage-label">Structured Analytics</div>
+                <strong style="display:block; margin-bottom:6px;">Complete Bundle (.json)</strong>
+                <p class="small muted" style="margin:0 0 12px;">Includes reproducibility metadata, category breakdown, and McNemar/CV stats.</p>
+                <button class="btn btn-sm" type="button" onclick="downloadExport('json')" style="width:100%;">Download JSON</button>
+              </div>
+              <div class="stage-block">
+                <div class="stage-label">Plain Text / Paper</div>
+                <strong style="display:block; margin-bottom:6px;">Markdown Report (.md)</strong>
+                <p class="small muted" style="margin:0 0 12px;">Ready-to-paste tables with exact metric denominators and significance values.</p>
+                <button class="btn btn-sm" type="button" onclick="downloadExport('report')" style="width:100%;">Download Markdown</button>
+              </div>
+              <div class="stage-block" style="border-color:var(--accent-border); background:var(--accent-soft);">
+                <div class="stage-label" style="color:var(--accent);">Publication Output</div>
+                <strong style="display:block; margin-bottom:6px;">Formatted Research PDF (.pdf)</strong>
+                <p class="small muted" style="margin:0 0 12px;">Multi-page PDF with bar charts, methodology, configuration, statistics &amp; limitations.</p>
+                <button id="reports-pdf-btn" class="btn btn-sm btn-primary" type="button" onclick="downloadExport('pdf')" style="width:100%;">Download PDF</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="section-header">
+              <div>
+                <h3 class="card-title">Live Report Preview (Derived from Active Run)</h3>
+                <p class="small muted">Markdown draft generated directly by <code>GET /api/export/report</code></p>
+              </div>
+              <button id="reports-refresh-preview-btn" class="btn btn-sm" type="button">Reload Preview</button>
+            </div>
+            <pre id="reports-md-preview" class="json-dump" style="max-height:520px; white-space:pre-wrap;">Loading Markdown report preview...</pre>
+          </div>
+        </section>
+
+        <!-- 10. SETTINGS -->
+        <section id="tab-settings" class="tab-panel stack">
+          <div id="settings-container" class="grid-2">
+            <div class="card">Loading backend configuration and security posture...</div>
+          </div>
+        </section>
+
+        <!-- 11. OPEN-ENDED QUERY WORKSPACE -->
+        <section id="tab-workspace" class="tab-panel stack">
+          <div class="notice notice-info">
+            <div>
+              <strong>Open-Ended Query Workspace:</strong> Submit arbitrary, multi-line, Unicode, or follow-up questions.
+              Dynamic planning validates tools against allowlists/AST schemas and streams all 10 execution stages live.
+            </div>
+            <span id="ws-conv-status" class="pill pill-blue">Session isolated · New Thread</span>
+          </div>
+
+          <div class="grid-2">
+            <!-- Left: Composer & Conversation Context Controls -->
+            <div class="card stack">
+              <div class="section-header" style="margin-bottom:4px;">
+                <div>
+                  <h3 class="card-title">Natural-Language Query &amp; Conversation Context</h3>
+                  <p class="small muted">Suggestion chips only pre-fill the box; any unseen prompt or follow-up is accepted.</p>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                  <button id="ws-new-conv-btn" class="btn btn-sm" type="button">New Conversation</button>
+                  <button id="ws-clear-conv-btn" class="btn btn-sm" type="button">Clear Context</button>
+                  <button id="ws-delete-conv-btn" class="btn btn-sm" type="button">Delete Thread</button>
+                </div>
+              </div>
+
+              <div>
+                <label class="field-label" for="ws-conv-select">Active Conversation Thread</label>
+                <select id="ws-conv-select" class="select-control">
+                  <option value="">Start new conversation on submit</option>
+                </select>
+              </div>
+
+              <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                <button class="btn btn-sm" type="button" onclick="fillWorkspacePrompt('Compute (45 * 18) + 125 and show step verification')">Suggestion: Unseen Math</button>
+                <button class="btn btn-sm" type="button" onclick="fillWorkspacePrompt('Look up support ticket T-401 and calculate (1200 * 1.15)')">Suggestion: Multi-Step API+Calc</button>
+                <button class="btn btn-sm" type="button" onclick="fillWorkspacePrompt('What is an API timeout?')">Suggestion: Follow-Up Start</button>
+                <button class="btn btn-sm" type="button" onclick="fillWorkspacePrompt('How can an AI agent recover from it?')">Suggestion: Follow-Up Turn 2</button>
+              </div>
+
+              <form id="ws-query-form" class="form-grid">
+                <div class="col-12">
+                  <label class="field-label" for="ws-query-input">Query Prompt (multi-line &amp; Unicode supported)</label>
+                  <textarea id="ws-query-input" class="textarea-control" rows="4" placeholder="Ask any question, e.g. multi-step calculations, ticket lookups, research queries, or follow-ups..."></textarea>
+                </div>
+
+                <div class="col-4">
+                  <label class="field-label" for="ws-provider">Execution Provider</label>
+                  <select id="ws-provider" class="select-control">
+                    <option value="local" selected>local (Offline Deterministic)</option>
+                    <option value="gemini">gemini (Live LLM)</option>
+                    <option value="openai">openai (Live LLM)</option>
+                    <option value="anthropic">anthropic (Live LLM)</option>
+                  </select>
+                </div>
+                <div class="col-4">
+                  <label class="field-label" for="ws-search-provider">Search Adapter</label>
+                  <select id="ws-search-provider" class="select-control">
+                    <option value="auto" selected>auto (Wikipedia + DDG / Keyed)</option>
+                    <option value="wikipedia">wikipedia</option>
+                    <option value="duckduckgo">duckduckgo</option>
+                    <option value="tavily">tavily (Requires key)</option>
+                    <option value="serpapi">serpapi (Requires key)</option>
+                    <option value="disabled">disabled</option>
+                  </select>
+                </div>
+                <div class="col-2">
+                  <label class="field-label" for="ws-fault-rate">Fault %</label>
+                  <input id="ws-fault-rate" class="input-control" type="number" min="0" max="100" step="10" value="0" />
+                </div>
+                <div class="col-2">
+                  <label class="field-label" for="ws-seed">Seed</label>
+                  <input id="ws-seed" class="input-control" type="number" min="0" value="42" />
+                </div>
+
+                <div class="col-12 check-group">
+                  <label class="check-chip"><input id="ws-ext-search" type="checkbox" /> Enable External Search</label>
+                  <label class="check-chip"><input id="ws-recovery" type="checkbox" checked /> Recovery</label>
+                  <label class="check-chip"><input id="ws-grounding" type="checkbox" checked /> Evidence Grounding</label>
+                  <label class="check-chip"><input id="ws-uncertainty" type="checkbox" checked /> Uncertainty Policy</label>
+                  <label class="check-chip"><input id="ws-nli" type="checkbox" /> NLI Verifier</label>
+                </div>
+
+                <div class="col-12" style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;">
+                  <div id="ws-provider-note" class="small muted">Selected: offline deterministic local provider (does not fabricate arbitrary open-world knowledge without tools).</div>
+                  <div style="display:flex; gap:8px;">
+                    <button id="ws-cancel-btn" class="btn" type="button" disabled>Cancel Query</button>
+                    <button id="ws-submit-btn" class="btn btn-primary" type="submit">Submit Query</button>
+                  </div>
+                </div>
+              </form>
+
+              <div id="ws-loading-status" style="display:none;" class="notice notice-info"></div>
+              <div id="ws-error"></div>
+            </div>
+
+            <!-- Right: Final Answer, Provenance & Thread History -->
+            <div class="card stack">
+              <div class="section-header" style="margin-bottom:4px;">
+                <div>
+                  <h3 class="card-title">Grounded Response &amp; Knowledge Attribution</h3>
+                  <p class="small muted">Separates tool-grounded facts, external URLs, and model-generated prose</p>
+                </div>
+              </div>
+              <div id="ws-answer-container">
+                <div class="empty-state">Submit an open-ended query to inspect dynamic planning, tool provenance, and answer verification.</div>
+              </div>
+              <div>
+                <h4 style="margin:0 0 8px; font-size:14px;">Conversation History</h4>
+                <div id="ws-thread-history" class="stack">
+                  <div class="empty-state" style="padding:18px;">No messages in this conversation thread yet.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Real-Time 10-Stage Execution Visualization -->
+          <div class="card">
+            <div class="section-header">
+              <div>
+                <h3 class="card-title">Live 10-Stage Execution Timeline</h3>
+                <p class="small muted">Real events streamed during execution (tool arguments, observations, failures, recoveries, committed vs. discarded evidence)</p>
+              </div>
+              <span id="ws-stage-count-badge" class="pill pill-slate">0 events</span>
+            </div>
+            <div id="ws-timeline-stages" class="stack">
+              <div class="empty-state">Real-time 10-stage events will appear here as a query executes.</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 12. UNSEEN QUERY EVALUATION LAB -->
+        <section id="tab-unseen" class="tab-panel stack">
+          <div class="card">
+            <div class="section-header">
+              <div>
+                <h3 class="card-title">Unseen-Query Generalization Lab (13 Categories)</h3>
+                <p class="small muted">Generates versioned unseen benchmarks separate from canonical <code>eval/tasks.json</code> and reports separated population metrics.</p>
+              </div>
+              <button id="unseen-refresh-btn" class="btn btn-sm" type="button">Refresh Metrics</button>
+            </div>
+            <form id="unseen-run-form" class="form-grid">
+              <div class="col-3">
+                <label class="field-label" for="unseen-num-tasks">Task Count</label>
+                <select id="unseen-num-tasks" class="select-control">
+                  <option value="13" selected>13 tasks (1 per category)</option>
+                  <option value="26">26 tasks (2 per category)</option>
+                  <option value="39">39 tasks (3 per category)</option>
+                </select>
+              </div>
+              <div class="col-2">
+                <label class="field-label" for="unseen-seed">Seed</label>
+                <input id="unseen-seed" class="input-control" type="number" min="0" value="101" />
+              </div>
+              <div class="col-3">
+                <label class="field-label" for="unseen-provider">Provider</label>
+                <select id="unseen-provider" class="select-control">
+                  <option value="local" selected>local (Offline Deterministic)</option>
+                  <option value="gemini">gemini</option>
+                  <option value="openai">openai</option>
+                  <option value="anthropic">anthropic</option>
+                </select>
+              </div>
+              <div class="col-2">
+                <label class="field-label" for="unseen-fault-rate">Fault %</label>
+                <input id="unseen-fault-rate" class="input-control" type="number" min="0" max="100" step="10" value="0" />
+              </div>
+              <div class="col-2">
+                <label class="check-chip" style="width:100%; justify-content:center;"><input id="unseen-ext-search" type="checkbox" /> Ext Search</label>
+              </div>
+              <div class="col-12" id="unseen-admin-wrap" style="display:none;">
+                <label class="field-label" for="unseen-admin-token">Admin Token (required when TRACERECOVER_ADMIN_TOKEN is set)</label>
+                <input id="unseen-admin-token" class="input-control" type="password" autocomplete="off" />
+              </div>
+              <div class="col-12" style="display:flex; justify-content:flex-end;">
+                <button id="unseen-run-btn" class="btn btn-primary" type="submit">Generate &amp; Run Unseen Evaluation</button>
+              </div>
+            </form>
+            <div id="unseen-run-feedback" style="margin-top:12px;"></div>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">Population-Separated Generalization Overview</h3>
+            <p class="small muted" style="margin-bottom:12px;">Canonical, unseen generated, user-submitted, external-search, and live-provider populations are never pooled together.</p>
+            <div class="grid-3" id="unseen-populations-grid"></div>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">Latest Unseen Run Reliability Metrics</h3>
+            <p id="unseen-active-meta" class="small muted" style="margin-bottom:12px;">Select or run an unseen evaluation benchmark</p>
+            <div class="grid-4" id="unseen-metrics-summary"></div>
+            <div class="table-wrap" id="unseen-category-table" style="margin-top:14px;"></div>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">Unseen Run History &amp; Per-Task Evaluation Outcomes</h3>
+            <div class="table-wrap" id="unseen-history-table" style="margin-bottom:14px;"></div>
+            <div class="table-wrap" id="unseen-tasks-table"></div>
+          </div>
+        </section>
+
+        <!-- 13. MULTI-PROVIDER COMPARISON -->
+        <section id="tab-compare" class="tab-panel stack">
+          <div class="card">
+            <div class="section-header">
+              <div>
+                <h3 class="card-title">Multi-Provider Reliability Comparison</h3>
+                <p class="small muted">Compare local deterministic mode against configured live LLM providers on the identical question without silent fallbacks.</p>
+              </div>
+              <button id="cmp-refresh-btn" class="btn btn-sm" type="button">Refresh History</button>
+            </div>
+            <form id="cmp-form" class="form-grid">
+              <div class="col-12">
+                <label class="field-label" for="cmp-question">Shared Evaluation Question</label>
+                <textarea id="cmp-question" class="textarea-control" rows="2">Look up enterprise SLA ticket T-401 and calculate (1200 * 1.15)</textarea>
+              </div>
+              <div class="col-8 check-group">
+                <label class="check-chip"><input type="checkbox" name="cmp-prov" value="local" checked /> local</label>
+                <label class="check-chip"><input type="checkbox" name="cmp-prov" value="gemini" checked /> gemini</label>
+                <label class="check-chip"><input type="checkbox" name="cmp-prov" value="openai" checked /> openai</label>
+                <label class="check-chip"><input type="checkbox" name="cmp-prov" value="anthropic" checked /> anthropic</label>
+                <label class="check-chip"><input id="cmp-ext-search" type="checkbox" /> Enable External Search</label>
+              </div>
+              <div class="col-2">
+                <label class="field-label" for="cmp-fault-rate">Fault %</label>
+                <input id="cmp-fault-rate" class="input-control" type="number" min="0" max="100" step="10" value="0" />
+              </div>
+              <div class="col-2">
+                <button id="cmp-run-btn" class="btn btn-primary" type="submit" style="width:100%;">Compare Providers</button>
+              </div>
+            </form>
+            <div id="cmp-feedback" style="margin-top:12px;"></div>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">Side-by-Side Provider Outcomes</h3>
+            <div id="cmp-results-wrap" class="stack" style="margin-top:12px;">
+              <div class="empty-state">Run a comparison above to compare latency, tokens, cost, tools, evidence support, and abstention across providers.</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">Recent Provider Comparisons</h3>
+            <div class="table-wrap" id="cmp-history-table" style="margin-top:10px;"></div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const appState = {
+      health: null,
+      settings: null,
+      experiments: [],
+      selectedRunId: "",
+      analytics: null,
+      datasetsCatalog: null,
+      datasetPreview: null,
+      presets: [],
+      scenarioMode: "standard",
+      traces: [],
+      selectedTraceId: null,
+      replaySources: null,
+      replayFrames: [],
+      replayIndex: 0,
+      replayTimer: null,
+      dsTasksCache: [],
+      dsInspectId: "eval_tasks",
+      sessionId: "sess-" + Math.random().toString(36).slice(2, 10),
+      activeConvId: null,
+      activeQueryId: null,
+      activeAbort: null,
+      conversations: [],
+      unseenRuns: null,
+      unseenDetail: null,
+      compareHistory: [],
+    };
+
+    const NAV_TITLES = {
+      overview: "Overview",
+      experiments: "Experiments",
+      analytics: "Results & Analytics",
+      demo: "Live Demo",
+      replay: "Execution Replay",
+      evidence: "Evidence Inspector",
+      datasets: "Datasets",
+      logs: "Execution Logs",
+      reports: "Research Reports",
+      settings: "Settings",
+      workspace: "Open-Ended Query Workspace",
+      unseen: "Unseen-Query Evaluation Lab",
+      compare: "Multi-Provider Comparison",
+    };
+
+    /* -------------------------------------------------------------------
+       Utilities
+       ------------------------------------------------------------------- */
+    function esc(v) {
+      return String(v ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function pct(v, digits = 1) {
+      if (v === null || v === undefined || Number.isNaN(Number(v))) return "N/A";
+      return (Number(v) * 100).toFixed(digits) + "%";
+    }
+
+    function numFmt(v, digits = 3) {
+      if (v === null || v === undefined || Number.isNaN(Number(v))) return "N/A";
+      return Number(v).toFixed(digits);
+    }
+
+    function msFmt(sec) {
+      if (sec === null || sec === undefined || Number.isNaN(Number(sec))) return "N/A";
+      const ms = Number(sec) * 1000;
+      return ms < 10 ? ms.toFixed(2) + " ms" : ms.toFixed(1) + " ms";
+    }
+
+    function pValFmt(p) {
+      if (p === null || p === undefined || Number.isNaN(Number(p))) return "N/A";
+      const n = Number(p);
+      return n < 0.0001 ? n.toExponential(2) : n.toFixed(4);
+    }
+
+    function decisionPill(decision) {
+      const d = String(decision || "NOT_APPLICABLE").toUpperCase();
+      if (d === "ANSWER") return '<span class="pill pill-green">ANSWER</span>';
+      if (d === "WARN") return '<span class="pill pill-amber">WARN</span>';
+      if (d === "ABSTAIN") return '<span class="pill pill-red">ABSTAIN</span>';
+      return '<span class="pill pill-slate">RAW / DISABLED</span>';
+    }
+
+    function valStr(v) {
+      if (v === null || v === undefined) return "null";
+      if (typeof v === "object") return JSON.stringify(v, null, 2);
+      return String(v);
+    }
+
+    async function apiFetch(url, options = {}) {
+      const res = await fetch(url, options);
+      const text = await res.text();
+      let data = null;
+      try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+      if (!res.ok) {
+        const msg = typeof data === "object" && data ? (data.detail?.message || JSON.stringify(data.detail?.errors || data.detail)) : ("HTTP " + res.status);
+        throw new Error(msg || "Request failed with HTTP " + res.status);
+      }
+      return data;
+    }
+
+    /* -------------------------------------------------------------------
+       Navigation & Sidebar Drawer
+       ------------------------------------------------------------------- */
+    function closeMobileMenu() {
+      document.getElementById("app-sidebar").classList.remove("open");
+      document.getElementById("sidebar-backdrop").classList.remove("open");
+    }
+
+    document.getElementById("mobile-menu-btn").addEventListener("click", () => {
+      document.getElementById("app-sidebar").classList.toggle("open");
+      document.getElementById("sidebar-backdrop").classList.toggle("open");
+    });
+    document.getElementById("sidebar-backdrop").addEventListener("click", closeMobileMenu);
+
+    window.switchTab = function (navId) {
+      document.querySelectorAll(".nav-item").forEach((b) => b.classList.toggle("active", b.dataset.nav === navId));
+      document.querySelectorAll(".tab-panel").forEach((p) => p.classList.toggle("active", p.id === "tab-" + navId));
+      document.getElementById("topbar-title").textContent = NAV_TITLES[navId] || "TraceRecover";
+      closeMobileMenu();
+      if (navId === "logs" || navId === "evidence") loadTraces();
+      if (navId === "replay" && !appState.replaySources) loadReplaySources();
+      if (navId === "reports") loadReportPreview();
+      if (navId === "datasets") loadDatasetTasks();
+      if (navId === "workspace") loadWorkspaceConversations();
+      if (navId === "unseen") loadUnseenDashboard();
+      if (navId === "compare") loadCompareHistory();
+    };
+
+    document.querySelectorAll(".nav-item").forEach((btn) => {
+      btn.addEventListener("click", () => window.switchTab(btn.dataset.nav));
+    });
+
+    window.downloadExport = function (kind) {
+      const runParam = appState.selectedRunId ? "?run_id=" + encodeURIComponent(appState.selectedRunId) : "";
+      window.location.href = "/api/export/" + kind + runParam;
+    };
+    document.getElementById("export-csv-btn").addEventListener("click", () => window.downloadExport("csv"));
+    document.getElementById("export-json-btn").addEventListener("click", () => window.downloadExport("json"));
+    document.getElementById("export-pdf-btn").addEventListener("click", () => window.downloadExport("pdf"));
+
+    async function selectRun(runId) {
+      appState.selectedRunId = runId;
+      ["global-run-select", "analytics-run-filter", "reports-run-select"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.value = runId;
+      });
+      appState.analytics = await apiFetch("/api/analytics?run_id=" + encodeURIComponent(runId));
+      renderOverview();
+      renderExperiments();
+      renderAnalytics();
+      if (document.getElementById("tab-reports").classList.contains("active")) loadReportPreview();
+    }
+
+    ["global-run-select", "analytics-run-filter", "reports-run-select"].forEach((id) => {
+      document.getElementById(id).addEventListener("change", (e) => {
+        if (e.target.value) selectRun(e.target.value);
+      });
+    });
+
+    /* -------------------------------------------------------------------
+       Dynamic SVG Chart Helper
+       ------------------------------------------------------------------- */
+    function renderGroupedBarSvg(groups, { height = 225, legend = [] } = {}) {
+      if (!groups || !groups.length) return '<div class="empty-state">No numeric data available for this selection.</div>';
+      const w = 580, padL = 44, padR = 16, padT = 28, padB = 46;
+      const chartW = w - padL - padR, chartH = height - padT - padB;
+      const groupW = chartW / groups.length;
+      let svg = `<svg viewBox="0 0 ${w} ${height}" width="100%" style="display:block; max-height:${height}px;" role="img" aria-label="Benchmark chart">`;
+      [0, 0.25, 0.5, 0.75, 1.0].forEach((tick) => {
+        const y = padT + chartH * (1 - tick);
+        svg += `<line x1="${padL}" y1="${y}" x2="${w - padR}" y2="${y}" stroke="#E2E8F0" stroke-width="1" />`;
+        svg += `<text x="${padL - 8}" y="${y + 4}" text-anchor="end" fill="#64748B" font-size="11">${Math.round(tick * 100)}%</text>`;
+      });
+      groups.forEach((g, gi) => {
+        const bars = g.bars || [];
+        const bw = Math.min(28, (groupW * 0.72) / Math.max(1, bars.length));
+        const totalBarsW = bw * bars.length + Math.max(0, bars.length - 1) * 4;
+        const startX = padL + gi * groupW + (groupW - totalBarsW) / 2;
+        bars.forEach((b, bi) => {
+          const val = Math.max(0, Math.min(1, Number(b.value || 0)));
+          const bh = val * chartH;
+          const x = startX + bi * (bw + 4);
+          const y = padT + chartH - bh;
+          svg += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="3" fill="${b.color}" />`;
+          svg += `<text x="${(x + bw / 2).toFixed(1)}" y="${(y - 5).toFixed(1)}" text-anchor="middle" fill="#334155" font-size="10" font-weight="600">${Math.round(val * 100)}%</text>`;
+        });
+        const cx = padL + gi * groupW + groupW / 2;
+        svg += `<text x="${cx.toFixed(1)}" y="${height - 20}" text-anchor="middle" fill="#475569" font-size="11" font-weight="600">${esc(g.label)}</text>`;
+      });
+      let lx = padL;
+      legend.forEach((item) => {
+        svg += `<rect x="${lx}" y="6" width="10" height="10" rx="2" fill="${item.color}" />`;
+        svg += `<text x="${lx + 14}" y="15" fill="#475569" font-size="11" font-weight="600">${esc(item.label)}</text>`;
+        lx += Math.max(92, item.label.length * 7.2 + 26);
+      });
+      return svg + "</svg>";
+    }
+
+    /* -------------------------------------------------------------------
+       1. OVERVIEW
+       ------------------------------------------------------------------- */
+    function renderOverview() {
+      const h = appState.health, a = appState.analytics;
+      if (!h || !a) return;
+      const comps = a.comparisons || [], rows = a.metrics_summary || [];
+      const repro = a.reproducibility || {}, ctx = a.evaluation_context || {};
+      const c40 = comps.find((c) => Number(c.failure_rate_percent) === 40) || comps[comps.length - 1];
+      const bSuccTot = comps.reduce((s, c) => s + (c.baseline?.task_success?.successes || 0), 0);
+      const bDenTot = comps.reduce((s, c) => s + (c.baseline?.task_success?.denominator || 0), 0);
+      const tSuccTot = comps.reduce((s, c) => s + (c.tracerecover?.task_success?.successes || 0), 0);
+      const tDenTot = comps.reduce((s, c) => s + (c.tracerecover?.task_success?.denominator || 0), 0);
+      const tRecTot = comps.reduce((s, c) => s + (c.tracerecover?.recovery?.successful_recoveries || 0), 0);
+      const tDetTot = comps.reduce((s, c) => s + (c.tracerecover?.recovery?.detected_failures || 0), 0);
+      const tHallTot = comps.reduce((s, c) => s + (c.tracerecover?.hallucination?.hallucinating_answers || 0), 0);
+      const tClaimTot = comps.reduce((s, c) => s + (c.tracerecover?.hallucination?.denominator || 0), 0);
+      const bHallTot = comps.reduce((s, c) => s + (c.baseline?.hallucination?.hallucinating_answers || 0), 0);
+      const bClaimTot = comps.reduce((s, c) => s + (c.baseline?.hallucination?.denominator || 0), 0);
+      const trRows = rows.filter((r) => r.system === "tracerecover");
+      const blRows = rows.filter((r) => r.system === "baseline");
+      const trAvgLat = trRows.length ? trRows.reduce((s, r) => s + Number(r.average_latency_seconds || 0), 0) / trRows.length : null;
+      const blAvgLat = blRows.length ? blRows.reduce((s, r) => s + Number(r.average_latency_seconds || 0), 0) / blRows.length : null;
+
+      document.getElementById("overview-scope-banner").innerHTML = `
+        <div>
+          <strong>Evaluation Scope:</strong> ${esc(ctx.scope_note || "")}
+          <div class="small" style="margin-top:3px;">Run: <code class="mono">${esc(a.run_id)}</code> · Live LLM Study: <strong>Not Run (Offline Mode)</strong> · Real-World APIs: <strong>Future Work</strong></div>
+        </div>
+        <span class="pill pill-blue num">${esc(repro.task_count)} tasks × ${(repro.failure_rates_percent || []).length} rates · Seed ${esc(repro.random_seed)}</span>
+      `;
+
+      const kpis = [
+        { label: "System Health & Core Tests", value: h.status === "ok" ? "Operational" : "Degraded", sub: `${h.test_suite?.label || ""} · Python ${h.python_version}`, color: "var(--green)" },
+        { label: "Benchmark Tasks & Runs", value: `${repro.task_count ?? 0} Tasks`, sub: `${tDenTot} paired runs · ${appState.experiments.length} saved runs` },
+        { label: "Baseline Success (Pooled)", value: pct(bDenTot ? bSuccTot / bDenTot : null, 1), sub: `${bSuccTot}/${bDenTot} passed · @40%: ${pct(c40?.baseline?.task_success?.rate, 1)} (${c40?.baseline?.task_success?.successes}/${c40?.baseline?.task_success?.denominator})` },
+        { label: "TraceRecover Success (Pooled)", value: pct(tDenTot ? tSuccTot / tDenTot : null, 1), sub: `${tSuccTot}/${tDenTot} passed · @40%: ${pct(c40?.tracerecover?.task_success?.rate, 1)} (${c40?.tracerecover?.task_success?.successes}/${c40?.tracerecover?.task_success?.denominator})`, color: "var(--accent)" },
+        { label: "Recovery Rate (Validated)", value: pct(tDetTot ? tRecTot / tDetTot : null, 1), sub: `${tRecTot}/${tDetTot} failures healed · Baseline: 0.0%` },
+        { label: "Hallucination (TR vs. BL)", value: `${pct(tClaimTot ? tHallTot / tClaimTot : null, 1)} vs ${pct(bClaimTot ? bHallTot / bClaimTot : null, 1)}`, sub: `TR: ${tHallTot}/${tClaimTot} · BL: ${bHallTot}/${bClaimTot}`, color: "var(--green)" },
+        { label: "Avg Execution Latency", value: msFmt(trAvgLat), sub: `Baseline avg: ${msFmt(blAvgLat)}` },
+        { label: "Persisted Logs", value: String(h.trace_log_count ?? 0), sub: `Live traces in logs/ · 300 eval traces` },
+      ];
+      document.getElementById("overview-kpis").innerHTML = kpis.map((k) => `
+        <div class="kpi-card">
+          <div class="kpi-label">${esc(k.label)}</div>
+          <div class="kpi-value" ${k.color ? `style="color:${k.color};"` : ""}>${esc(k.value)}</div>
+          <div class="kpi-sub">${esc(k.sub)}</div>
+        </div>
+      `).join("");
+
+      document.getElementById("overview-comparison-chart").innerHTML = renderGroupedBarSvg(
+        comps.map((c) => ({
+          label: `${c.failure_rate_percent}% Faults`,
+          bars: [
+            { value: c.baseline?.task_success?.rate || 0, color: "#94A3B8" },
+            { value: c.tracerecover?.task_success?.rate || 0, color: "#2563EB" },
+            { value: c.baseline?.hallucination?.rate || 0, color: "#E11D48" },
+            { value: c.tracerecover?.hallucination?.rate || 0, color: "#059669" },
+          ],
+        })),
+        {
+          legend: [
+            { label: "Baseline Success", color: "#94A3B8" },
+            { label: "TR Success", color: "#2563EB" },
+            { label: "BL Halluc.", color: "#E11D48" },
+            { label: "TR Halluc.", color: "#059669" },
+          ],
+        }
+      );
+
+      document.getElementById("overview-regime-table").innerHTML = `
+        <table>
+          <thead><tr><th>Rate</th><th>Baseline Success</th><th>TraceRecover Success</th><th>Recovery</th><th>TR Halluc.</th></tr></thead>
+          <tbody>
+            ${comps.map((c) => `
+              <tr>
+                <td class="num"><strong>${c.failure_rate_percent}%</strong></td>
+                <td class="num">${pct(c.baseline?.task_success?.rate, 1)} (${c.baseline?.task_success?.successes}/${c.baseline?.task_success?.denominator})</td>
+                <td class="num" style="color:var(--accent); font-weight:700;">${pct(c.tracerecover?.task_success?.rate, 1)} (${c.tracerecover?.task_success?.successes}/${c.tracerecover?.task_success?.denominator})</td>
+                <td class="num">${c.tracerecover?.recovery?.detected_failures > 0 ? `${pct(c.tracerecover.recovery.rate, 1)} (${c.tracerecover.recovery.successful_recoveries}/${c.tracerecover.recovery.detected_failures})` : "—"}</td>
+                <td class="num"><span class="pill pill-green">${pct(c.tracerecover?.hallucination?.rate, 1)} (${c.tracerecover?.hallucination?.hallucinating_answers}/${c.tracerecover?.hallucination?.denominator})</span></td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+
+      const dsList = appState.datasetsCatalog?.datasets || [];
+      document.getElementById("overview-datasets-grid").innerHTML = dsList.slice(0, 4).map((d) => `
+        <div class="stage-block">
+          <div style="display:flex; justify-content:space-between; gap:6px; margin-bottom:4px;">
+            <strong style="font-size:13.5px;">${esc(d.name)}</strong>
+            <span class="pill pill-green">v${esc(d.version)}</span>
+          </div>
+          <div class="num" style="font-size:19px; font-weight:700;">${Number(d.record_count).toLocaleString()} <span class="small muted">${esc(d.record_unit)}</span></div>
+          <div class="small muted mono" style="margin-top:4px;">${esc(d.relative_path)} (${d.size_kb} KB)</div>
+        </div>
+      `).join("");
+    }
+
+    /* -------------------------------------------------------------------
+       2. EXPERIMENTS
+       ------------------------------------------------------------------- */
+    function renderExperiments() {
+      const h = appState.health, exps = appState.experiments || [], a = appState.analytics;
+      const authEnabled = Boolean(h?.security?.admin_auth_enabled);
+      document.getElementById("exp-admin-wrap").style.display = authEnabled ? "block" : "none";
+      const badge = document.getElementById("exp-auth-badge");
+      badge.className = authEnabled ? "pill pill-blue" : "pill pill-slate";
+      badge.textContent = authEnabled ? "Admin Token Required" : "Local Open Mode";
+      document.getElementById("exp-history-count").textContent = String(exps.length);
+
+      document.getElementById("exp-history-table").innerHTML = exps.length ? `
+        <table>
+          <thead><tr><th>Run ID</th><th>Tasks</th><th>Seed</th><th>Rates</th><th>BL (Max Fault)</th><th>TR (Max Fault)</th><th>TR Halluc.</th><th>Action</th></tr></thead>
+          <tbody>
+            ${exps.map((e) => {
+              const isSel = e.run_id === appState.selectedRunId;
+              const hMax = e.headline["40%"] || e.headline[Object.keys(e.headline).slice(-1)[0]] || {};
+              return `
+                <tr class="${isSel ? "selected-row" : ""}">
+                  <td><div class="mono" style="font-weight:700; color:var(--accent);">${esc(e.run_id)}</div><div class="small muted">${e.is_active_flagship ? "Flagship 100-Task" : "Custom Run"} · ${esc(e.provider)}</div></td>
+                  <td class="num">${e.task_count} (${e.total_paired_runs} runs)</td>
+                  <td class="num">${esc(e.random_seed)}</td>
+                  <td class="num">${(e.failure_rates_percent || []).join("%, ")}%</td>
+                  <td class="num">${hMax.baseline_success_rate !== undefined ? `${pct(hMax.baseline_success_rate, 1)} (${hMax.baseline_successes}/${hMax.task_count})` : "—"}</td>
+                  <td class="num" style="color:var(--accent); font-weight:700;">${hMax.tracerecover_success_rate !== undefined ? `${pct(hMax.tracerecover_success_rate, 1)} (${hMax.tracerecover_successes}/${hMax.task_count})` : "—"}</td>
+                  <td class="num">${hMax.tracerecover_hallucination_rate !== undefined ? pct(hMax.tracerecover_hallucination_rate, 1) : "—"}</td>
+                  <td><button class="btn btn-sm ${isSel ? "btn-primary" : ""}" type="button" onclick="inspectExperiment('${esc(e.run_id)}')">${isSel ? "Active" : "Inspect"}</button></td>
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      ` : '<div class="empty-state">No benchmark experiments saved yet.</div>';
+
+      if (a) {
+        const rep = a.reproducibility || {};
+        document.getElementById("exp-repro-details").innerHTML = `
+          <div class="table-wrap"><table><tbody>
+            <tr><th>Run ID</th><td class="mono">${esc(a.run_id)}</td></tr>
+            <tr><th>Dataset Version</th><td>v${esc(rep.dataset_version)} (${esc(rep.task_count)} tasks)</td></tr>
+            <tr><th>Dataset SHA-256</th><td class="mono" style="word-break:break-all;">${esc(rep.dataset_sha256)}</td></tr>
+            <tr><th>Seed Formula</th><td class="mono">base=${esc(rep.random_seed)}; task=base+idx*1009; recovery=+1000003</td></tr>
+            <tr><th>Execution Scope</th><td>${esc(a.evaluation_context?.provider_mode)}</td></tr>
+          </tbody></table></div>
+        `;
+        const ablRows = (a.metrics_summary || []).filter((r) => r.system.startsWith("without_") || r.system === "tracerecover");
+        document.getElementById("exp-ablation-table").innerHTML = `
+          <table><thead><tr><th>System</th><th>Fault %</th><th>Success (n)</th><th>Hallucination</th><th>Abst R / P</th></tr></thead>
+          <tbody>${ablRows.map((r) => `
+            <tr class="${r.system === "tracerecover" ? "highlight-row" : ""}">
+              <td>${esc(r.system)}</td><td class="num">${r.failure_rate_percent}%</td>
+              <td class="num">${pct(r.task_success_rate, 1)} (${r.task_successes}/${r.task_count})</td>
+              <td class="num">${pct(r.hallucination_rate, 1)} (${r.hallucinating_answers}/${r.answers_with_factual_claims})</td>
+              <td class="num">${pct(r.abstention_recall, 0)} / ${pct(r.abstention_precision, 0)}</td>
+            </tr>`).join("")}
+          </tbody></table>
+        `;
+      }
+    }
+
+    window.inspectExperiment = async function (runId) {
+      await selectRun(runId);
+      window.switchTab("analytics");
+    };
+
+    document.getElementById("refresh-experiments-btn").addEventListener("click", async () => {
+      const res = await apiFetch("/api/experiments");
+      appState.experiments = res.experiments || [];
+      populateRunSelectors();
+      renderExperiments();
+    });
+
+    document.getElementById("run-experiment-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const rates = Array.from(document.querySelectorAll('input[name="exp-rate"]:checked')).map((el) => Number(el.value));
+      const fb = document.getElementById("exp-run-feedback");
+      if (!rates.length) { fb.innerHTML = '<div class="notice notice-error">Select at least one fault rate.</div>'; return; }
+      const btn = document.getElementById("run-experiment-btn");
+      btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Running...';
+      fb.innerHTML = '<div class="notice notice-info">Running matched Baseline, TraceRecover, and 3 ablations...</div>';
+      const headers = { "Content-Type": "application/json" };
+      const tok = document.getElementById("exp-admin-token").value.trim();
+      if (tok) headers["Authorization"] = "Bearer " + tok;
+      try {
+        const res = await apiFetch("/api/experiments/run", {
+          method: "POST", headers,
+          body: JSON.stringify({
+            failure_rates: rates,
+            num_tasks: Number(document.getElementById("exp-num-tasks").value),
+            seed: Number(document.getElementById("exp-seed").value),
+            answer_threshold: Number(document.getElementById("exp-ans-thresh").value),
+            abstain_threshold: Number(document.getElementById("exp-abs-thresh").value),
+            run_statistical_validation: document.getElementById("exp-run-stat").checked,
+          }),
+        });
+        fb.innerHTML = `<div class="notice notice-success">Completed run <strong>${esc(res.run_id)}</strong> in ${res.elapsed_seconds}s.</div>`;
+        const expRes = await apiFetch("/api/experiments");
+        appState.experiments = expRes.experiments || [];
+        populateRunSelectors();
+        await selectRun(res.run_id);
+      } catch (err) {
+        fb.innerHTML = `<div class="notice notice-error">${esc(err.message)}</div>`;
+      } finally {
+        btn.disabled = false; btn.textContent = "Run Benchmark Experiment";
+      }
+    });
+
+    /* -------------------------------------------------------------------
+       3. RESULTS & ANALYTICS
+       ------------------------------------------------------------------- */
+    function renderAnalytics() {
+      const a = appState.analytics;
+      if (!a) return;
+      const rateFilter = document.getElementById("analytics-rate-filter").value;
+      const catSelect = document.getElementById("analytics-cat-filter");
+      const allCats = [...new Set((a.category_breakdown || []).map((c) => c.category))].sort();
+      const prevCat = catSelect.value || "all";
+      catSelect.innerHTML = '<option value="all">All Task Categories</option>' + allCats.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+      catSelect.value = allCats.includes(prevCat) ? prevCat : "all";
+      const catFilter = catSelect.value;
+
+      const best = a.best_configuration || {}, ws = best.winner_summary || {};
+      document.getElementById("analytics-best-config").innerHTML = best.winner ? `
+        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px;">
+          <div>
+            <div class="small muted" style="font-weight:700; text-transform:uppercase;">Best-Performing Configuration (Pre-Specified Criterion)</div>
+            <h3 style="margin:3px 0; font-size:19px; color:var(--accent);">${esc(best.winner)}</h3>
+            <p class="small muted" style="margin:0;">${esc(best.criteria)}</p>
+          </div>
+          <div style="display:flex; flex-wrap:wrap; gap:8px;">
+            <span class="pill pill-green num">Hallucination: ${pct(ws.pooled_hallucination_rate, 1)} (${ws.pooled_hallucinating_answers}/${ws.pooled_claim_bearing_answers})</span>
+            <span class="pill pill-blue num">Success: ${pct(ws.pooled_task_success_rate, 1)} (${ws.pooled_task_successes}/${ws.evaluated_runs})</span>
+          </div>
+        </div>
+      ` : '<div class="empty-state">No best configuration computed.</div>';
+
+      const rows = a.metrics_summary || [];
+      const rates = [...new Set(rows.map((r) => Number(r.failure_rate_percent)))].sort((x, y) => x - y);
+      const visRates = rateFilter === "all" ? rates : rates.filter((r) => r === Number(rateFilter));
+
+      document.getElementById("analytics-svg-success").innerHTML = renderGroupedBarSvg(
+        visRates.map((rate) => {
+          const f = (s) => rows.find((r) => r.system === s && Number(r.failure_rate_percent) === rate);
+          return {
+            label: `${rate}% Faults`,
+            bars: [
+              { value: f("baseline")?.task_success_rate || 0, color: "#94A3B8" },
+              { value: f("tracerecover")?.task_success_rate || 0, color: "#2563EB" },
+              { value: f("without_grounding")?.task_success_rate || 0, color: "#F59E0B" },
+              { value: f("without_uncertainty")?.task_success_rate || 0, color: "#8B5CF6" },
+              { value: f("without_localization")?.task_success_rate || 0, color: "#E11D48" },
+            ],
+          };
+        }),
+        { legend: [
+          { label: "Baseline", color: "#94A3B8" },
+          { label: "TraceRecover", color: "#2563EB" },
+          { label: "No Grounding", color: "#F59E0B" },
+          { label: "No Uncertainty", color: "#8B5CF6" },
+          { label: "No Localization", color: "#E11D48" },
+        ] }
+      );
+
+      const catRowsAll = a.category_breakdown || [];
+      const chartRate = rateFilter === "all" ? (visRates[visRates.length - 1] ?? 0) : Number(rateFilter);
+      const catChartItems = catRowsAll.filter((c) => Number(c.failure_rate_percent) === chartRate && (catFilter === "all" || c.category === catFilter));
+      document.getElementById("analytics-svg-category").innerHTML = renderGroupedBarSvg(
+        catChartItems.map((c) => ({
+          label: c.category.replace(/_/g, " ").replace("abstention", "abst.").replace("aggregation", "agg."),
+          bars: [
+            { value: c.baseline_success_rate || 0, color: "#94A3B8" },
+            { value: c.tracerecover_success_rate || 0, color: "#2563EB" },
+          ],
+        })),
+        { legend: [
+          { label: `Baseline @ ${chartRate}%`, color: "#94A3B8" },
+          { label: `TraceRecover @ ${chartRate}%`, color: "#2563EB" },
+        ] }
+      );
+
+      const filteredMetricRows = rows.filter((r) => rateFilter === "all" || Number(r.failure_rate_percent) === Number(rateFilter));
+      const statConds = a.statistical_validation?.conditions || [];
+      const getBrier = (sysName, rv) => {
+        const sc = statConds.find((c) => Number(c.failure_rate_percent) === Number(rv));
+        return sc && sc[sysName] ? (sc[sysName].brier_score?.brier_score ?? null) : null;
+      };
+      document.getElementById("analytics-metrics-table").innerHTML = `
+        <table><thead><tr><th>System</th><th>Fault %</th><th>Task Success (95% CI)</th><th>Recovery</th><th>Hallucination</th><th>Unsup Claim %</th><th>Evid Cov</th><th>Abst P / R</th><th>ECE / Brier</th><th>Latency</th></tr></thead>
+        <tbody>${filteredMetricRows.map((r) => `
+          <tr class="${r.system === "tracerecover" ? "highlight-row" : ""}">
+            <td>${esc(r.system)}</td><td class="num">${r.failure_rate_percent}%</td>
+            <td class="num">${pct(r.task_success_rate, 1)} (${r.task_successes}/${r.task_count}) <div class="small muted">[${numFmt(r.task_success_ci95_lower, 3)}, ${numFmt(r.task_success_ci95_upper, 3)}]</div></td>
+            <td class="num">${r.detected_failures > 0 ? `${pct(r.recovery_rate, 1)} (${r.successful_recoveries}/${r.detected_failures})` : "—"}</td>
+            <td class="num">${pct(r.hallucination_rate, 1)} (${r.hallucinating_answers}/${r.answers_with_factual_claims})</td>
+            <td class="num">${pct(r.unsupported_claim_rate, 1)}</td><td class="num">${pct(r.evidence_coverage, 1)}</td>
+            <td class="num">${pct(r.abstention_precision, 0)} / ${pct(r.abstention_recall, 0)}</td>
+            <td class="num">${numFmt(r.ece, 3)} / ${numFmt(getBrier(r.system, r.failure_rate_percent), 3)}</td>
+            <td class="num">${msFmt(r.average_latency_seconds)}</td>
+          </tr>`).join("")}
+        </tbody></table>
+      `;
+
+      const filteredCats = catRowsAll.filter((c) => (rateFilter === "all" || Number(c.failure_rate_percent) === Number(rateFilter)) && (catFilter === "all" || c.category === catFilter));
+      document.getElementById("analytics-category-table").innerHTML = filteredCats.length ? `
+        <table><thead><tr><th>Fault %</th><th>Category</th><th>Tasks</th><th>BL Success</th><th>TR Success</th><th>Gain</th><th>TR Halluc.</th><th>TR Answer Cov.</th></tr></thead>
+        <tbody>${filteredCats.map((c) => `
+          <tr>
+            <td class="num">${c.failure_rate_percent}%</td><td class="mono">${esc(c.category)}</td><td class="num">${c.task_count}</td>
+            <td class="num">${pct(c.baseline_success_rate, 1)} (${c.baseline_successes}/${c.task_count})</td>
+            <td class="num" style="color:var(--accent); font-weight:700;">${pct(c.tracerecover_success_rate, 1)} (${c.tracerecover_successes}/${c.task_count})</td>
+            <td class="num">${c.delta_success_rate !== null ? (c.delta_success_rate >= 0 ? "+" : "") + (c.delta_success_rate * 100).toFixed(1) + " pp" : "—"}</td>
+            <td class="num">${c.tracerecover_hallucination_rate !== null ? `${pct(c.tracerecover_hallucination_rate, 1)} (${c.tracerecover_hallucinations}/${c.tracerecover_hallucination_denominator})` : `Abstained (0/${c.task_count})`}</td>
+            <td class="num">${pct(c.tracerecover_answer_coverage, 1)} (${c.tracerecover_answered_count}/${c.task_count})</td>
+          </tr>`).join("")}
+        </tbody></table>
+      ` : '<div class="empty-state">No matching category rows.</div>';
+
+      const stat = a.statistical_validation;
+      if (!stat) {
+        document.getElementById("analytics-stat-section").innerHTML = '<div class="empty-state">No statistical validation report for this run.</div>';
+      } else {
+        const conds = stat.conditions || [], pooled = stat.pooled_across_all_rates || {}, cv = stat.five_fold_cross_fitted_thresholds || {}, oof = cv.out_of_fold_aggregate || {};
+        const oofOk = oof.selective_accuracy_strict !== null && oof.non_abstained_count ? Math.round(oof.selective_accuracy_strict * oof.non_abstained_count) : 0;
+        document.getElementById("analytics-stat-section").innerHTML = `
+          <div class="table-wrap" style="margin-bottom:12px;"><table>
+            <thead><tr><th>Regime</th><th>Baseline (95% CI)</th><th>TraceRecover (95% CI)</th><th>McNemar p</th><th>n11/n10/n01/n00</th><th>TR SelAcc</th><th>TR Brier / ECE</th></tr></thead>
+            <tbody>
+              ${conds.map((c) => {
+                const mc = c.paired_mcnemar_test, ct = mc.contingency_table, ss = c.tracerecover.accuracy_and_hallucination.selective_accuracy_strict;
+                return `<tr>
+                  <td class="num">${c.failure_rate_percent}%</td>
+                  <td class="num">${pct(c.baseline.task_success_rate, 1)} [${numFmt(c.baseline.wilson_95_ci.lower, 3)}, ${numFmt(c.baseline.wilson_95_ci.upper, 3)}]</td>
+                  <td class="num" style="color:var(--accent); font-weight:700;">${pct(c.tracerecover.task_success_rate, 1)} [${numFmt(c.tracerecover.wilson_95_ci.lower, 3)}, ${numFmt(c.tracerecover.wilson_95_ci.upper, 3)}]</td>
+                  <td class="num" style="color:var(--green); font-weight:700;">p = ${pValFmt(mc.exact_two_sided_p_value)}</td>
+                  <td class="mono">${ct.both_correct_n11}/${ct.baseline_only_n10}/${ct.tracerecover_only_n01}/${ct.both_wrong_n00}</td>
+                  <td class="num">${pct(ss.rate, 1)} (${ss.correct}/${ss.denominator})</td>
+                  <td class="num">${numFmt(c.tracerecover.brier_score.brier_score, 4)} / ${numFmt(c.tracerecover.ece.ece, 4)}</td>
+                </tr>`;
+              }).join("")}
+              ${pooled.total_paired_runs ? `<tr class="highlight-row">
+                <td>Pooled (n=${pooled.total_paired_runs})</td><td class="num">${pct(pooled.baseline_task_success_rate, 1)}</td><td class="num">${pct(pooled.tracerecover_task_success_rate, 1)}</td>
+                <td class="num" style="color:var(--green);">p = ${pValFmt(pooled.paired_mcnemar_test?.exact_two_sided_p_value)}</td>
+                <td class="mono">${pooled.paired_mcnemar_test?.contingency_table?.both_correct_n11}/${pooled.paired_mcnemar_test?.contingency_table?.baseline_only_n10}/${pooled.paired_mcnemar_test?.contingency_table?.tracerecover_only_n01}/${pooled.paired_mcnemar_test?.contingency_table?.both_wrong_n00}</td>
+                <td class="num">${pct(oof.selective_accuracy_strict, 1)} (${oofOk}/${oof.non_abstained_count})</td>
+                <td class="num">${numFmt(pooled.tracerecover_brier_score?.brier_score, 4)} / ${numFmt(pooled.tracerecover_ece?.ece, 4)}</td>
+              </tr>` : ""}
+            </tbody>
+          </table></div>
+        `;
+      }
+
+      document.getElementById("analytics-plots-grid").innerHTML = (a.plots || []).map((p) => `
+        <div class="chart-box">
+          <div style="font-weight:700; font-size:13.5px; margin-bottom:6px;">${esc(p.title)}</div>
+          <img src="${esc(p.url)}" alt="${esc(p.title)}" loading="lazy" />
+        </div>
+      `).join("");
+    }
+    document.getElementById("analytics-rate-filter").addEventListener("change", renderAnalytics);
+    document.getElementById("analytics-cat-filter").addEventListener("change", renderAnalytics);
+
+    /* -------------------------------------------------------------------
+       4. LIVE DEMO & SHARED RUN INSPECTOR
+       ------------------------------------------------------------------- */
+    function renderDemoControls() {
+      document.getElementById("demo-provider").innerHTML = (appState.health?.providers || []).map((p) => `
+        <option value="${esc(p.id)}" ${p.id === "local" ? "selected" : ""}>${esc(p.id)} (${esc(p.model)}) — ${p.api_key_configured ? "Server Key Ready" : "Key Missing"}</option>
+      `).join("");
+      document.getElementById("demo-preset-bar").innerHTML = (appState.presets || []).map((p) => `
+        <button class="btn btn-sm" type="button" data-preset="${esc(p.id)}" onclick="applyDemoPreset('${esc(p.id)}')">${esc(p.title)}</button>
+      `).join("");
+    }
+
+    window.applyDemoPreset = function (id) {
+      const p = (appState.presets || []).find((x) => x.id === id);
+      if (!p) return;
+      const pr = p.params;
+      document.getElementById("demo-question").value = pr.question || "";
+      document.getElementById("demo-provider").value = pr.provider || "local";
+      document.getElementById("demo-fault-rate").value = pr.failure_rate ?? 0;
+      document.getElementById("demo-fault-label").textContent = (pr.failure_rate ?? 0) + "%";
+      document.getElementById("demo-seed").value = pr.seed ?? 42;
+      document.getElementById("demo-recovery").checked = Boolean(pr.enable_recovery);
+      document.getElementById("demo-grounding").checked = Boolean(pr.enable_grounding);
+      document.getElementById("demo-nli").checked = Boolean(pr.use_nli);
+      document.getElementById("demo-uncertainty").checked = Boolean(pr.enable_uncertainty);
+      appState.scenarioMode = pr.scenario_mode || "standard";
+      runLiveDemo();
+    };
+
+    document.getElementById("demo-fault-rate").addEventListener("input", (e) => {
+      document.getElementById("demo-fault-label").textContent = e.target.value + "%";
+    });
+    document.getElementById("demo-question").addEventListener("input", () => { appState.scenarioMode = "standard"; });
+    document.getElementById("live-demo-form").addEventListener("submit", (e) => { e.preventDefault(); runLiveDemo(); });
+
+    async function runLiveDemo() {
+      const btn = document.getElementById("demo-submit-btn"), err = document.getElementById("demo-error"), out = document.getElementById("demo-output-container");
+      err.innerHTML = ""; btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Executing...';
+      out.innerHTML = '<div class="card" style="text-align:center; padding:28px;">Running ReactAgent tool pipeline and verifying claims...</div>';
+      const fts = Array.from(document.querySelectorAll('input[name="demo-ft"]:checked')).map((el) => el.value);
+      try {
+        const data = await apiFetch("/api/run", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            question: document.getElementById("demo-question").value.trim(),
+            provider: document.getElementById("demo-provider").value,
+            failure_rate: Number(document.getElementById("demo-fault-rate").value),
+            seed: Number(document.getElementById("demo-seed").value),
+            enabled_failure_types: fts,
+            enable_recovery: document.getElementById("demo-recovery").checked,
+            enable_grounding: document.getElementById("demo-grounding").checked,
+            use_nli: document.getElementById("demo-nli").checked,
+            enable_uncertainty: document.getElementById("demo-uncertainty").checked,
+            scenario_mode: appState.scenarioMode,
+          }),
+        });
+        out.innerHTML = renderFullRunInspector(data);
+        loadTraces();
+        loadReplaySources();
+      } catch (e) {
+        err.innerHTML = `<div class="notice notice-error">${esc(e.message)}</div>`;
+        out.innerHTML = "";
+      } finally {
+        btn.disabled = false; btn.textContent = "Execute Agent";
+      }
+    }
+
+    function renderFullRunInspector(data) {
+      const steps = data.steps || [];
+      const toolSteps = steps.filter((s) => s.tool !== "final" && s.tool !== "llm");
+      const committed = toolSteps.filter((s) => (s.provenance_state || s.output_state) === "committed");
+      const discarded = toolSteps.filter((s) => (s.provenance_state || s.output_state) === "discarded");
+      const fr = data.failure_report || {}, rr = data.recovery_report || {}, gr = data.grounding_report || {}, unc = data.uncertainty_report || {};
+      const decision = String(data.final_decision || "NOT_APPLICABLE").toUpperCase();
+      const claims = gr.claims || [], sigs = unc.signal_values || {};
+      const rawId = "raw-" + Math.random().toString(36).slice(2, 8);
+      const whyMap = {
+        ANSWER: "Accepted (ANSWER): Claims supported by committed evidence, zero contradictions, uncertainty within threshold.",
+        WARN: "Warned (WARN): Moderate uncertainty or partial claim support; answer surfaced with warning.",
+        ABSTAIN: "Rejected / Abstained (ABSTAIN): Missing support, claim contradiction, or high uncertainty prevented hallucination.",
+        NOT_APPLICABLE: "Gating Disabled: Raw output returned without abstention gate.",
+      };
+      return `
+        <div class="stack">
+          <div class="decision-box ${esc(decision)}">
+            <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;">
+              <div style="display:flex; flex-wrap:wrap; align-items:center; gap:8px;">
+                ${decisionPill(decision)}
+                <span class="mono muted">${esc(data.trace_id || "")}</span>
+              </div>
+              <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                <span class="pill pill-blue num">Uncertainty: ${numFmt(unc.uncertainty_score, 3)}</span>
+                <span class="pill pill-slate num">Grounding: ${gr.grounding_score !== null && gr.grounding_score !== undefined ? pct(gr.grounding_score, 0) : (gr.status === "DISABLED" ? "OFF" : "N/A")}</span>
+                <span class="pill pill-slate num">${msFmt(data.elapsed_seconds ?? data.total_latency_seconds)}</span>
+              </div>
+            </div>
+            <div style="margin-top:8px; font-size:14px;"><strong>Rationale:</strong> ${esc(unc.decision_explanation || whyMap[decision])}</div>
+            <div class="decision-output">${esc(data.final_response || data.answer || "(empty response)")}</div>
+            ${data.answer && data.answer !== data.final_response ? `<div class="small muted" style="margin-top:6px;"><strong>Draft before gate:</strong> <span class="mono">${esc(data.answer)}</span></div>` : ""}
+          </div>
+
+          <div class="grid-2">
+            <div class="stage-block">
+              <div class="stage-label">1. Planning &amp; Tool Calls (${toolSteps.length})</div>
+              ${toolSteps.length ? toolSteps.map((s) => `
+                <div class="obs-card">
+                  <div style="display:flex; justify-content:space-between;"><strong>Step ${esc(s.step_id)} · <span class="mono">${esc(s.tool)}</span></strong><span class="small muted num">${msFmt(s.latency)}</span></div>
+                  ${s.thought ? `<div class="small muted" style="margin-top:3px;">${esc(s.thought)}</div>` : ""}
+                  <div class="small mono" style="margin-top:4px;">Args: ${esc(valStr(s.input))}</div>
+                </div>
+              `).join("") : '<div class="small muted">No tool steps logged.</div>'}
+            </div>
+
+            <div class="stage-block">
+              <div class="stage-label">2. Observations: Committed (${committed.length}) vs. Discarded (${discarded.length})</div>
+              ${committed.map((s) => `<div class="obs-card committed"><div style="display:flex; justify-content:space-between; margin-bottom:4px;"><strong>Step ${esc(s.step_id)} (${esc(s.tool)})</strong><span class="pill pill-green">${s.recovered ? "Committed (Recovered)" : "Committed"}</span></div><div class="mono" style="white-space:pre-wrap;">${esc(valStr(s.output))}</div></div>`).join("")}
+              ${discarded.map((s) => `<div class="obs-card discarded"><div style="display:flex; justify-content:space-between; margin-bottom:4px;"><strong>Step ${esc(s.step_id)} (${esc(s.tool)})</strong><span class="pill pill-red">Discarded</span></div><div class="mono" style="white-space:pre-wrap;">${esc(s.error || valStr(s.output))}</div></div>`).join("")}
+              ${!committed.length && !discarded.length ? '<div class="small muted">No tool outputs.</div>' : ""}
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="stage-block">
+              <div class="stage-label">3. Failure Detection &amp; Localization (${fr.total_failures ?? 0})</div>
+              ${(fr.failures && fr.failures.length) ? fr.failures.map((f) => `<div class="obs-card discarded"><strong>Step ${esc(f.step_id)} · ${esc(f.tool_name)} · ${esc(f.failure_category)}</strong><div class="small">${esc(f.explanation || "")}</div></div>`).join("") : '<div class="obs-card committed"><strong>No failures detected.</strong></div>'}
+            </div>
+            <div class="stage-block">
+              <div class="stage-label">4. Self-Healing Recovery (${rr.successful_recoveries ?? 0}/${rr.total_detected_failures ?? 0} healed)</div>
+              ${(rr.failures && rr.failures.length) ? rr.failures.flatMap((i) => i.attempts || []).map((att) => `<div class="obs-card ${att.recovery_success ? "committed" : "discarded"}"><strong>Attempt #${esc(att.attempt_number)} · ${esc(att.strategy)} (${esc(att.recovery_tool)})</strong> — ${att.recovery_success ? "Validated" : "Failed"}<div class="small">${esc(att.reason || "")}</div></div>`).join("") : '<div class="obs-card small muted">No recovery attempts triggered.</div>'}
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="stage-block">
+              <div class="stage-label">5. Evidence Verification (${claims.length} claims)</div>
+              ${gr.status === "DISABLED" ? '<div class="small muted">Evidence grounding disabled.</div>' : (claims.length ? claims.map((c) => {
+                const st = String(c.status || "UNSUPPORTED").toUpperCase();
+                const supEv = (c.evidence || []).filter((e) => e.relation === "SUPPORTED");
+                const conEv = (c.evidence || []).filter((e) => e.relation === "CONTRADICTED");
+                return `<div class="obs-card ${st === "SUPPORTED" ? "committed" : (st === "CONTRADICTED" ? "discarded" : "")}">
+                  <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span class="mono">${esc(c.claim_id)}</span><span class="pill ${st === "SUPPORTED" ? "pill-green" : (st === "CONTRADICTED" ? "pill-red" : "pill-amber")}">${esc(st)}</span></div>
+                  <div style="font-weight:600;">${esc(c.claim)}</div>
+                  <div class="small muted">${esc(c.explanation || "")}</div>
+                  ${supEv.length ? `<div class="small" style="color:var(--green); margin-top:4px;"><strong>Supporting:</strong> ${supEv.map((e) => `Step ${esc(e.step_id)} (${esc(e.tool)})`).join(", ")}</div>` : ""}
+                  ${conEv.length ? `<div class="small" style="color:var(--red); margin-top:4px;"><strong>Contradicting:</strong> ${conEv.map((e) => `Step ${esc(e.step_id)} (${esc(e.tool)})`).join(", ")}</div>` : ""}
+                </div>`;
+              }).join("") : '<div class="small muted">No factual claims extracted.</div>')}
+            </div>
+
+            <div class="stage-block">
+              <div class="stage-label">6. Uncertainty Estimation</div>
+              ${unc.status === "DISABLED" ? '<div class="small muted">Uncertainty estimator disabled.</div>' : `
+                ${[
+                  ["Grounding Score", sigs.grounding ?? unc.grounding_score],
+                  ["Tool Success Ratio", sigs.tool_success ?? unc.tool_success_ratio],
+                  ["Recovery Reliability", sigs.recovery_reliability ?? unc.recovery_reliability],
+                  ["Self-Consistency", sigs.self_consistency ?? unc.self_consistency_score],
+                ].map(([lbl, val]) => {
+                  const ok = val !== null && val !== undefined && !Number.isNaN(Number(val));
+                  return `<div style="margin-bottom:8px;"><div style="display:flex; justify-content:space-between; font-size:13px;"><span>${esc(lbl)}</span><strong class="num">${ok ? numFmt(val, 3) : "N/A"}</strong></div><div class="progress-track"><div class="progress-fill" style="width:${ok ? Math.min(100, Number(val) * 100) : 0}%; ${ok ? "" : "background:#CBD5E1;"}"></div></div></div>`;
+                }).join("")}
+                <div class="obs-card"><div style="display:flex; justify-content:space-between;"><span>Uncertainty Score (1 - R)</span><strong class="num" style="color:var(--accent);">${numFmt(unc.uncertainty_score, 3)}</strong></div></div>
+              `}
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end;">
+            <button class="btn btn-sm" type="button" onclick="const e=document.getElementById('${rawId}'); e.style.display=e.style.display==='none'?'block':'none';">Toggle Raw Trace JSON</button>
+          </div>
+          <pre id="${rawId}" class="json-dump" style="display:none;">${esc(JSON.stringify(data, null, 2))}</pre>
+        </div>
+      `;
+    }
+
+    /* -------------------------------------------------------------------
+       5. EXECUTION REPLAY
+       ------------------------------------------------------------------- */
+    function stopReplayTimer() {
+      if (appState.replayTimer) {
+        clearInterval(appState.replayTimer);
+        appState.replayTimer = null;
+      }
+      document.getElementById("replay-play-btn").disabled = !appState.replayFrames.length;
+      document.getElementById("replay-pause-btn").disabled = true;
+    }
+
+    async function loadReplaySources() {
+      const url = "/api/replay/sources" + (appState.selectedRunId ? "?run_id=" + encodeURIComponent(appState.selectedRunId) : "");
+      appState.replaySources = await apiFetch(url);
+      renderReplaySelector();
+    }
+
+    function renderReplaySelector() {
+      const srcType = document.getElementById("replay-source-type").value;
+      const list = srcType === "eval" ? (appState.replaySources?.eval_traces || []) : (appState.replaySources?.live_traces || []);
+      const sel = document.getElementById("replay-trace-select");
+      if (!list.length) {
+        sel.innerHTML = '<option value="">No recorded traces in this category</option>';
+        return;
+      }
+      sel.innerHTML = list.map((item, idx) => `<option value="${idx}">${esc(item.label)}</option>`).join("");
+    }
+
+    async function loadReplayTrace(params) {
+      stopReplayTimer();
+      const qs = new URLSearchParams(params);
+      const data = await apiFetch("/api/replay/trace?" + qs.toString());
+      appState.replayFrames = data.frames || [];
+      appState.replayIndex = 0;
+      renderReplayFrame();
+    }
+
+    window.jumpToReplay = async function (traceId) {
+      window.switchTab("replay");
+      if (!appState.replaySources) await loadReplaySources();
+      document.getElementById("replay-source-type").value = "live";
+      renderReplaySelector();
+      await loadReplayTrace({ source: "live", trace_id: traceId });
+    };
+
+    function renderReplayFrame() {
+      const frames = appState.replayFrames || [];
+      const counter = document.getElementById("replay-counter");
+      const rail = document.getElementById("replay-rail");
+      const content = document.getElementById("replay-stage-content");
+      if (!frames.length) {
+        counter.textContent = "Frame 0 of 0";
+        rail.innerHTML = "";
+        content.innerHTML = '<div class="empty-state">Select a recorded trace and click <strong>Load Trace</strong>.</div>';
+        return;
+      }
+      const idx = Math.max(0, Math.min(frames.length - 1, appState.replayIndex));
+      appState.replayIndex = idx;
+      const f = frames[idx];
+      counter.textContent = `Frame ${idx + 1} of ${frames.length}`;
+
+      document.getElementById("replay-prev-btn").disabled = idx === 0;
+      document.getElementById("replay-next-btn").disabled = idx === frames.length - 1;
+      document.getElementById("replay-play-btn").disabled = Boolean(appState.replayTimer);
+
+      rail.innerHTML = frames.map((item, i) => `
+        <button class="replay-node ${i === idx ? "active" : ""} ${esc(item.provenance_state || "")}" type="button" onclick="setReplayFrame(${i})">
+          ${i + 1}. ${esc(item.stage.replace(/_/g, " "))}
+        </button>
+      `).join("");
+
+      const provBadge = f.provenance_state
+        ? `<span class="pill ${f.provenance_state === "committed" ? "pill-green" : "pill-red"}">${f.provenance_state.toUpperCase()}</span>`
+        : "";
+      content.innerHTML = `
+        <div class="stage-block">
+          <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
+            <h3 style="margin:0; font-size:17px;">${esc(f.title)}</h3>
+            ${provBadge}
+          </div>
+          <p class="muted" style="margin:0 0 12px;">${esc(f.summary)}</p>
+          <pre class="json-dump">${esc(JSON.stringify(f.details, null, 2))}</pre>
+        </div>
+      `;
+    }
+
+    window.setReplayFrame = function (idx) {
+      stopReplayTimer();
+      appState.replayIndex = idx;
+      renderReplayFrame();
+    };
+
+    document.getElementById("replay-source-type").addEventListener("change", renderReplaySelector);
+    document.getElementById("replay-refresh-btn").addEventListener("click", loadReplaySources);
+    document.getElementById("replay-load-btn").addEventListener("click", async () => {
+      const srcType = document.getElementById("replay-source-type").value;
+      const list = srcType === "eval" ? (appState.replaySources?.eval_traces || []) : (appState.replaySources?.live_traces || []);
+      const idx = Number(document.getElementById("replay-trace-select").value);
+      const item = list[idx];
+      if (!item) return;
+      if (srcType === "eval") {
+        await loadReplayTrace({ source: "eval", run_id: item.run_id, rate: item.rate, task_id: item.task_id });
+      } else {
+        await loadReplayTrace({ source: "live", trace_id: item.trace_id });
+      }
+    });
+
+    document.getElementById("replay-restart-btn").addEventListener("click", () => { stopReplayTimer(); appState.replayIndex = 0; renderReplayFrame(); });
+    document.getElementById("replay-prev-btn").addEventListener("click", () => { stopReplayTimer(); if (appState.replayIndex > 0) { appState.replayIndex--; renderReplayFrame(); } });
+    document.getElementById("replay-next-btn").addEventListener("click", () => { stopReplayTimer(); if (appState.replayIndex < appState.replayFrames.length - 1) { appState.replayIndex++; renderReplayFrame(); } });
+    document.getElementById("replay-pause-btn").addEventListener("click", stopReplayTimer);
+    document.getElementById("replay-play-btn").addEventListener("click", () => {
+      if (!appState.replayFrames.length || appState.replayTimer) return;
+      if (appState.replayIndex >= appState.replayFrames.length - 1) appState.replayIndex = 0;
+      const delay = Number(document.getElementById("replay-speed").value) || 1400;
+      document.getElementById("replay-play-btn").disabled = true;
+      document.getElementById("replay-pause-btn").disabled = false;
+      appState.replayTimer = setInterval(() => {
+        if (appState.replayIndex < appState.replayFrames.length - 1) {
+          appState.replayIndex++;
+          renderReplayFrame();
+        } else {
+          stopReplayTimer();
+        }
+      }, delay);
+      renderReplayFrame();
+    });
+
+    /* -------------------------------------------------------------------
+       6. EVIDENCE INSPECTOR & 8. EXECUTION LOGS
+       ------------------------------------------------------------------- */
+    async function loadTraces() {
+      const search = document.getElementById("logs-search").value.trim();
+      const decision = document.getElementById("logs-decision").value;
+      const params = new URLSearchParams({ limit: "60" });
+      if (decision && decision !== "ALL") params.set("decision", decision);
+      if (search) params.set("search", search);
+
+      const wrap = document.getElementById("logs-table-wrap");
+      try {
+        const res = await apiFetch("/api/traces?" + params.toString());
+        appState.traces = res.traces || [];
+        document.getElementById("logs-meta").textContent = `Showing ${appState.traces.length} of ${res.total_files} real JSONL execution traces stored in logs/.`;
+
+        const evSel = document.getElementById("evidence-trace-select");
+        evSel.innerHTML = appState.traces.map((t) => `<option value="${esc(t.trace_id)}">${esc(t.trace_id)} · ${esc(t.final_decision)} · ${esc(t.question.slice(0, 42))}</option>`).join("") || '<option value="">No traces</option>';
+        if (appState.selectedTraceId && appState.traces.some((t) => t.trace_id === appState.selectedTraceId)) {
+          evSel.value = appState.selectedTraceId;
+        } else if (appState.traces.length && !appState.selectedTraceId) {
+          appState.selectedTraceId = appState.traces[0].trace_id;
+          evSel.value = appState.selectedTraceId;
+          loadEvidenceDetail(appState.selectedTraceId);
+        }
+
+        if (!appState.traces.length) {
+          wrap.innerHTML = '<div class="empty-state" style="border:none;">No matching execution logs found.</div>';
+          return;
+        }
+
+        wrap.innerHTML = `
+          <table>
+            <thead><tr><th>Question &amp; Trace ID</th><th>Decision</th><th>Tools</th><th>Kept / Rejected</th><th>Recovery</th><th>Uncertainty</th><th>Actions</th></tr></thead>
+            <tbody>
+              ${appState.traces.map((t) => `
+                <tr class="${appState.selectedTraceId === t.trace_id ? "selected-row" : ""}">
+                  <td><div style="font-weight:600;">${esc(t.question)}</div><div class="mono small muted">${esc(t.trace_id)}</div></td>
+                  <td>${decisionPill(t.final_decision)}</td>
+                  <td class="mono">${esc((t.tools_used || []).join(", ") || "—")}</td>
+                  <td class="num"><span style="color:var(--green); font-weight:700;">${t.provenance?.committed_steps ?? 0}</span> / <span style="color:var(--red); font-weight:700;">${t.provenance?.discarded_steps ?? 0}</span></td>
+                  <td class="num">${t.total_failures > 0 ? `${t.successful_recoveries}/${t.total_failures} healed` : "Clean"}</td>
+                  <td class="num">${numFmt(t.uncertainty_score, 3)}</td>
+                  <td style="white-space:nowrap;">
+                    <button class="btn btn-sm" type="button" onclick="openEvidenceTrace('${esc(t.trace_id)}')">Evidence</button>
+                    <button class="btn btn-sm" type="button" onclick="jumpToReplay('${esc(t.trace_id)}')">Replay</button>
+                  </td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        `;
+      } catch (err) {
+        wrap.innerHTML = `<div class="notice notice-error">${esc(err.message)}</div>`;
+      }
+    }
+
+    window.openEvidenceTrace = async function (traceId) {
+      appState.selectedTraceId = traceId;
+      window.switchTab("evidence");
+      await loadEvidenceDetail(traceId);
+    };
+
+    async function loadEvidenceDetail(traceId) {
+      if (!traceId) return;
+      appState.selectedTraceId = traceId;
+      document.getElementById("evidence-trace-select").value = traceId;
+      const panel = document.getElementById("evidence-inspector-panel");
+      panel.innerHTML = '<div class="card" style="text-align:center; padding:24px;">Loading evidence provenance...</div>';
+      try {
+        const detail = await apiFetch("/api/traces/" + encodeURIComponent(traceId));
+        panel.innerHTML = `<div class="card">${renderFullRunInspector(detail)}</div>`;
+      } catch (err) {
+        panel.innerHTML = `<div class="notice notice-error">${esc(err.message)}</div>`;
+      }
+    }
+
+    document.getElementById("evidence-trace-select").addEventListener("change", (e) => { if (e.target.value) loadEvidenceDetail(e.target.value); });
+    document.getElementById("evidence-replay-jump").addEventListener("click", () => { const tid = document.getElementById("evidence-trace-select").value; if (tid) window.jumpToReplay(tid); });
+    document.getElementById("logs-refresh-btn").addEventListener("click", loadTraces);
+    document.getElementById("logs-decision").addEventListener("change", loadTraces);
+    document.getElementById("logs-search").addEventListener("keydown", (e) => { if (e.key === "Enter") loadTraces(); });
+
+    /* -------------------------------------------------------------------
+       7. DATASETS
+       ------------------------------------------------------------------- */
+    function renderDatasetsCatalog() {
+      const cat = appState.datasetsCatalog;
+      if (!cat) return;
+      const authEnabled = Boolean(appState.health?.security?.admin_auth_enabled);
+      document.getElementById("ds-admin-wrap").style.display = authEnabled ? "block" : "none";
+
+      document.getElementById("datasets-catalog-grid").innerHTML = (cat.datasets || []).map((d) => `
+        <div class="stage-block">
+          <div style="display:flex; justify-content:space-between; gap:8px; margin-bottom:6px;">
+            <strong style="font-size:15px;">${esc(d.name)}</strong>
+            <span class="pill ${d.is_canonical ? "pill-blue" : "pill-slate"}">${d.is_canonical ? "Canonical" : "v" + esc(d.version)}</span>
+          </div>
+          <p class="small muted" style="margin:0 0 8px;">${esc(d.description)}</p>
+          <div class="num" style="font-size:18px; font-weight:700; margin-bottom:6px;">${Number(d.record_count).toLocaleString()} ${esc(d.record_unit)} <span class="small muted">(${d.size_kb} KB)</span></div>
+          <div class="small mono muted" style="word-break:break-all; margin-bottom:6px;">SHA-256: ${esc(d.sha256)}</div>
+          <div class="small muted" style="margin-bottom:8px;">Associated Runs: ${d.associated_experiments?.length ? esc(d.associated_experiments.join(", ")) : "None logged"}</div>
+          ${Object.keys(d.categories || {}).length ? `<div style="display:flex; flex-wrap:wrap; gap:5px; margin-bottom:10px;">${Object.entries(d.categories).map(([k, v]) => `<span class="pill pill-slate">${esc(k)}: ${v.total} (${v.should_abstain} abst.)</span>`).join("")}</div>` : ""}
+          ${d.inspectable ? `<button class="btn btn-sm" type="button" onclick="inspectDatasetTasks('${esc(d.id)}')">Inspect Tasks</button>` : ""}
+        </div>
+      `).join("");
+
+      const inspectable = (cat.datasets || []).filter((d) => d.inspectable);
+      document.getElementById("ds-inspect-select").innerHTML = inspectable.map((d) => `<option value="${esc(d.id)}" ${d.id === appState.dsInspectId ? "selected" : ""}>${esc(d.name)} (v${esc(d.version)})</option>`).join("");
+
+      const hist = cat.version_history || [];
+      document.getElementById("ds-history-table").innerHTML = hist.length ? `
+        <table><thead><tr><th>Name</th><th>Version</th><th>Tasks</th><th>SHA-256 (prefix)</th><th>Imported</th></tr></thead>
+        <tbody>${hist.map((h) => `<tr><td>${esc(h.name)}</td><td>v${esc(h.version)}</td><td class="num">${h.task_count}</td><td class="mono">${esc(String(h.sha256).slice(0, 12))}…</td><td class="small">${esc(new Date(h.imported_at).toLocaleString())}</td></tr>`).join("")}</tbody></table>
+      ` : '<div class="empty-state" style="border:none;">No custom dataset versions imported yet. Canonical <code>eval/tasks.json</code> v2.0 is active.</div>';
+    }
+
+    window.inspectDatasetTasks = function (dsId) {
+      appState.dsInspectId = dsId;
+      document.getElementById("ds-inspect-select").value = dsId;
+      loadDatasetTasks();
+    };
+
+    async function loadDatasetTasks() {
+      const dsId = document.getElementById("ds-inspect-select").value || "eval_tasks";
+      const cat = document.getElementById("ds-cat-filter").value;
+      const abs = document.getElementById("ds-abs-filter").value;
+      const q = document.getElementById("ds-search").value.trim();
+      const params = new URLSearchParams({ limit: "25", offset: "0" });
+      if (cat !== "all") params.set("category", cat);
+      if (abs !== "all") params.set("abstain", abs);
+      if (q) params.set("search", q);
+
+      const res = await apiFetch(`/api/datasets/${encodeURIComponent(dsId)}/tasks?` + params.toString());
+      appState.dsTasksCache = res.tasks || [];
+      document.getElementById("dataset-tasks-meta").textContent = `Showing ${res.returned} of ${res.filtered_count} matching tasks (total ${res.total_tasks}) in ${res.name} v${res.dataset_version}`;
+
+      // Populate category dropdown from catalog
+      const dsMeta = (appState.datasetsCatalog?.datasets || []).find((d) => d.id === dsId);
+      const dsCats = Object.keys(dsMeta?.categories || {}).sort();
+      const catSel = document.getElementById("ds-cat-filter");
+      const prev = catSel.value;
+      if (dsCats.length) {
+        catSel.innerHTML = '<option value="all">All Categories</option>' + dsCats.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+        catSel.value = dsCats.includes(prev) ? prev : "all";
+      }
+
+      document.getElementById("ds-tasks-table").innerHTML = appState.dsTasksCache.length ? `
+        <table><thead><tr><th>Task ID</th><th>Category</th><th>Query</th><th>Tools</th><th>Label</th><th>Inspect</th></tr></thead>
+        <tbody>${appState.dsTasksCache.map((t, i) => `
+          <tr class="clickable" onclick="showTaskDetail(${i})">
+            <td class="mono" style="font-weight:700;">${esc(t.task_id)}</td>
+            <td class="mono small">${esc(t.category)}</td>
+            <td>${esc(t.query)}</td>
+            <td class="mono small">${esc(Array.isArray(t.expected_tool_category) ? t.expected_tool_category.join(" → ") : String(t.expected_tool_category || "—"))}</td>
+            <td><span class="pill ${t.should_abstain ? "pill-red" : "pill-green"}">${t.should_abstain ? "Abstain" : "Answerable"}</span></td>
+            <td><button class="btn btn-sm" type="button">Details</button></td>
+          </tr>`).join("")}
+        </tbody></table>
+      ` : '<div class="empty-state" style="border:none;">No matching tasks.</div>';
+    }
+
+    window.showTaskDetail = function (idx) {
+      const t = appState.dsTasksCache[idx];
+      if (!t) return;
+      document.getElementById("ds-task-detail").innerHTML = `
+        <div class="stage-block">
+          <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><strong>${esc(t.task_id)} (${esc(t.category)})</strong><span class="pill ${t.should_abstain ? "pill-red" : "pill-green"}">should_abstain=${esc(t.should_abstain)}</span></div>
+          <div><strong>Query:</strong> ${esc(t.query)}</div>
+          <div class="small muted" style="margin-top:4px;"><strong>Expected Facts:</strong> ${esc(Array.isArray(t.expected_facts) ? t.expected_facts.join(", ") : String(t.expected_facts || "—"))} | <strong>Contradictory Facts:</strong> ${esc(Array.isArray(t.contradictory_facts) ? t.contradictory_facts.join(", ") : String(t.contradictory_facts || "—"))}</div>
+          <pre class="json-dump" style="margin-top:8px;">${esc(JSON.stringify(t.oracle_plan, null, 2))}</pre>
+        </div>
+      `;
+    };
+
+    document.getElementById("datasets-refresh-btn").addEventListener("click", async () => {
+      appState.datasetsCatalog = await apiFetch("/api/datasets");
+      renderDatasetsCatalog();
+      loadDatasetTasks();
+    });
+    ["ds-inspect-select", "ds-cat-filter", "ds-abs-filter"].forEach((id) => {
+      document.getElementById(id).addEventListener("change", loadDatasetTasks);
+    });
+    document.getElementById("ds-search").addEventListener("keydown", (e) => { if (e.key === "Enter") loadDatasetTasks(); });
+
+    document.getElementById("ds-load-sample-btn").addEventListener("click", () => {
+      document.getElementById("ds-import-json").value = JSON.stringify([
+        {
+          task_id: "CUSTOM-01",
+          query: "What is 15 * 4?",
+          category: "multi_hop_search_math",
+          expected_answer: "60",
+          expected_facts: ["60"],
+          contradictory_facts: ["999"],
+          expected_tool_category: ["calculator"],
+          should_abstain: false,
+          evaluation_criteria: "Exact arithmetic product 60.",
+          oracle_plan: [{ tool: "calculator", arguments: { expression: "15 * 4" } }],
+          final_answer_template: "{0}",
+        },
+      ], null, 2);
+    });
+
+    async function handleDatasetAction(importIt) {
+      const fb = document.getElementById("ds-import-feedback");
+      let tasksParsed;
+      try {
+        tasksParsed = JSON.parse(document.getElementById("ds-import-json").value);
+      } catch (e) {
+        fb.innerHTML = `<div class="notice notice-error">Invalid JSON syntax: ${esc(e.message)}</div>`;
+        return;
+      }
+      const headers = { "Content-Type": "application/json" };
+      const tok = document.getElementById("ds-admin-token").value.trim();
+      if (tok) headers["Authorization"] = "Bearer " + tok;
+      try {
+        const res = await apiFetch(importIt ? "/api/datasets/import" : "/api/datasets/validate", {
+          method: "POST", headers,
+          body: JSON.stringify({
+            name: document.getElementById("ds-import-name").value.trim(),
+            dataset_version: document.getElementById("ds-import-version").value.trim(),
+            tasks: tasksParsed,
+          }),
+        });
+        if (!importIt) {
+          fb.innerHTML = res.valid
+            ? `<div class="notice notice-success">Schema valid (${res.task_count} tasks, SHA-256 ${esc(res.sha256.slice(0, 14))}…).</div>`
+            : `<div class="notice notice-error">Validation errors: ${esc(res.errors.join("; "))}</div>`;
+        } else {
+          fb.innerHTML = `<div class="notice notice-success">Imported versioned dataset <strong>${esc(res.dataset.id)}</strong> (${res.dataset.task_count} tasks). Canonical benchmark untouched.</div>`;
+          appState.datasetsCatalog = await apiFetch("/api/datasets");
+          renderDatasetsCatalog();
+        }
+      } catch (err) {
+        fb.innerHTML = `<div class="notice notice-error">${esc(err.message)}</div>`;
+      }
+    }
+    document.getElementById("ds-validate-btn").addEventListener("click", () => handleDatasetAction(false));
+    document.getElementById("ds-import-btn").addEventListener("click", () => handleDatasetAction(true));
+
+    /* -------------------------------------------------------------------
+       9. RESEARCH REPORTS & 10. SETTINGS
+       ------------------------------------------------------------------- */
+    async function loadReportPreview() {
+      const el = document.getElementById("reports-md-preview");
+      el.textContent = "Generating Markdown report from experiment records...";
+      try {
+        const url = "/api/export/report" + (appState.selectedRunId ? "?run_id=" + encodeURIComponent(appState.selectedRunId) : "");
+        const res = await fetch(url);
+        el.textContent = await res.text();
+      } catch (err) {
+        el.textContent = "Could not load report preview: " + err.message;
+      }
+    }
+    document.getElementById("reports-refresh-preview-btn").addEventListener("click", loadReportPreview);
+
+    function renderSettings() {
+      const s = appState.settings;
+      if (!s) return;
+      document.getElementById("settings-container").innerHTML = `
+        <div class="card">
+          <h3 class="card-title">Recovery Engine Budgets &amp; Strategy Map</h3>
+          <p class="small muted">${esc(s.recovery.budget_explanation || "")}</p>
+          <div class="table-wrap" style="margin-top:10px;"><table><tbody>
+            <tr><th>max_retries (RETRY loop only)</th><td class="num">${s.recovery.max_retries}</td></tr>
+            <tr><th>max_total_attempts (All strategies combined)</th><td class="num">${s.recovery.max_total_attempts}</td></tr>
+            <tr><th>max_duration_seconds (Between attempts)</th><td class="num">${s.recovery.max_duration_seconds}s</td></tr>
+            ${Object.entries(s.recovery.strategy_map || {}).map(([cat, strats]) => `<tr><td class="mono">${esc(cat)}</td><td class="mono">${esc(strats.join(" → "))}</td></tr>`).join("")}
+          </tbody></table></div>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">Grounding, NLI &amp; Calibrated Uncertainty</h3>
+          <div class="table-wrap" style="margin-top:10px;"><table><tbody>
+            <tr><th>NLI Model</th><td class="mono">${esc(s.grounding_and_nli.default_nli_model)}</td></tr>
+            <tr><th>Active NLI Backend</th><td class="mono">${esc(s.grounding_and_nli.active_nli_backend)}</td></tr>
+            <tr><th>Signal Weights</th><td class="mono">${esc(JSON.stringify(s.uncertainty_and_abstention.signal_weights))}</td></tr>
+            <tr><th>Default Policy Thresholds</th><td class="num">ANSWER ≤ ${s.uncertainty_and_abstention.default_thresholds.answer_threshold} | ABSTAIN ≥ ${s.uncertainty_and_abstention.default_thresholds.abstain_threshold}</td></tr>
+            ${s.uncertainty_and_abstention.calibrated_5fold_thresholds?.summary ? `<tr><th>5-Fold Cross-Fitted Mean</th><td class="num">ANSWER ≤ ${numFmt(s.uncertainty_and_abstention.calibrated_5fold_thresholds.summary.answer_threshold_mean, 4)} | ABSTAIN ≥ ${numFmt(s.uncertainty_and_abstention.calibrated_5fold_thresholds.summary.abstain_threshold_mean, 4)}</td></tr>` : ""}
+          </tbody></table></div>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">Provider Registry (Server-Side Credentials Only)</h3>
+          <div class="table-wrap" style="margin-top:10px;"><table>
+            <thead><tr><th>Provider</th><th>Model</th><th>Env Variable</th><th>Status</th></tr></thead>
+            <tbody>${(s.providers || []).map((p) => `<tr><td><strong>${esc(p.id)}</strong></td><td class="mono">${esc(p.model)}</td><td class="mono">${esc(p.api_key_env_var || "None (offline)")}</td><td><span class="pill ${p.api_key_configured ? "pill-green" : "pill-slate"}">${p.api_key_configured ? "Ready" : "Key Unset"}</span></td></tr>`).join("")}</tbody>
+          </table></div>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">Security Posture &amp; Tool AST Guards</h3>
+          <div class="table-wrap" style="margin-top:10px;"><table><tbody>
+            <tr><th>Admin Auth (Experiments/Import)</th><td>${s.security.admin_auth_required_for_experiments ? '<span class="pill pill-green">Enabled (Bearer / X-API-Key)</span>' : '<span class="pill pill-amber">Disabled (Local Dev)</span>'}</td></tr>
+            <tr><th>Rate Limits</th><td class="num">${s.security.rate_limit_run_per_min}/min (Demo) · ${s.security.rate_limit_experiments_per_min}/min (Experiments)</td></tr>
+            <tr><th>Max Request Size</th><td class="num">${Number(s.security.max_request_bytes).toLocaleString()} bytes</td></tr>
+            <tr><th>CORS Origins</th><td class="mono small">${esc((s.security.cors_allowed_origins || []).join(", "))}</td></tr>
+            <tr><th>Tool Guards</th><td class="small">Calculator len ≤ ${s.runtime.ast_and_schema_guards.calculator_max_expression_length}; Python len ≤ ${s.runtime.ast_and_schema_guards.python_exec_max_code_length} (${esc(s.runtime.ast_and_schema_guards.python_exec_allowed_calls.join(", "))})</td></tr>
+          </tbody></table></div>
+        </div>
+      `;
+    }
+
+    /* -------------------------------------------------------------------
+       BOOTSTRAP
+       ------------------------------------------------------------------- */
+    function populateRunSelectors() {
+      const html = (appState.experiments || []).map((e) => `<option value="${esc(e.run_id)}" ${e.run_id === appState.selectedRunId ? "selected" : ""}>${esc(e.run_id)} (${e.task_count}t${e.is_active_flagship ? " · flagship" : ""})</option>`).join("") || '<option value="">No runs</option>';
+      ["global-run-select", "analytics-run-filter", "reports-run-select"].forEach((id) => {
+        document.getElementById(id).innerHTML = html;
+      });
+    }
+
+    async function init() {
+      try {
+        const [health, dsCatalog, expData, presetsData, settingsData] = await Promise.all([
+          apiFetch("/api/health"),
+          apiFetch("/api/datasets"),
+          apiFetch("/api/experiments"),
+          apiFetch("/api/presets"),
+          apiFetch("/api/settings"),
+        ]);
+        appState.health = health;
+        appState.datasetsCatalog = dsCatalog;
+        appState.experiments = expData.experiments || [];
+        appState.presets = presetsData.presets || [];
+        appState.settings = settingsData;
+        appState.selectedRunId = expData.active_run_id || (appState.experiments[0]?.run_id || "");
+
+        const pill = document.getElementById("health-pill");
+        pill.className = health.status === "ok" ? "pill pill-green" : "pill pill-red";
+        pill.textContent = `${health.test_suite?.label || "Ready"} · Online`;
+        document.getElementById("sidebar-footer-status").innerHTML = `
+          <div><strong>System:</strong> ${health.status === "ok" ? "Healthy" : "Check"}</div>
+          <div><strong>Tests:</strong> ${esc(health.test_suite?.label || "")}</div>
+          <div><strong>Auth:</strong> ${health.security?.admin_auth_enabled ? "Protected" : "Local Mode"}</div>
+        `;
+
+        populateRunSelectors();
+        renderDemoControls();
+        renderDatasetsCatalog();
+        renderSettings();
+
+        if (appState.selectedRunId) {
+          appState.analytics = await apiFetch("/api/analytics?run_id=" + encodeURIComponent(appState.selectedRunId));
+        }
+
+        renderOverview();
+        renderExperiments();
+        renderAnalytics();
+        loadTraces();
+        loadReplaySources();
+        loadWorkspaceConversations();
+      } catch (err) {
+        document.getElementById("health-pill").className = "pill pill-red";
+        document.getElementById("health-pill").textContent = "Backend Error";
+        document.getElementById("overview-scope-banner").className = "notice notice-error";
+        document.getElementById("overview-scope-banner").textContent = "Dashboard initialization failed: " + err.message;
+      }
+    }
+
+    /* -------------------------------------------------------------------
+       11. OPEN-ENDED QUERY WORKSPACE (SSE + CONVERSATIONS + 10-STAGE VIEW)
+       ------------------------------------------------------------------- */
+    function sessionHeaders(extra = {}) {
+      return { "X-Session-ID": appState.sessionId, ...extra };
+    }
+
+    window.fillWorkspacePrompt = function (text) {
+      document.getElementById("ws-query-input").value = text;
+      document.getElementById("ws-query-input").focus();
+    };
+
+    document.getElementById("ws-provider").addEventListener("change", (e) => {
+      const p = e.target.value;
+      const note = document.getElementById("ws-provider-note");
+      if (p === "local") {
+        note.textContent = "Selected: offline deterministic local provider (cannot answer arbitrary world trivia without tools/external search).";
+      } else {
+        const meta = (appState.settings?.providers || []).find((x) => x.id === p);
+        note.textContent = meta?.api_key_configured
+          ? `Selected live provider: ${p} (${meta.model}). No silent fallback if it fails.`
+          : `Live provider ${p}: requires server env ${meta?.api_key_env_var || "API key"}. Will return an explicit error if unset.`;
+      }
+    });
+
+    async function loadWorkspaceConversations() {
+      try {
+        const res = await apiFetch("/api/conversations", { headers: sessionHeaders() });
+        appState.conversations = res.conversations || [];
+        const sel = document.getElementById("ws-conv-select");
+        const opts = ['<option value="">Start new conversation on submit</option>'].concat(
+          appState.conversations.map((c) =>
+            `<option value="${esc(c.conversation_id)}" ${c.conversation_id === appState.activeConvId ? "selected" : ""}>${esc(c.title)} (${c.turn_count} turns)</option>`
+          )
+        );
+        sel.innerHTML = opts.join("");
+        document.getElementById("ws-conv-status").textContent = appState.activeConvId
+          ? `Thread: ${appState.activeConvId}`
+          : `Session ${appState.sessionId} · New Thread`;
+      } catch (e) {
+        /* non-fatal initial load */
+      }
+    }
+
+    async function loadActiveConversationTurns(convId) {
+      if (!convId) {
+        document.getElementById("ws-thread-history").innerHTML = '<div class="empty-state" style="padding:18px;">No messages in this conversation thread yet.</div>';
+        return;
+      }
+      try {
+        const conv = await apiFetch("/api/conversations/" + encodeURIComponent(convId), { headers: sessionHeaders() });
+        const turns = conv.turns || [];
+        document.getElementById("ws-thread-history").innerHTML = turns.length ? turns.map((t, i) => `
+          <div class="stage-block">
+            <div style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:6px; margin-bottom:6px;">
+              <strong>Turn ${i + 1}: ${esc(t.question)}</strong>
+              <span style="display:flex; gap:6px; flex-wrap:wrap;">
+                ${decisionPill(t.final_decision)}
+                <span class="pill pill-slate">${esc(t.provider)} · ${esc(t.knowledge_source || "")}</span>
+              </span>
+            </div>
+            <div class="decision-output" style="margin-top:6px;">${esc(t.final_response)}</div>
+            <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
+              ${t.trace_id ? `<button class="btn btn-sm" type="button" onclick="window.jumpToReplay('${esc(t.trace_id)}')">Replay Trace</button>` : ""}
+              ${t.trace_id ? `<button class="btn btn-sm" type="button" onclick="window.openEvidenceTrace('${esc(t.trace_id)}')">Inspect Evidence</button>` : ""}
+            </div>
+          </div>
+        `).join("") : '<div class="empty-state" style="padding:18px;">Conversation cleared. Ask a question to begin.</div>';
+      } catch (err) {
+        document.getElementById("ws-error").innerHTML = `<div class="notice notice-error">${esc(err.message)}</div>`;
+      }
+    }
+
+    document.getElementById("ws-conv-select").addEventListener("change", (e) => {
+      appState.activeConvId = e.target.value || null;
+      document.getElementById("ws-conv-status").textContent = appState.activeConvId ? `Thread: ${appState.activeConvId}` : `Session ${appState.sessionId} · New Thread`;
+      loadActiveConversationTurns(appState.activeConvId);
+    });
+
+    document.getElementById("ws-new-conv-btn").addEventListener("click", async () => {
+      const res = await apiFetch("/api/conversations", {
+        method: "POST",
+        headers: sessionHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ title: "New Conversation" }),
+      });
+      appState.activeConvId = res.conversation.conversation_id;
+      await loadWorkspaceConversations();
+      await loadActiveConversationTurns(appState.activeConvId);
+      document.getElementById("ws-answer-container").innerHTML = '<div class="empty-state">Started new conversation thread. Submit your first question!</div>';
+    });
+
+    document.getElementById("ws-clear-conv-btn").addEventListener("click", async () => {
+      if (!appState.activeConvId) {
+        document.getElementById("ws-thread-history").innerHTML = '<div class="empty-state" style="padding:18px;">Context cleared.</div>';
+        return;
+      }
+      await apiFetch(`/api/conversations/${encodeURIComponent(appState.activeConvId)}/clear`, {
+        method: "POST",
+        headers: sessionHeaders(),
+      });
+      await loadWorkspaceConversations();
+      await loadActiveConversationTurns(appState.activeConvId);
+    });
+
+    document.getElementById("ws-delete-conv-btn").addEventListener("click", async () => {
+      if (!appState.activeConvId) return;
+      await apiFetch(`/api/conversations/${encodeURIComponent(appState.activeConvId)}`, {
+        method: "DELETE",
+        headers: sessionHeaders(),
+      });
+      appState.activeConvId = null;
+      await loadWorkspaceConversations();
+      await loadActiveConversationTurns(null);
+    });
+
+    function renderWorkspaceStageList(events) {
+      document.getElementById("ws-stage-count-badge").textContent = `${events.length} events`;
+      const container = document.getElementById("ws-timeline-stages");
+      if (!events.length) {
+        container.innerHTML = '<div class="empty-state">Waiting for execution events...</div>';
+        return;
+      }
+      container.innerHTML = events.map((ev) => {
+        const statusCls = ev.status === "ok" ? "pill-green" : (ev.status === "failed" || ev.status === "blocked" || ev.status === "abstained" ? "pill-red" : (ev.status === "warning" ? "pill-amber" : "pill-slate"));
+        const d = ev.data || {};
+        const provPill = d.output_state ? `<span class="pill ${d.output_state === "committed" ? "pill-green" : "pill-red"}">${esc(String(d.output_state).toUpperCase())}</span>` : "";
+        return `
+          <div class="obs-card ${esc(d.output_state || "")}">
+            <div style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; margin-bottom:6px;">
+              <strong>${esc(ev.title)}</strong>
+              <span style="display:flex; gap:6px; align-items:center;">
+                ${provPill}
+                <span class="pill ${statusCls}">${esc(ev.status)}</span>
+                <span class="small muted num">${esc(ev.elapsed_ms)} ms</span>
+              </span>
+            </div>
+            <pre class="json-dump" style="max-height:180px;">${esc(JSON.stringify(d, null, 2))}</pre>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderWorkspaceAnswer(data) {
+      const srcHtml = (data.external_sources || []).length ? `
+        <div style="margin-top:10px;">
+          <strong class="small">Verified External Sources (${data.external_sources.length}):</strong>
+          <ul style="margin:6px 0 0 18px; padding:0;">
+            ${data.external_sources.map((s) => `<li class="small"><a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.title)}</a> <span class="muted">(${esc(s.provider)})</span></li>`).join("")}
+          </ul>
+        </div>
+      ` : "";
+      document.getElementById("ws-answer-container").innerHTML = `
+        <div class="decision-box ${esc(data.final_decision)}">
+          <div style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px;">
+            <span style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+              ${decisionPill(data.final_decision)}
+              <span class="pill pill-blue">${esc(data.provider)} (${esc(data.model)})</span>
+              <span class="pill pill-slate">${esc(data.knowledge_source)}</span>
+            </span>
+            <span class="small muted num">${msFmt(data.elapsed_seconds)} · Tokens: ${data.llm_usage?.total_tokens ?? 0}</span>
+          </div>
+          <div class="decision-output">${esc(data.final_response)}</div>
+          <p class="small muted" style="margin:8px 0 0;"><strong>Why:</strong> ${esc(data.decision_explanation)} | Tools: ${esc((data.tools_selected || []).join(", ") || "none")}</p>
+          ${srcHtml}
+          <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+            <button class="btn btn-sm" type="button" onclick="window.jumpToReplay('${esc(data.trace_id)}')">Replay Trace</button>
+            <button class="btn btn-sm" type="button" onclick="window.openEvidenceTrace('${esc(data.trace_id)}')">Inspect Evidence</button>
+          </div>
+        </div>
+      `;
+    }
+
+    document.getElementById("ws-cancel-btn").addEventListener("click", async () => {
+      if (appState.activeQueryId) {
+        try { await fetch(`/api/chat/cancel/${encodeURIComponent(appState.activeQueryId)}`, { method: "POST" }); } catch {}
+      }
+      if (appState.activeAbort) {
+        appState.activeAbort.abort();
+      }
+    });
+
+    document.getElementById("ws-query-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const q = document.getElementById("ws-query-input").value.trim();
+      const errBox = document.getElementById("ws-error");
+      const loadBox = document.getElementById("ws-loading-status");
+      const subBtn = document.getElementById("ws-submit-btn");
+      const canBtn = document.getElementById("ws-cancel-btn");
+      errBox.innerHTML = "";
+      if (!q) {
+        errBox.innerHTML = '<div class="notice notice-error">Please enter a query.</div>';
+        return;
+      }
+
+      const qid = "qry-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 6);
+      appState.activeQueryId = qid;
+      const abortCtrl = new AbortController();
+      appState.activeAbort = abortCtrl;
+      const liveEvents = [];
+      renderWorkspaceStageList([]);
+
+      subBtn.disabled = true;
+      canBtn.disabled = false;
+      loadBox.style.display = "flex";
+      loadBox.innerHTML = `<div><span class="spinner" style="border-color:rgba(37,99,235,0.25); border-top-color:var(--accent); vertical-align:middle; margin-right:8px;"></span> Executing query <code class="mono">${esc(qid)}</code> with dynamic planner...</div>`;
+
+      try {
+        const res = await fetch("/api/chat/stream", {
+          method: "POST",
+          headers: sessionHeaders({ "Content-Type": "application/json" }),
+          signal: abortCtrl.signal,
+          body: JSON.stringify({
+            question: q,
+            provider: document.getElementById("ws-provider").value,
+            conversation_id: appState.activeConvId,
+            query_id: qid,
+            enable_external_search: document.getElementById("ws-ext-search").checked,
+            search_provider: document.getElementById("ws-search-provider").value,
+            failure_rate: Number(document.getElementById("ws-fault-rate").value || 0),
+            seed: Number(document.getElementById("ws-seed").value || 42),
+            enable_recovery: document.getElementById("ws-recovery").checked,
+            enable_grounding: document.getElementById("ws-grounding").checked,
+            enable_uncertainty: document.getElementById("ws-uncertainty").checked,
+            use_nli: document.getElementById("ws-nli").checked,
+          }),
+        });
+        if (!res.ok) {
+          const txt = await res.text();
+          let msg = "HTTP " + res.status;
+          try { msg = JSON.parse(txt).detail || msg; } catch {}
+          throw new Error(msg);
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let buf = "";
+        let finalResult = null;
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          const frames = buf.split("\n\n");
+          buf = frames.pop() || "";
+          for (const frame of frames) {
+            let evtType = "message";
+            let dataStr = "";
+            for (const line of frame.split("\n")) {
+              if (line.startsWith("event:")) evtType = line.slice(6).trim();
+              else if (line.startsWith("data:")) dataStr += line.slice(5).trim();
+            }
+            if (!dataStr) continue;
+            const payload = JSON.parse(dataStr);
+            if (evtType === "stage") {
+              liveEvents.push(payload);
+              renderWorkspaceStageList(liveEvents);
+              loadBox.textContent = `Running: ${payload.title} (${payload.elapsed_ms} ms)`;
+            } else if (evtType === "result") {
+              finalResult = payload;
+            } else if (evtType === "error") {
+              throw new Error(payload.detail || "Execution error");
+            }
+          }
+        }
+        if (finalResult) {
+          appState.activeConvId = finalResult.conversation_id;
+          renderWorkspaceAnswer(finalResult);
+          await loadWorkspaceConversations();
+          await loadActiveConversationTurns(finalResult.conversation_id);
+          loadTraces();
+          loadReplaySources();
+        }
+      } catch (err) {
+        if (err.name === "AbortError") {
+          errBox.innerHTML = '<div class="notice notice-info">Query cancelled cleanly by user.</div>';
+        } else {
+          errBox.innerHTML = `<div class="notice notice-error">${esc(err.message)}</div>`;
+        }
+      } finally {
+        appState.activeQueryId = null;
+        appState.activeAbort = null;
+        subBtn.disabled = false;
+        canBtn.disabled = true;
+        loadBox.style.display = "none";
+      }
+    });
+
+    /* -------------------------------------------------------------------
+       12. UNSEEN EVALUATION LAB & POPULATION-SEPARATED METRICS
+       ------------------------------------------------------------------- */
+    async function loadUnseenDashboard() {
+      const authEnabled = Boolean(appState.health?.security?.admin_auth_enabled);
+      document.getElementById("unseen-admin-wrap").style.display = authEnabled ? "block" : "none";
+      const data = await apiFetch("/api/unseen/runs");
+      appState.unseenRuns = data;
+      renderGeneralizationPopulations(data.generalization);
+      renderUnseenHistory(data.runs || []);
+      if (data.runs?.length) {
+        await loadUnseenDetail(data.runs[0].run_id);
+      } else {
+        document.getElementById("unseen-metrics-summary").innerHTML = '<div class="empty-state" style="grid-column:1/-1;">No unseen-query runs executed yet. Click Generate &amp; Run Unseen Evaluation above.</div>';
+      }
+    }
+
+    function renderGeneralizationPopulations(gen) {
+      if (!gen) return;
+      const can = gen.canonical_benchmark || {};
+      const uns = gen.unseen_generated_queries || {};
+      const usr = gen.user_submitted_queries || {};
+      const ext = gen.external_information_queries || {};
+      const liv = gen.live_provider_experiments || {};
+      const um = uns.latest_metrics || {};
+      document.getElementById("unseen-populations-grid").innerHTML = `
+        <div class="stage-block">
+          <div class="stage-label">1. Canonical Benchmark (100 Tasks)</div>
+          <div class="num" style="font-size:20px; font-weight:700;">${pct(can.tracerecover_pooled_success, 1)}</div>
+          <div class="small muted">Baseline: ${pct(can.baseline_pooled_success, 1)} · ${esc(can.run_id || "—")}</div>
+        </div>
+        <div class="stage-block">
+          <div class="stage-label">2. Unseen Generated Benchmark</div>
+          <div class="num" style="font-size:20px; font-weight:700;">${pct(um.answer_correctness?.rate, 1)}</div>
+          <div class="small muted">${uns.run_count} runs · Correct ${um.answer_correctness?.correct ?? 0}/${um.answer_correctness?.denominator ?? 0} deterministic</div>
+        </div>
+        <div class="stage-block">
+          <div class="stage-label">3. User-Submitted Workspace Queries</div>
+          <div class="num" style="font-size:20px; font-weight:700;">${usr.count ?? 0} queries</div>
+          <div class="small muted">ANSWER: ${usr.decisions?.ANSWER ?? 0} · WARN: ${usr.decisions?.WARN ?? 0} · ABSTAIN: ${usr.decisions?.ABSTAIN ?? 0}</div>
+        </div>
+        <div class="stage-block">
+          <div class="stage-label">4. External-Information Queries</div>
+          <div class="num" style="font-size:20px; font-weight:700;">${ext.total_count ?? 0} queries</div>
+          <div class="small muted">Verified URLs linked: ${ext.verified_source_links_count ?? 0}</div>
+        </div>
+        <div class="stage-block">
+          <div class="stage-label">5. Live-Provider Experiments</div>
+          <div class="num" style="font-size:20px; font-weight:700;">${liv.total_count ?? 0} runs</div>
+          <div class="small muted">Providers: ${esc((liv.providers_observed || []).join(", ") || "None yet")} · $${Number(liv.total_cost_usd || 0).toFixed(4)}</div>
+        </div>
+      `;
+    }
+
+    function renderUnseenHistory(runs) {
+      document.getElementById("unseen-history-table").innerHTML = runs.length ? `
+        <table><thead><tr><th>Run ID</th><th>Provider</th><th>Tasks</th><th>Seed</th><th>Fault %</th><th>Answer Correctness</th><th>Recovery</th><th>Abstention Prec.</th><th>Inspect</th></tr></thead>
+        <tbody>${runs.map((r) => `<tr><td class="mono">${esc(r.run_id)}</td><td>${esc(r.provider)}</td><td class="num">${r.num_tasks}</td><td class="num">${r.seed}</td><td class="num">${r.failure_rate_percent}%</td><td class="num">${pct(r.answer_correctness_rate, 1)}</td><td class="num">${pct(r.recovery_rate, 1)}</td><td class="num">${pct(r.abstention_precision, 1)}</td><td><button class="btn btn-sm" type="button" onclick="loadUnseenDetail('${esc(r.run_id)}')">View</button></td></tr>`).join("")}</tbody></table>
+      ` : '<div class="empty-state" style="border:none;">No saved unseen runs yet.</div>';
+    }
+
+    window.loadUnseenDetail = async function (runId) {
+      const detail = await apiFetch("/api/unseen/runs/" + encodeURIComponent(runId));
+      appState.unseenDetail = detail;
+      const m = detail.metrics || {};
+      const cfg = detail.config || {};
+      document.getElementById("unseen-active-meta").textContent = `${detail.run_id} · Seed ${cfg.seed} · Provider ${cfg.provider} (${cfg.provider_scope}) · SHA-256 ${String(cfg.dataset_sha256 || "").slice(0, 12)}…`;
+      const cards = [
+        ["Answer Correctness (Det.)", pct(m.answer_correctness?.rate, 1), `${m.answer_correctness?.correct ?? 0}/${m.answer_correctness?.denominator ?? 0} (${m.reference_criteria_review_count ?? 0} rubric-reviewed)`],
+        ["Evidence Support Rate", pct(m.evidence_support_rate?.rate, 1), `${m.evidence_support_rate?.supported_claims ?? 0}/${m.evidence_support_rate?.denominator ?? 0} claims`],
+        ["Unsupported Claim Rate", pct(m.unsupported_claim_rate?.rate, 1), `${m.unsupported_claim_rate?.unsupported_or_contradicted ?? 0}/${m.unsupported_claim_rate?.denominator ?? 0}`],
+        ["Successful Recovery", pct(m.successful_recovery_rate?.rate, 1), `${m.successful_recovery_rate?.successful_recoveries ?? 0}/${m.successful_recovery_rate?.detected_failures ?? 0} failures`],
+        ["Correct Abstention / Recall", pct(m.correct_abstention_rate?.rate, 1), `Prec: ${pct(m.abstention_precision?.rate, 1)} · False Abs: ${pct(m.incorrect_abstention_rate?.rate, 1)}`],
+        ["Query Completion & Tool OK", pct(m.query_completion_rate?.rate, 1), `Tools OK: ${pct(m.tool_execution_success_rate?.rate, 1)}`],
+        ["Latency (Avg / Median)", msFmt(m.latency_seconds?.average), `Median: ${msFmt(m.latency_seconds?.median)}`],
+        ["Tokens & Cost", `${m.tokens?.total ?? 0} tok`, `Mean: ${m.tokens?.mean ?? 0} · $${Number(m.cost_usd?.total || 0).toFixed(4)}`],
+      ];
+      document.getElementById("unseen-metrics-summary").innerHTML = cards.map(([k, v, sub]) => `
+        <div class="kpi-card"><div class="kpi-label">${esc(k)}</div><div class="kpi-value" style="font-size:21px;">${esc(v)}</div><div class="kpi-sub">${esc(sub)}</div></div>
+      `).join("");
+
+      const cats = m.category_breakdown || [];
+      document.getElementById("unseen-category-table").innerHTML = cats.length ? `
+        <table><thead><tr><th>Category (13 Supported)</th><th>Tasks</th><th>Det. Correct</th><th>Abstained</th><th>Failures</th><th>Recovered</th></tr></thead>
+        <tbody>${cats.map((c) => `<tr><td class="mono">${esc(c.category)}</td><td class="num">${c.count}</td><td class="num">${c.deterministic_correct}/${c.deterministic_count}</td><td class="num">${c.abstained}</td><td class="num">${c.detected_failures}</td><td class="num">${c.successful_recoveries}</td></tr>`).join("")}</tbody></table>
+      ` : "";
+
+      const rows = detail.results || [];
+      document.getElementById("unseen-tasks-table").innerHTML = rows.length ? `
+        <table><thead><tr><th>Task ID</th><th>Category</th><th>Query</th><th>Decision</th><th>Tools</th><th>Correct</th><th>Trace</th></tr></thead>
+        <tbody>${rows.map((r) => `<tr><td class="mono">${esc(r.task_id)}</td><td class="mono small">${esc(r.category)}</td><td>${esc(r.query)}<div class="small muted">${esc(r.reference_criteria || "")}</div></td><td>${decisionPill(r.final_decision)}</td><td class="mono small">${esc((r.tools_selected || []).join(", ") || "none")}</td><td>${r.correct === true ? '<span class="pill pill-green">Pass</span>' : (r.correct === false ? '<span class="pill pill-red">Fail</span>' : '<span class="pill pill-slate">Human Rubric</span>')}</td><td>${r.trace_id ? `<button class="btn btn-sm" type="button" onclick="window.jumpToReplay('${esc(r.trace_id)}')">Replay</button>` : ""}</td></tr>`).join("")}</tbody></table>
+      ` : "";
+    };
+
+    document.getElementById("unseen-refresh-btn").addEventListener("click", loadUnseenDashboard);
+    document.getElementById("unseen-run-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById("unseen-run-btn");
+      const fb = document.getElementById("unseen-run-feedback");
+      btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Running Unseen Suite...';
+      fb.innerHTML = '<div class="notice notice-info">Generating unseen dataset and running TraceRecover evaluation...</div>';
+      const headers = { "Content-Type": "application/json" };
+      const tok = document.getElementById("unseen-admin-token").value.trim();
+      if (tok) headers["Authorization"] = "Bearer " + tok;
+      try {
+        const res = await apiFetch("/api/unseen/run", {
+          method: "POST", headers,
+          body: JSON.stringify({
+            num_tasks: Number(document.getElementById("unseen-num-tasks").value),
+            seed: Number(document.getElementById("unseen-seed").value || 42),
+            provider: document.getElementById("unseen-provider").value,
+            failure_rate: Number(document.getElementById("unseen-fault-rate").value || 0),
+            enable_external_search: document.getElementById("unseen-ext-search").checked,
+          }),
+        });
+        fb.innerHTML = `<div class="notice notice-success">Completed unseen evaluation <strong>${esc(res.run_id)}</strong> (${res.config.num_tasks} tasks). Canonical benchmark untouched.</div>`;
+        await loadUnseenDashboard();
+      } catch (err) {
+        fb.innerHTML = `<div class="notice notice-error">${esc(err.message)}</div>`;
+      } finally {
+        btn.disabled = false; btn.textContent = "Generate & Run Unseen Evaluation";
+      }
+    });
+
+    /* -------------------------------------------------------------------
+       13. MULTI-PROVIDER COMPARISON
+       ------------------------------------------------------------------- */
+    async function loadCompareHistory() {
+      const res = await apiFetch("/api/compare/history");
+      appState.compareHistory = res.comparisons || [];
+      document.getElementById("cmp-history-table").innerHTML = appState.compareHistory.length ? `
+        <table><thead><tr><th>Comparison ID</th><th>Question</th><th>Providers</th><th>Created</th><th>Inspect</th></tr></thead>
+        <tbody>${appState.compareHistory.map((c, idx) => `<tr><td class="mono">${esc(c.comparison_id)}</td><td>${esc(c.question)}</td><td class="mono small">${esc((c.config?.providers || []).join(", "))}</td><td class="small">${esc(new Date(c.created_at).toLocaleString())}</td><td><button class="btn btn-sm" type="button" onclick="renderCompareBundle(appState.compareHistory[${idx}])">Show</button></td></tr>`).join("")}</tbody></table>
+      ` : '<div class="empty-state" style="border:none;">No provider comparisons saved yet.</div>';
+    }
+
+    window.renderCompareBundle = function (bundle) {
+      if (!bundle) return;
+      const rows = bundle.results || [];
+      document.getElementById("cmp-results-wrap").innerHTML = `
+        <div class="table-wrap"><table>
+          <thead><tr><th>Provider</th><th>Status &amp; Mode</th><th>Decision</th><th>Tools</th><th>Evidence</th><th>Recovery</th><th>Latency</th><th>Tokens / Cost</th><th>Response / Error</th></tr></thead>
+          <tbody>${rows.map((r) => `
+            <tr>
+              <td><strong>${esc(r.provider)}</strong><div class="small mono muted">${esc(r.model || "—")}</div></td>
+              <td><span class="pill ${r.status === "completed" ? "pill-green" : "pill-amber"}">${esc(r.status)}</span><div class="small muted">${esc(r.execution_mode)}</div></td>
+              <td>${r.final_decision ? decisionPill(r.final_decision) : '<span class="pill pill-slate">N/A</span>'}</td>
+              <td class="mono small">${esc((r.tools_selected || []).join(", ") || "none")}</td>
+              <td class="num">${r.evidence_coverage !== null && r.evidence_coverage !== undefined ? pct(r.evidence_coverage, 0) : "N/A"}</td>
+              <td class="num">${r.successful_recoveries ?? 0}</td>
+              <td class="num">${msFmt(r.latency_seconds)}</td>
+              <td class="num">${r.total_tokens ?? 0}<div class="small muted">$${Number(r.estimated_cost_usd || 0).toFixed(4)}</div></td>
+              <td>${r.error ? `<span class="small" style="color:var(--red);">${esc(r.error)}</span>` : `<div class="small">${esc(String(r.final_response || "").slice(0, 220))}</div>`}${r.trace_id ? `<div style="margin-top:4px;"><button class="btn btn-sm" type="button" onclick="window.jumpToReplay('${esc(r.trace_id)}')">Replay</button></div>` : ""}</td>
+            </tr>`).join("")}
+          </tbody>
+        </table></div>
+      `;
+    };
+
+    document.getElementById("cmp-refresh-btn").addEventListener("click", loadCompareHistory);
+    document.getElementById("cmp-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById("cmp-run-btn");
+      const fb = document.getElementById("cmp-feedback");
+      const provs = Array.from(document.querySelectorAll('input[name="cmp-prov"]:checked')).map((el) => el.value);
+      if (!provs.length) {
+        fb.innerHTML = '<div class="notice notice-error">Select at least one provider.</div>';
+        return;
+      }
+      btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Comparing...';
+      fb.innerHTML = '<div class="notice notice-info">Running identical query across selected providers...</div>';
+      try {
+        const bundle = await apiFetch("/api/compare/providers", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            question: document.getElementById("cmp-question").value.trim(),
+            providers: provs,
+            enable_external_search: document.getElementById("cmp-ext-search").checked,
+            failure_rate: Number(document.getElementById("cmp-fault-rate").value || 0),
+          }),
+        });
+        fb.innerHTML = `<div class="notice notice-success">Comparison <strong>${esc(bundle.comparison_id)}</strong> completed.</div>`;
+        window.renderCompareBundle(bundle);
+        await loadCompareHistory();
+      } catch (err) {
+        fb.innerHTML = `<div class="notice notice-error">${esc(err.message)}</div>`;
+      } finally {
+        btn.disabled = false; btn.textContent = "Compare Providers";
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>

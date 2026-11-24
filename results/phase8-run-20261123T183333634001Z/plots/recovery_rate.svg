@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600" role="img" aria-labelledby="chart-title chart-desc">
+<title id="chart-title">Recovery rate</title>
+<desc id="chart-desc">Successful recovery incidents divided by detected failure incidents. Undefined values remain N/A rather than being plotted as zero.</desc>
+<style>text{font-family:Segoe UI,Arial,sans-serif;fill:#222}.grid{stroke:#d9d9d9;stroke-width:1}.axis{stroke:#444;stroke-width:1.4}.line{fill:none;stroke-width:2.5}.point{stroke:#fff;stroke-width:1.5}.label{font-size:12px}.small{font-size:11px}</style>
+<text x="480.0" y="38" text-anchor="middle" font-size="22" font-weight="600">Recovery rate</text>
+<text x="480.0" y="62" text-anchor="middle" font-size="12" fill="#555">Successful recovery incidents divided by detected failure incidents. Undefined values remain N/A rather than being plotted as zero.</text>
+<line class="grid" x1="100.0" y1="478.0" x2="780.0" y2="478.0"/>
+<text class="label" x="88.0" y="482.0" text-anchor="end">0.0</text>
+<line class="grid" x1="100.0" y1="400.0" x2="780.0" y2="400.0"/>
+<text class="label" x="88.0" y="404.0" text-anchor="end">0.2</text>
+<line class="grid" x1="100.0" y1="322.0" x2="780.0" y2="322.0"/>
+<text class="label" x="88.0" y="326.0" text-anchor="end">0.4</text>
+<line class="grid" x1="100.0" y1="244.0" x2="780.0" y2="244.0"/>
+<text class="label" x="88.0" y="248.0" text-anchor="end">0.6</text>
+<line class="grid" x1="100.0" y1="166.0" x2="780.0" y2="166.0"/>
+<text class="label" x="88.0" y="170.0" text-anchor="end">0.8</text>
+<line class="grid" x1="100.0" y1="88.0" x2="780.0" y2="88.0"/>
+<text class="label" x="88.0" y="92.0" text-anchor="end">1.0</text>
+<line class="axis" x1="100.0" y1="88.0" x2="100.0" y2="478.0"/>
+<line class="axis" x1="100.0" y1="478.0" x2="780.0" y2="478.0"/>
+<line class="grid" x1="100.0" y1="478.0" x2="100.0" y2="483.0"/>
+<text class="label" x="100.0" y="502.0" text-anchor="middle">0%</text>
+<line class="grid" x1="440.0" y1="478.0" x2="440.0" y2="483.0"/>
+<text class="label" x="440.0" y="502.0" text-anchor="middle">20%</text>
+<line class="grid" x1="780.0" y1="478.0" x2="780.0" y2="483.0"/>
+<text class="label" x="780.0" y="502.0" text-anchor="middle">40%</text>
+<text class="label" x="440.0" y="530.0" text-anchor="middle">Injected tool failure rate</text>
+<text class="label" transform="translate(28 283.0) rotate(-90)" text-anchor="middle">Recovery rate</text>
+<circle class="point" cx="100.0" cy="478.0" r="5" fill="#4c78a8"><title>Baseline at 0%: 0; 0/10</title></circle>
+<text class="small" x="107.0" y="469.0">0/10</text>
+<circle class="point" cx="440.0" cy="478.0" r="5" fill="#4c78a8"><title>Baseline at 20%: 0; 0/42</title></circle>
+<text class="small" x="447.0" y="469.0">0/42</text>
+<circle class="point" cx="780.0" cy="478.0" r="5" fill="#4c78a8"><title>Baseline at 40%: 0; 0/75</title></circle>
+<text class="small" x="787.0" y="469.0">0/75</text>
+<polyline class="line" stroke="#4c78a8" points="100.0,478.0 440.0,478.0 780.0,478.0"/>
+<circle class="point" cx="100.0" cy="478.0" r="5" fill="#f58518"><title>TraceRecover at 0%: 0; 0/10</title></circle>
+<text class="small" x="107.0" y="456.0">0/10</text>
+<circle class="point" cx="440.0" cy="273.7" r="5" fill="#f58518"><title>TraceRecover at 20%: 0.5238; 22/42</title></circle>
+<text class="small" x="447.0" y="251.7">22/42</text>
+<circle class="point" cx="780.0" cy="280.2" r="5" fill="#f58518"><title>TraceRecover at 40%: 0.5072; 35/69</title></circle>
+<text class="small" x="787.0" y="258.2">35/69</text>
+<polyline class="line" stroke="#f58518" points="100.0,478.0 440.0,273.7 780.0,280.2"/>
+<circle class="point" cx="100.0" cy="478.0" r="5" fill="#b279a2"><title>Without localization at 0%: 0; 0/10</title></circle>
+<text class="small" x="107.0" y="469.0">0/10</text>
+<circle class="point" cx="440.0" cy="478.0" r="5" fill="#b279a2"><title>Without localization at 20%: 0; 0/42</title></circle>
+<text class="small" x="447.0" y="469.0">0/42</text>
+<circle class="point" cx="780.0" cy="478.0" r="5" fill="#b279a2"><title>Without localization at 40%: 0; 0/75</title></circle>
+<text class="small" x="787.0" y="469.0">0/75</text>
+<polyline class="line" stroke="#b279a2" points="100.0,478.0 440.0,478.0 780.0,478.0"/>
+<line x1="806" y1="108.0" x2="832" y2="108.0" stroke="#4c78a8" stroke-width="3"/>
+<circle cx="819" cy="108.0" r="4" fill="#4c78a8"/>
+<text class="label" x="840" y="112.0">Baseline</text>
+<line x1="806" y1="134.0" x2="832" y2="134.0" stroke="#f58518" stroke-width="3"/>
+<circle cx="819" cy="134.0" r="4" fill="#f58518"/>
+<text class="label" x="840" y="138.0">TraceRecover</text>
+<line x1="806" y1="160.0" x2="832" y2="160.0" stroke="#b279a2" stroke-width="3"/>
+<circle cx="819" cy="160.0" r="4" fill="#b279a2"/>
+<text class="label" x="840" y="164.0">Without localization</text>
+</svg>

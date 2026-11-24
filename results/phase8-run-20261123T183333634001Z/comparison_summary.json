@@ -1,0 +1,1686 @@
+{
+  "dataset_version": "2.0",
+  "dataset_sha256": "7e3a535c6609021ace84acc86e62fbc641ca6f567feac77a2d5b457f61f5050c",
+  "random_seed": 42,
+  "task_count": 100,
+  "failure_rates_percent": [
+    0.0,
+    20.0,
+    40.0
+  ],
+  "confidence_interval_method": "Wilson score interval, 95%, reported for task success only; no significance tests performed.",
+  "comparisons": [
+    {
+      "failure_rate_percent": 0.0,
+      "baseline": {
+        "task_count": 100,
+        "task_success": {
+          "rate": 0.86,
+          "successes": 86,
+          "denominator": 100,
+          "confidence_interval_95": {
+            "lower": 0.7786263961619276,
+            "upper": 0.914737342455351
+          }
+        },
+        "recovery": {
+          "rate": 0.0,
+          "successful_recoveries": 0,
+          "detected_failures": 10,
+          "denominator": 10,
+          "detected_injected_failures": 0,
+          "detected_natural_failures": 10,
+          "injected_tool_failures": 0,
+          "injected_recovery_failures": 0
+        },
+        "hallucination": {
+          "rate": 0.13131313131313133,
+          "hallucinating_answers": 13,
+          "answers_with_factual_claims": 99,
+          "denominator": 99,
+          "unsupported_claims": 13,
+          "contradicted_claims": 10
+        },
+        "unsupported_claim_rate": {
+          "rate": 0.06878306878306878,
+          "ungrounded_rate": 0.12169312169312169,
+          "unsupported_claims": 13,
+          "contradicted_claims": 10,
+          "total_claims": 189,
+          "denominator": 189
+        },
+        "evidence_coverage": {
+          "rate": null,
+          "average_coverage": null,
+          "median_coverage": null,
+          "fully_grounded_tasks": 0,
+          "full_coverage_rate": null,
+          "sample_count": 0,
+          "denominator": 0
+        },
+        "ece": {
+          "ece": null,
+          "sample_count": 0,
+          "bin_count": 10,
+          "binning": "equal-width [0,1], last bin includes 1",
+          "bins": []
+        },
+        "abstention": {
+          "correct_abstentions": 0,
+          "incorrect_abstentions": 0,
+          "missed_abstentions": 30,
+          "abstention_precision": null,
+          "abstention_recall": 0.0,
+          "ground_truth_abstention_tasks": 30,
+          "predicted_abstentions": 0
+        },
+        "latency": {
+          "average_seconds": 0.0027030590001959356,
+          "median_seconds": 0.0024197499988076743,
+          "sample_count": 100
+        },
+        "cost": {
+          "total_prompt_tokens": 0,
+          "total_completion_tokens": 0,
+          "total_tokens": 0,
+          "average_tokens": 0,
+          "total_cost_usd": 0.0,
+          "average_cost_usd": 0.0,
+          "sample_count": 100
+        }
+      },
+      "tracerecover": {
+        "task_count": 100,
+        "task_success": {
+          "rate": 1.0,
+          "successes": 100,
+          "denominator": 100,
+          "confidence_interval_95": {
+            "lower": 0.9630051925239981,
+            "upper": 0.9999999999999999
+          }
+        },
+        "recovery": {
+          "rate": 0.0,
+          "successful_recoveries": 0,
+          "detected_failures": 10,
+          "denominator": 10,
+          "detected_injected_failures": 0,
+          "detected_natural_failures": 10,
+          "injected_tool_failures": 0,
+          "injected_recovery_failures": 0
+        },
+        "hallucination": {
+          "rate": 0.0,
+          "hallucinating_answers": 0,
+          "answers_with_factual_claims": 70,
+          "denominator": 70,
+          "unsupported_claims": 0,
+          "contradicted_claims": 0
+        },
+        "unsupported_claim_rate": {
+          "rate": 0.0,
+          "ungrounded_rate": 0.0,
+          "unsupported_claims": 0,
+          "contradicted_claims": 0,
+          "total_claims": 150,
+          "denominator": 150
+        },
+        "evidence_coverage": {
+          "rate": 0.75,
+          "average_coverage": 0.75,
+          "median_coverage": 1.0,
+          "fully_grounded_tasks": 70,
+          "full_coverage_rate": 0.7,
+          "sample_count": 100,
+          "denominator": 100
+        },
+        "ece": {
+          "ece": 0.19642857142857142,
+          "sample_count": 100,
+          "bin_count": 10,
+          "binning": "equal-width [0,1], last bin includes 1",
+          "bins": [
+            {
+              "bin": 0,
+              "lower_bound": 0.0,
+              "upper_bound": 0.1,
+              "sample_count": 10,
+              "average_confidence": 0.0,
+              "accuracy": 1.0
+            },
+            {
+              "bin": 3,
+              "lower_bound": 0.3,
+              "upper_bound": 0.4,
+              "sample_count": 10,
+              "average_confidence": 0.3571428571428572,
+              "accuracy": 1.0
+            },
+            {
+              "bin": 6,
+              "lower_bound": 0.6,
+              "upper_bound": 0.7,
+              "sample_count": 10,
+              "average_confidence": 0.6785714285714286,
+              "accuracy": 1.0
+            },
+            {
+              "bin": 9,
+              "lower_bound": 0.9,
+              "upper_bound": 1.0,
+              "sample_count": 70,
+              "average_confidence": 1.0,
+              "accuracy": 1.0
+            }
+          ]
+        },
+        "abstention": {
+          "correct_abstentions": 30,
+          "incorrect_abstentions": 0,
+          "missed_abstentions": 0,
+          "abstention_precision": 1.0,
+          "abstention_recall": 1.0,
+          "ground_truth_abstention_tasks": 30,
+          "predicted_abstentions": 30
+        },
+        "latency": {
+          "average_seconds": 0.006651824999644305,
+          "median_seconds": 0.00640900000144029,
+          "sample_count": 100
+        },
+        "cost": {
+          "total_prompt_tokens": 0,
+          "total_completion_tokens": 0,
+          "total_tokens": 0,
+          "average_tokens": 0,
+          "total_cost_usd": 0.0,
+          "average_cost_usd": 0.0,
+          "sample_count": 100
+        }
+      },
+      "tracerecover_minus_baseline": {
+        "task_success_rate": 0.14,
+        "hallucination_rate": -0.13131313131313133,
+        "unsupported_claim_rate": -0.06878306878306878,
+        "evidence_coverage": null,
+        "average_latency_seconds": 0.0039487659994483695,
+        "ece": null,
+        "average_cost_usd": 0.0
+      }
+    },
+    {
+      "failure_rate_percent": 20.0,
+      "baseline": {
+        "task_count": 100,
+        "task_success": {
+          "rate": 0.58,
+          "successes": 58,
+          "denominator": 100,
+          "confidence_interval_95": {
+            "lower": 0.4820630799889527,
+            "upper": 0.672017750814887
+          }
+        },
+        "recovery": {
+          "rate": 0.0,
+          "successful_recoveries": 0,
+          "detected_failures": 42,
+          "denominator": 42,
+          "detected_injected_failures": 34,
+          "detected_natural_failures": 8,
+          "injected_tool_failures": 34,
+          "injected_recovery_failures": 0
+        },
+        "hallucination": {
+          "rate": 0.40404040404040403,
+          "hallucinating_answers": 40,
+          "answers_with_factual_claims": 99,
+          "denominator": 99,
+          "unsupported_claims": 41,
+          "contradicted_claims": 10
+        },
+        "unsupported_claim_rate": {
+          "rate": 0.2192513368983957,
+          "ungrounded_rate": 0.2727272727272727,
+          "unsupported_claims": 41,
+          "contradicted_claims": 10,
+          "total_claims": 187,
+          "denominator": 187
+        },
+        "evidence_coverage": {
+          "rate": null,
+          "average_coverage": null,
+          "median_coverage": null,
+          "fully_grounded_tasks": 0,
+          "full_coverage_rate": null,
+          "sample_count": 0,
+          "denominator": 0
+        },
+        "ece": {
+          "ece": null,
+          "sample_count": 0,
+          "bin_count": 10,
+          "binning": "equal-width [0,1], last bin includes 1",
+          "bins": []
+        },
+        "abstention": {
+          "correct_abstentions": 0,
+          "incorrect_abstentions": 0,
+          "missed_abstentions": 30,
+          "abstention_precision": null,
+          "abstention_recall": 0.0,
+          "ground_truth_abstention_tasks": 30,
+          "predicted_abstentions": 0
+        },
+        "latency": {
+          "average_seconds": 0.002156600000162143,
+          "median_seconds": 0.002161350003007101,
+          "sample_count": 100
+        },
+        "cost": {
+          "total_prompt_tokens": 0,
+          "total_completion_tokens": 0,
+          "total_tokens": 0,
+          "average_tokens": 0,
+          "total_cost_usd": 0.0,
+          "average_cost_usd": 0.0,
+          "sample_count": 100
+        }
+      },
+      "tracerecover": {
+        "task_count": 100,
+        "task_success": {
+          "rate": 0.89,
+          "successes": 89,
+          "denominator": 100,
+          "confidence_interval_95": {
+            "lower": 0.8136853697209698,
+            "upper": 0.9374586804477487
+          }
+        },
+        "recovery": {
+          "rate": 0.5238095238095238,
+          "successful_recoveries": 22,
+          "detected_failures": 42,
+          "denominator": 42,
+          "detected_injected_failures": 34,
+          "detected_natural_failures": 8,
+          "injected_tool_failures": 34,
+          "injected_recovery_failures": 11
+        },
+        "hallucination": {
+          "rate": 0.0,
+          "hallucinating_answers": 0,
+          "answers_with_factual_claims": 60,
+          "denominator": 60,
+          "unsupported_claims": 0,
+          "contradicted_claims": 0
+        },
+        "unsupported_claim_rate": {
+          "rate": 0.0,
+          "ungrounded_rate": 0.0,
+          "unsupported_claims": 0,
+          "contradicted_claims": 0,
+          "total_claims": 126,
+          "denominator": 126
+        },
+        "evidence_coverage": {
+          "rate": 0.65,
+          "average_coverage": 0.65,
+          "median_coverage": 1.0,
+          "fully_grounded_tasks": 60,
+          "full_coverage_rate": 0.6,
+          "sample_count": 100,
+          "denominator": 100
+        },
+        "ece": {
+          "ece": 0.21249579831932766,
+          "sample_count": 100,
+          "bin_count": 10,
+          "binning": "equal-width [0,1], last bin includes 1",
+          "bins": [
+            {
+              "bin": 0,
+              "lower_bound": 0.0,
+              "upper_bound": 0.1,
+              "sample_count": 19,
+              "average_confidence": 0.019349845201238385,
+              "accuracy": 0.5263157894736842
+            },
+            {
+              "bin": 1,
+              "lower_bound": 0.1,
+              "upper_bound": 0.2,
+              "sample_count": 1,
+              "average_confidence": 0.196078431372549,
+              "accuracy": 0.0
+            },
+            {
+              "bin": 3,
+              "lower_bound": 0.3,
+              "upper_bound": 0.4,
+              "sample_count": 10,
+              "average_confidence": 0.3504201680672269,
+              "accuracy": 1.0
+            },
+            {
+              "bin": 6,
+              "lower_bound": 0.6,
+              "upper_bound": 0.7,
+              "sample_count": 10,
+              "average_confidence": 0.6703081232492998,
+              "accuracy": 1.0
+            },
+            {
+              "bin": 7,
+              "lower_bound": 0.7,
+              "upper_bound": 0.8,
+              "sample_count": 1,
+              "average_confidence": 0.7950980392156863,
+              "accuracy": 1.0
+            },
+            {
+              "bin": 8,
+              "lower_bound": 0.8,
+              "upper_bound": 0.9,
+              "sample_count": 4,
+              "average_confidence": 0.8607843137254902,
+              "accuracy": 0.75
+            },
+            {
+              "bin": 9,
+              "lower_bound": 0.9,
+              "upper_bound": 1.0,
+              "sample_count": 55,
+              "average_confidence": 0.9821746880570411,
+              "accuracy": 1.0
+            }
+          ]
+        },
+        "abstention": {
+          "correct_abstentions": 30,
+          "incorrect_abstentions": 10,
+          "missed_abstentions": 0,
+          "abstention_precision": 0.75,
+          "abstention_recall": 1.0,
+          "ground_truth_abstention_tasks": 30,
+          "predicted_abstentions": 40
+        },
+        "latency": {
+          "average_seconds": 0.006712467999677756,
+          "median_seconds": 0.006425300001865253,
+          "sample_count": 100
+        },
+        "cost": {
+          "total_prompt_tokens": 0,
+          "total_completion_tokens": 0,
+          "total_tokens": 0,
+          "average_tokens": 0,
+          "total_cost_usd": 0.0,
+          "average_cost_usd": 0.0,
+          "sample_count": 100
+        }
+      },
+      "tracerecover_minus_baseline": {
+        "task_success_rate": 0.31000000000000005,
+        "hallucination_rate": -0.40404040404040403,
+        "unsupported_claim_rate": -0.2192513368983957,
+        "evidence_coverage": null,
+        "average_latency_seconds": 0.0045558679995156125,
+        "ece": null,
+        "average_cost_usd": 0.0
+      }
+    },
+    {
+      "failure_rate_percent": 40.0,
+      "baseline": {
+        "task_count": 100,
+        "task_success": {
+          "rate": 0.4,
+          "successes": 40,
+          "denominator": 100,
+          "confidence_interval_95": {
+            "lower": 0.3093997461136028,
+            "upper": 0.4979992153815976
+          }
+        },
+        "recovery": {
+          "rate": 0.0,
+          "successful_recoveries": 0,
+          "detected_failures": 75,
+          "denominator": 75,
+          "detected_injected_failures": 67,
+          "detected_natural_failures": 8,
+          "injected_tool_failures": 67,
+          "injected_recovery_failures": 0
+        },
+        "hallucination": {
+          "rate": 0.5757575757575758,
+          "hallucinating_answers": 57,
+          "answers_with_factual_claims": 99,
+          "denominator": 99,
+          "unsupported_claims": 67,
+          "contradicted_claims": 10
+        },
+        "unsupported_claim_rate": {
+          "rate": 0.3641304347826087,
+          "ungrounded_rate": 0.41847826086956524,
+          "unsupported_claims": 67,
+          "contradicted_claims": 10,
+          "total_claims": 184,
+          "denominator": 184
+        },
+        "evidence_coverage": {
+          "rate": null,
+          "average_coverage": null,
+          "median_coverage": null,
+          "fully_grounded_tasks": 0,
+          "full_coverage_rate": null,
+          "sample_count": 0,
+          "denominator": 0
+        },
+        "ece": {
+          "ece": null,
+          "sample_count": 0,
+          "bin_count": 10,
+          "binning": "equal-width [0,1], last bin includes 1",
+          "bins": []
+        },
+        "abstention": {
+          "correct_abstentions": 0,
+          "incorrect_abstentions": 0,
+          "missed_abstentions": 30,
+          "abstention_precision": null,
+          "abstention_recall": 0.0,
+          "ground_truth_abstention_tasks": 30,
+          "predicted_abstentions": 0
+        },
+        "latency": {
+          "average_seconds": 0.002140921000100207,
+          "median_seconds": 0.0021575499995378777,
+          "sample_count": 100
+        },
+        "cost": {
+          "total_prompt_tokens": 0,
+          "total_completion_tokens": 0,
+          "total_tokens": 0,
+          "average_tokens": 0,
+          "total_cost_usd": 0.0,
+          "average_cost_usd": 0.0,
+          "sample_count": 100
+        }
+      },
+      "tracerecover": {
+        "task_count": 100,
+        "task_success": {
+          "rate": 0.79,
+          "successes": 79,
+          "denominator": 100,
+          "confidence_interval_95": {
+            "lower": 0.7001985069803768,
+            "upper": 0.8583445046835422
+          }
+        },
+        "recovery": {
+          "rate": 0.5072463768115942,
+          "successful_recoveries": 35,
+          "detected_failures": 69,
+          "denominator": 69,
+          "detected_injected_failures": 61,
+          "detected_natural_failures": 8,
+          "injected_tool_failures": 61,
+          "injected_recovery_failures": 28
+        },
+        "hallucination": {
+          "rate": 0.0,
+          "hallucinating_answers": 0,
+          "answers_with_factual_claims": 49,
+          "denominator": 49,
+          "unsupported_claims": 0,
+          "contradicted_claims": 0
+        },
+        "unsupported_claim_rate": {
+          "rate": 0.0,
+          "ungrounded_rate": 0.0,
+          "unsupported_claims": 0,
+          "contradicted_claims": 0,
+          "total_claims": 102,
+          "denominator": 102
+        },
+        "evidence_coverage": {
+          "rate": 0.535,
+          "average_coverage": 0.535,
+          "median_coverage": 0.5,
+          "fully_grounded_tasks": 49,
+          "full_coverage_rate": 0.49,
+          "sample_count": 100,
+          "denominator": 100
+        },
+        "ece": {
+          "ece": 0.23482072829131653,
+          "sample_count": 100,
+          "bin_count": 10,
+          "binning": "equal-width [0,1], last bin includes 1",
+          "bins": [
+            {
+              "bin": 0,
+              "lower_bound": 0.0,
+              "upper_bound": 0.1,
+              "sample_count": 33,
+              "average_confidence": 0.017082590612002374,
+              "accuracy": 0.3939393939393939
+            },
+            {
+              "bin": 2,
+              "lower_bound": 0.2,
+              "upper_bound": 0.3,
+              "sample_count": 1,
+              "average_confidence": 0.23529411764705888,
+              "accuracy": 0.0
+            },
+            {
+              "bin": 3,
+              "lower_bound": 0.3,
+              "upper_bound": 0.4,
+              "sample_count": 8,
+              "average_confidence": 0.34873949579831937,
+              "accuracy": 1.0
+            },
+            {
+              "bin": 5,
+              "lower_bound": 0.5,
+              "upper_bound": 0.6,
+              "sample_count": 1,
+              "average_confidence": 0.5794117647058824,
+              "accuracy": 1.0
+            },
+            {
+              "bin": 6,
+              "lower_bound": 0.6,
+              "upper_bound": 0.7,
+              "sample_count": 8,
+              "average_confidence": 0.6579131652661064,
+              "accuracy": 1.0
+            },
+            {
+              "bin": 8,
+              "lower_bound": 0.8,
+              "upper_bound": 0.9,
+              "sample_count": 11,
+              "average_confidence": 0.8558823529411765,
+              "accuracy": 1.0
+            },
+            {
+              "bin": 9,
+              "lower_bound": 0.9,
+              "upper_bound": 1.0,
+              "sample_count": 38,
+              "average_confidence": 0.9774251805985552,
+              "accuracy": 1.0
+            }
+          ]
+        },
+        "abstention": {
+          "correct_abstentions": 30,
+          "incorrect_abstentions": 21,
+          "missed_abstentions": 0,
+          "abstention_precision": 0.5882352941176471,
+          "abstention_recall": 1.0,
+          "ground_truth_abstention_tasks": 30,
+          "predicted_abstentions": 51
+        },
+        "latency": {
+          "average_seconds": 0.006928806000214536,
+          "median_seconds": 0.006394150001142407,
+          "sample_count": 100
+        },
+        "cost": {
+          "total_prompt_tokens": 0,
+          "total_completion_tokens": 0,
+          "total_tokens": 0,
+          "average_tokens": 0,
+          "total_cost_usd": 0.0,
+          "average_cost_usd": 0.0,
+          "sample_count": 100
+        }
+      },
+      "tracerecover_minus_baseline": {
+        "task_success_rate": 0.39,
+        "hallucination_rate": -0.5757575757575758,
+        "unsupported_claim_rate": -0.3641304347826087,
+        "evidence_coverage": null,
+        "average_latency_seconds": 0.004787885000114329,
+        "ece": null,
+        "average_cost_usd": 0.0
+      }
+    }
+  ],
+  "ablation_metrics": {
+    "without_grounding": [
+      {
+        "failure_rate_percent": 0.0,
+        "metrics": {
+          "task_count": 100,
+          "task_success": {
+            "rate": 0.9,
+            "successes": 90,
+            "denominator": 100,
+            "confidence_interval_95": {
+              "lower": 0.8256326956323347,
+              "upper": 0.9447714583868639
+            }
+          },
+          "recovery": {
+            "rate": 0.0,
+            "successful_recoveries": 0,
+            "detected_failures": 10,
+            "denominator": 10,
+            "detected_injected_failures": 0,
+            "detected_natural_failures": 10,
+            "injected_tool_failures": 0,
+            "injected_recovery_failures": 0
+          },
+          "hallucination": {
+            "rate": 0.1111111111111111,
+            "hallucinating_answers": 10,
+            "answers_with_factual_claims": 90,
+            "denominator": 90,
+            "unsupported_claims": 10,
+            "contradicted_claims": 10
+          },
+          "unsupported_claim_rate": {
+            "rate": 0.05555555555555555,
+            "ungrounded_rate": 0.1111111111111111,
+            "unsupported_claims": 10,
+            "contradicted_claims": 10,
+            "total_claims": 180,
+            "denominator": 180
+          },
+          "evidence_coverage": {
+            "rate": null,
+            "average_coverage": null,
+            "median_coverage": null,
+            "fully_grounded_tasks": 0,
+            "full_coverage_rate": null,
+            "sample_count": 0,
+            "denominator": 0
+          },
+          "ece": {
+            "ece": 0.20000000000000007,
+            "sample_count": 100,
+            "bin_count": 10,
+            "binning": "equal-width [0,1], last bin includes 1",
+            "bins": [
+              {
+                "bin": 0,
+                "lower_bound": 0.0,
+                "upper_bound": 0.1,
+                "sample_count": 10,
+                "average_confidence": 0.0,
+                "accuracy": 1.0
+              },
+              {
+                "bin": 9,
+                "lower_bound": 0.9,
+                "upper_bound": 1.0,
+                "sample_count": 90,
+                "average_confidence": 1.0,
+                "accuracy": 0.8888888888888888
+              }
+            ]
+          },
+          "abstention": {
+            "correct_abstentions": 10,
+            "incorrect_abstentions": 0,
+            "missed_abstentions": 20,
+            "abstention_precision": 1.0,
+            "abstention_recall": 0.3333333333333333,
+            "ground_truth_abstention_tasks": 30,
+            "predicted_abstentions": 10
+          },
+          "latency": {
+            "average_seconds": 0.005917003000286058,
+            "median_seconds": 0.0057500000002619345,
+            "sample_count": 100
+          },
+          "cost": {
+            "total_prompt_tokens": 0,
+            "total_completion_tokens": 0,
+            "total_tokens": 0,
+            "average_tokens": 0,
+            "total_cost_usd": 0.0,
+            "average_cost_usd": 0.0,
+            "sample_count": 100
+          }
+        }
+      },
+      {
+        "failure_rate_percent": 20.0,
+        "metrics": {
+          "task_count": 100,
+          "task_success": {
+            "rate": 0.79,
+            "successes": 79,
+            "denominator": 100,
+            "confidence_interval_95": {
+              "lower": 0.7001985069803768,
+              "upper": 0.8583445046835422
+            }
+          },
+          "recovery": {
+            "rate": 0.5238095238095238,
+            "successful_recoveries": 22,
+            "detected_failures": 42,
+            "denominator": 42,
+            "detected_injected_failures": 34,
+            "detected_natural_failures": 8,
+            "injected_tool_failures": 34,
+            "injected_recovery_failures": 11
+          },
+          "hallucination": {
+            "rate": 0.125,
+            "hallucinating_answers": 10,
+            "answers_with_factual_claims": 80,
+            "denominator": 80,
+            "unsupported_claims": 10,
+            "contradicted_claims": 10
+          },
+          "unsupported_claim_rate": {
+            "rate": 0.0641025641025641,
+            "ungrounded_rate": 0.1282051282051282,
+            "unsupported_claims": 10,
+            "contradicted_claims": 10,
+            "total_claims": 156,
+            "denominator": 156
+          },
+          "evidence_coverage": {
+            "rate": null,
+            "average_coverage": null,
+            "median_coverage": null,
+            "fully_grounded_tasks": 0,
+            "full_coverage_rate": null,
+            "sample_count": 0,
+            "denominator": 0
+          },
+          "ece": {
+            "ece": 0.22737499999999994,
+            "sample_count": 100,
+            "bin_count": 10,
+            "binning": "equal-width [0,1], last bin includes 1",
+            "bins": [
+              {
+                "bin": 0,
+                "lower_bound": 0.0,
+                "upper_bound": 0.1,
+                "sample_count": 15,
+                "average_confidence": 0.0,
+                "accuracy": 0.6666666666666666
+              },
+              {
+                "bin": 1,
+                "lower_bound": 0.1,
+                "upper_bound": 0.2,
+                "sample_count": 1,
+                "average_confidence": 0.15625,
+                "accuracy": 0.0
+              },
+              {
+                "bin": 2,
+                "lower_bound": 0.2,
+                "upper_bound": 0.3,
+                "sample_count": 3,
+                "average_confidence": 0.20833333333333326,
+                "accuracy": 0.0
+              },
+              {
+                "bin": 4,
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "sample_count": 1,
+                "average_confidence": 0.41666666666666663,
+                "accuracy": 0.0
+              },
+              {
+                "bin": 5,
+                "lower_bound": 0.5,
+                "upper_bound": 0.6,
+                "sample_count": 1,
+                "average_confidence": 0.5645833333333332,
+                "accuracy": 1.0
+              },
+              {
+                "bin": 6,
+                "lower_bound": 0.6,
+                "upper_bound": 0.7,
+                "sample_count": 5,
+                "average_confidence": 0.6837500000000001,
+                "accuracy": 1.0
+              },
+              {
+                "bin": 7,
+                "lower_bound": 0.7,
+                "upper_bound": 0.8,
+                "sample_count": 10,
+                "average_confidence": 0.7897916666666666,
+                "accuracy": 0.7
+              },
+              {
+                "bin": 8,
+                "lower_bound": 0.8,
+                "upper_bound": 0.9,
+                "sample_count": 4,
+                "average_confidence": 0.84375,
+                "accuracy": 1.0
+              },
+              {
+                "bin": 9,
+                "lower_bound": 0.9,
+                "upper_bound": 1.0,
+                "sample_count": 60,
+                "average_confidence": 1.0,
+                "accuracy": 0.8666666666666667
+              }
+            ]
+          },
+          "abstention": {
+            "correct_abstentions": 10,
+            "incorrect_abstentions": 10,
+            "missed_abstentions": 20,
+            "abstention_precision": 0.5,
+            "abstention_recall": 0.3333333333333333,
+            "ground_truth_abstention_tasks": 30,
+            "predicted_abstentions": 20
+          },
+          "latency": {
+            "average_seconds": 0.007030051000037929,
+            "median_seconds": 0.006634699999267468,
+            "sample_count": 100
+          },
+          "cost": {
+            "total_prompt_tokens": 0,
+            "total_completion_tokens": 0,
+            "total_tokens": 0,
+            "average_tokens": 0,
+            "total_cost_usd": 0.0,
+            "average_cost_usd": 0.0,
+            "sample_count": 100
+          }
+        }
+      },
+      {
+        "failure_rate_percent": 40.0,
+        "metrics": {
+          "task_count": 100,
+          "task_success": {
+            "rate": 0.7,
+            "successes": 70,
+            "denominator": 100,
+            "confidence_interval_95": {
+              "lower": 0.6041496156718804,
+              "upper": 0.7810524613377188
+            }
+          },
+          "recovery": {
+            "rate": 0.5072463768115942,
+            "successful_recoveries": 35,
+            "detected_failures": 69,
+            "denominator": 69,
+            "detected_injected_failures": 61,
+            "detected_natural_failures": 8,
+            "injected_tool_failures": 61,
+            "injected_recovery_failures": 28
+          },
+          "hallucination": {
+            "rate": 0.14925373134328357,
+            "hallucinating_answers": 10,
+            "answers_with_factual_claims": 67,
+            "denominator": 67,
+            "unsupported_claims": 10,
+            "contradicted_claims": 9
+          },
+          "unsupported_claim_rate": {
+            "rate": 0.07751937984496124,
+            "ungrounded_rate": 0.14728682170542637,
+            "unsupported_claims": 10,
+            "contradicted_claims": 9,
+            "total_claims": 129,
+            "denominator": 129
+          },
+          "evidence_coverage": {
+            "rate": null,
+            "average_coverage": null,
+            "median_coverage": null,
+            "fully_grounded_tasks": 0,
+            "full_coverage_rate": null,
+            "sample_count": 0,
+            "denominator": 0
+          },
+          "ece": {
+            "ece": 0.23929166666666665,
+            "sample_count": 100,
+            "bin_count": 10,
+            "binning": "equal-width [0,1], last bin includes 1",
+            "bins": [
+              {
+                "bin": 0,
+                "lower_bound": 0.0,
+                "upper_bound": 0.1,
+                "sample_count": 27,
+                "average_confidence": 0.0,
+                "accuracy": 0.48148148148148145
+              },
+              {
+                "bin": 1,
+                "lower_bound": 0.1,
+                "upper_bound": 0.2,
+                "sample_count": 1,
+                "average_confidence": 0.15625,
+                "accuracy": 0.0
+              },
+              {
+                "bin": 2,
+                "lower_bound": 0.2,
+                "upper_bound": 0.3,
+                "sample_count": 5,
+                "average_confidence": 0.20833333333333326,
+                "accuracy": 0.0
+              },
+              {
+                "bin": 5,
+                "lower_bound": 0.5,
+                "upper_bound": 0.6,
+                "sample_count": 1,
+                "average_confidence": 0.5,
+                "accuracy": 0.0
+              },
+              {
+                "bin": 6,
+                "lower_bound": 0.6,
+                "upper_bound": 0.7,
+                "sample_count": 12,
+                "average_confidence": 0.68125,
+                "accuracy": 0.9166666666666666
+              },
+              {
+                "bin": 7,
+                "lower_bound": 0.7,
+                "upper_bound": 0.8,
+                "sample_count": 11,
+                "average_confidence": 0.784090909090909,
+                "accuracy": 0.6363636363636364
+              },
+              {
+                "bin": 8,
+                "lower_bound": 0.8,
+                "upper_bound": 0.9,
+                "sample_count": 5,
+                "average_confidence": 0.84375,
+                "accuracy": 1.0
+              },
+              {
+                "bin": 9,
+                "lower_bound": 0.9,
+                "upper_bound": 1.0,
+                "sample_count": 38,
+                "average_confidence": 1.0,
+                "accuracy": 0.8947368421052632
+              }
+            ]
+          },
+          "abstention": {
+            "correct_abstentions": 13,
+            "incorrect_abstentions": 20,
+            "missed_abstentions": 17,
+            "abstention_precision": 0.3939393939393939,
+            "abstention_recall": 0.43333333333333335,
+            "ground_truth_abstention_tasks": 30,
+            "predicted_abstentions": 33
+          },
+          "latency": {
+            "average_seconds": 0.006901437000269652,
+            "median_seconds": 0.006632000000536209,
+            "sample_count": 100
+          },
+          "cost": {
+            "total_prompt_tokens": 0,
+            "total_completion_tokens": 0,
+            "total_tokens": 0,
+            "average_tokens": 0,
+            "total_cost_usd": 0.0,
+            "average_cost_usd": 0.0,
+            "sample_count": 100
+          }
+        }
+      }
+    ],
+    "without_uncertainty": [
+      {
+        "failure_rate_percent": 0.0,
+        "metrics": {
+          "task_count": 100,
+          "task_success": {
+            "rate": 0.8,
+            "successes": 80,
+            "denominator": 100,
+            "confidence_interval_95": {
+              "lower": 0.7111690380734977,
+              "upper": 0.8666340774409013
+            }
+          },
+          "recovery": {
+            "rate": 0.0,
+            "successful_recoveries": 0,
+            "detected_failures": 10,
+            "denominator": 10,
+            "detected_injected_failures": 0,
+            "detected_natural_failures": 10,
+            "injected_tool_failures": 0,
+            "injected_recovery_failures": 0
+          },
+          "hallucination": {
+            "rate": 0.2,
+            "hallucinating_answers": 20,
+            "answers_with_factual_claims": 100,
+            "denominator": 100,
+            "unsupported_claims": 20,
+            "contradicted_claims": 10
+          },
+          "unsupported_claim_rate": {
+            "rate": 0.10526315789473684,
+            "ungrounded_rate": 0.15789473684210525,
+            "unsupported_claims": 20,
+            "contradicted_claims": 10,
+            "total_claims": 190,
+            "denominator": 190
+          },
+          "evidence_coverage": {
+            "rate": 0.75,
+            "average_coverage": 0.75,
+            "median_coverage": 1.0,
+            "fully_grounded_tasks": 70,
+            "full_coverage_rate": 0.7,
+            "sample_count": 100,
+            "denominator": 100
+          },
+          "ece": {
+            "ece": null,
+            "sample_count": 0,
+            "bin_count": 10,
+            "binning": "equal-width [0,1], last bin includes 1",
+            "bins": []
+          },
+          "abstention": {
+            "correct_abstentions": 0,
+            "incorrect_abstentions": 0,
+            "missed_abstentions": 30,
+            "abstention_precision": null,
+            "abstention_recall": 0.0,
+            "ground_truth_abstention_tasks": 30,
+            "predicted_abstentions": 0
+          },
+          "latency": {
+            "average_seconds": 0.006436648999806493,
+            "median_seconds": 0.006040650001523318,
+            "sample_count": 100
+          },
+          "cost": {
+            "total_prompt_tokens": 0,
+            "total_completion_tokens": 0,
+            "total_tokens": 0,
+            "average_tokens": 0,
+            "total_cost_usd": 0.0,
+            "average_cost_usd": 0.0,
+            "sample_count": 100
+          }
+        }
+      },
+      {
+        "failure_rate_percent": 20.0,
+        "metrics": {
+          "task_count": 100,
+          "task_success": {
+            "rate": 0.69,
+            "successes": 69,
+            "denominator": 100,
+            "confidence_interval_95": {
+              "lower": 0.5937376052204429,
+              "upper": 0.7722043679386762
+            }
+          },
+          "recovery": {
+            "rate": 0.5238095238095238,
+            "successful_recoveries": 22,
+            "detected_failures": 42,
+            "denominator": 42,
+            "detected_injected_failures": 34,
+            "detected_natural_failures": 8,
+            "injected_tool_failures": 34,
+            "injected_recovery_failures": 11
+          },
+          "hallucination": {
+            "rate": 0.3,
+            "hallucinating_answers": 30,
+            "answers_with_factual_claims": 100,
+            "denominator": 100,
+            "unsupported_claims": 30,
+            "contradicted_claims": 10
+          },
+          "unsupported_claim_rate": {
+            "rate": 0.17045454545454544,
+            "ungrounded_rate": 0.22727272727272727,
+            "unsupported_claims": 30,
+            "contradicted_claims": 10,
+            "total_claims": 176,
+            "denominator": 176
+          },
+          "evidence_coverage": {
+            "rate": 0.65,
+            "average_coverage": 0.65,
+            "median_coverage": 1.0,
+            "fully_grounded_tasks": 60,
+            "full_coverage_rate": 0.6,
+            "sample_count": 100,
+            "denominator": 100
+          },
+          "ece": {
+            "ece": null,
+            "sample_count": 0,
+            "bin_count": 10,
+            "binning": "equal-width [0,1], last bin includes 1",
+            "bins": []
+          },
+          "abstention": {
+            "correct_abstentions": 0,
+            "incorrect_abstentions": 0,
+            "missed_abstentions": 30,
+            "abstention_precision": null,
+            "abstention_recall": 0.0,
+            "ground_truth_abstention_tasks": 30,
+            "predicted_abstentions": 0
+          },
+          "latency": {
+            "average_seconds": 0.006549680999887642,
+            "median_seconds": 0.006382299998222152,
+            "sample_count": 100
+          },
+          "cost": {
+            "total_prompt_tokens": 0,
+            "total_completion_tokens": 0,
+            "total_tokens": 0,
+            "average_tokens": 0,
+            "total_cost_usd": 0.0,
+            "average_cost_usd": 0.0,
+            "sample_count": 100
+          }
+        }
+      },
+      {
+        "failure_rate_percent": 40.0,
+        "metrics": {
+          "task_count": 100,
+          "task_success": {
+            "rate": 0.57,
+            "successes": 57,
+            "denominator": 100,
+            "confidence_interval_95": {
+              "lower": 0.4721521169586435,
+              "upper": 0.6626686099947162
+            }
+          },
+          "recovery": {
+            "rate": 0.5072463768115942,
+            "successful_recoveries": 35,
+            "detected_failures": 69,
+            "denominator": 69,
+            "detected_injected_failures": 61,
+            "detected_natural_failures": 8,
+            "injected_tool_failures": 61,
+            "injected_recovery_failures": 28
+          },
+          "hallucination": {
+            "rate": 0.43,
+            "hallucinating_answers": 43,
+            "answers_with_factual_claims": 100,
+            "denominator": 100,
+            "unsupported_claims": 43,
+            "contradicted_claims": 9
+          },
+          "unsupported_claim_rate": {
+            "rate": 0.2654320987654321,
+            "ungrounded_rate": 0.32098765432098764,
+            "unsupported_claims": 43,
+            "contradicted_claims": 9,
+            "total_claims": 162,
+            "denominator": 162
+          },
+          "evidence_coverage": {
+            "rate": 0.535,
+            "average_coverage": 0.535,
+            "median_coverage": 0.5,
+            "fully_grounded_tasks": 49,
+            "full_coverage_rate": 0.49,
+            "sample_count": 100,
+            "denominator": 100
+          },
+          "ece": {
+            "ece": null,
+            "sample_count": 0,
+            "bin_count": 10,
+            "binning": "equal-width [0,1], last bin includes 1",
+            "bins": []
+          },
+          "abstention": {
+            "correct_abstentions": 0,
+            "incorrect_abstentions": 0,
+            "missed_abstentions": 30,
+            "abstention_precision": null,
+            "abstention_recall": 0.0,
+            "ground_truth_abstention_tasks": 30,
+            "predicted_abstentions": 0
+          },
+          "latency": {
+            "average_seconds": 0.007606287000162411,
+            "median_seconds": 0.00628109999888693,
+            "sample_count": 100
+          },
+          "cost": {
+            "total_prompt_tokens": 0,
+            "total_completion_tokens": 0,
+            "total_tokens": 0,
+            "average_tokens": 0,
+            "total_cost_usd": 0.0,
+            "average_cost_usd": 0.0,
+            "sample_count": 100
+          }
+        }
+      }
+    ],
+    "without_localization": [
+      {
+        "failure_rate_percent": 0.0,
+        "metrics": {
+          "task_count": 100,
+          "task_success": {
+            "rate": 1.0,
+            "successes": 100,
+            "denominator": 100,
+            "confidence_interval_95": {
+              "lower": 0.9630051925239981,
+              "upper": 0.9999999999999999
+            }
+          },
+          "recovery": {
+            "rate": 0.0,
+            "successful_recoveries": 0,
+            "detected_failures": 10,
+            "denominator": 10,
+            "detected_injected_failures": 0,
+            "detected_natural_failures": 10,
+            "injected_tool_failures": 0,
+            "injected_recovery_failures": 0
+          },
+          "hallucination": {
+            "rate": 0.0,
+            "hallucinating_answers": 0,
+            "answers_with_factual_claims": 70,
+            "denominator": 70,
+            "unsupported_claims": 0,
+            "contradicted_claims": 0
+          },
+          "unsupported_claim_rate": {
+            "rate": 0.0,
+            "ungrounded_rate": 0.0,
+            "unsupported_claims": 0,
+            "contradicted_claims": 0,
+            "total_claims": 150,
+            "denominator": 150
+          },
+          "evidence_coverage": {
+            "rate": 0.75,
+            "average_coverage": 0.75,
+            "median_coverage": 1.0,
+            "fully_grounded_tasks": 70,
+            "full_coverage_rate": 0.7,
+            "sample_count": 100,
+            "denominator": 100
+          },
+          "ece": {
+            "ece": 0.19642857142857142,
+            "sample_count": 100,
+            "bin_count": 10,
+            "binning": "equal-width [0,1], last bin includes 1",
+            "bins": [
+              {
+                "bin": 0,
+                "lower_bound": 0.0,
+                "upper_bound": 0.1,
+                "sample_count": 10,
+                "average_confidence": 0.0,
+                "accuracy": 1.0
+              },
+              {
+                "bin": 3,
+                "lower_bound": 0.3,
+                "upper_bound": 0.4,
+                "sample_count": 10,
+                "average_confidence": 0.3571428571428572,
+                "accuracy": 1.0
+              },
+              {
+                "bin": 6,
+                "lower_bound": 0.6,
+                "upper_bound": 0.7,
+                "sample_count": 10,
+                "average_confidence": 0.6785714285714286,
+                "accuracy": 1.0
+              },
+              {
+                "bin": 9,
+                "lower_bound": 0.9,
+                "upper_bound": 1.0,
+                "sample_count": 70,
+                "average_confidence": 1.0,
+                "accuracy": 1.0
+              }
+            ]
+          },
+          "abstention": {
+            "correct_abstentions": 30,
+            "incorrect_abstentions": 0,
+            "missed_abstentions": 0,
+            "abstention_precision": 1.0,
+            "abstention_recall": 1.0,
+            "ground_truth_abstention_tasks": 30,
+            "predicted_abstentions": 30
+          },
+          "latency": {
+            "average_seconds": 0.006846425999610801,
+            "median_seconds": 0.00678689999767812,
+            "sample_count": 100
+          },
+          "cost": {
+            "total_prompt_tokens": 0,
+            "total_completion_tokens": 0,
+            "total_tokens": 0,
+            "average_tokens": 0,
+            "total_cost_usd": 0.0,
+            "average_cost_usd": 0.0,
+            "sample_count": 100
+          }
+        }
+      },
+      {
+        "failure_rate_percent": 20.0,
+        "metrics": {
+          "task_count": 100,
+          "task_success": {
+            "rate": 0.73,
+            "successes": 73,
+            "denominator": 100,
+            "confidence_interval_95": {
+              "lower": 0.6356769977376873,
+              "upper": 0.8073053908233518
+            }
+          },
+          "recovery": {
+            "rate": 0.0,
+            "successful_recoveries": 0,
+            "detected_failures": 42,
+            "denominator": 42,
+            "detected_injected_failures": 34,
+            "detected_natural_failures": 8,
+            "injected_tool_failures": 34,
+            "injected_recovery_failures": 0
+          },
+          "hallucination": {
+            "rate": 0.18518518518518517,
+            "hallucinating_answers": 10,
+            "answers_with_factual_claims": 54,
+            "denominator": 54,
+            "unsupported_claims": 19,
+            "contradicted_claims": 1
+          },
+          "unsupported_claim_rate": {
+            "rate": 0.14728682170542637,
+            "ungrounded_rate": 0.15503875968992248,
+            "unsupported_claims": 19,
+            "contradicted_claims": 1,
+            "total_claims": 129,
+            "denominator": 129
+          },
+          "evidence_coverage": {
+            "rate": 0.5733333333333334,
+            "average_coverage": 0.5733333333333334,
+            "median_coverage": 0.5,
+            "fully_grounded_tasks": 44,
+            "full_coverage_rate": 0.44,
+            "sample_count": 100,
+            "denominator": 100
+          },
+          "ece": {
+            "ece": 0.2096428571428571,
+            "sample_count": 100,
+            "bin_count": 10,
+            "binning": "equal-width [0,1], last bin includes 1",
+            "bins": [
+              {
+                "bin": 0,
+                "lower_bound": 0.0,
+                "upper_bound": 0.1,
+                "sample_count": 16,
+                "average_confidence": 0.0,
+                "accuracy": 0.75
+              },
+              {
+                "bin": 1,
+                "lower_bound": 0.1,
+                "upper_bound": 0.2,
+                "sample_count": 1,
+                "average_confidence": 0.1785714285714286,
+                "accuracy": 1.0
+              },
+              {
+                "bin": 3,
+                "lower_bound": 0.3,
+                "upper_bound": 0.4,
+                "sample_count": 21,
+                "average_confidence": 0.37925170068027214,
+                "accuracy": 0.38095238095238093
+              },
+              {
+                "bin": 5,
+                "lower_bound": 0.5,
+                "upper_bound": 0.6,
+                "sample_count": 10,
+                "average_confidence": 0.5535714285714286,
+                "accuracy": 0.0
+              },
+              {
+                "bin": 6,
+                "lower_bound": 0.6,
+                "upper_bound": 0.7,
+                "sample_count": 8,
+                "average_confidence": 0.6785714285714286,
+                "accuracy": 1.0
+              },
+              {
+                "bin": 9,
+                "lower_bound": 0.9,
+                "upper_bound": 1.0,
+                "sample_count": 44,
+                "average_confidence": 1.0,
+                "accuracy": 1.0
+              }
+            ]
+          },
+          "abstention": {
+            "correct_abstentions": 29,
+            "incorrect_abstentions": 17,
+            "missed_abstentions": 1,
+            "abstention_precision": 0.6304347826086957,
+            "abstention_recall": 0.9666666666666667,
+            "ground_truth_abstention_tasks": 30,
+            "predicted_abstentions": 46
+          },
+          "latency": {
+            "average_seconds": 0.007084276999739814,
+            "median_seconds": 0.006836699998530094,
+            "sample_count": 100
+          },
+          "cost": {
+            "total_prompt_tokens": 0,
+            "total_completion_tokens": 0,
+            "total_tokens": 0,
+            "average_tokens": 0,
+            "total_cost_usd": 0.0,
+            "average_cost_usd": 0.0,
+            "sample_count": 100
+          }
+        }
+      },
+      {
+        "failure_rate_percent": 40.0,
+        "metrics": {
+          "task_count": 100,
+          "task_success": {
+            "rate": 0.53,
+            "successes": 53,
+            "denominator": 100,
+            "confidence_interval_95": {
+              "lower": 0.4328868313724773,
+              "upper": 0.6248934801789626
+            }
+          },
+          "recovery": {
+            "rate": 0.0,
+            "successful_recoveries": 0,
+            "detected_failures": 75,
+            "denominator": 75,
+            "detected_injected_failures": 67,
+            "detected_natural_failures": 8,
+            "injected_tool_failures": 67,
+            "injected_recovery_failures": 0
+          },
+          "hallucination": {
+            "rate": 0.36363636363636365,
+            "hallucinating_answers": 16,
+            "answers_with_factual_claims": 44,
+            "denominator": 44,
+            "unsupported_claims": 27,
+            "contradicted_claims": 5
+          },
+          "unsupported_claim_rate": {
+            "rate": 0.24770642201834864,
+            "ungrounded_rate": 0.29357798165137616,
+            "unsupported_claims": 27,
+            "contradicted_claims": 5,
+            "total_claims": 109,
+            "denominator": 109
+          },
+          "evidence_coverage": {
+            "rate": 0.43466666666666665,
+            "average_coverage": 0.43466666666666665,
+            "median_coverage": 0.3333333333333333,
+            "fully_grounded_tasks": 28,
+            "full_coverage_rate": 0.28,
+            "sample_count": 100,
+            "denominator": 100
+          },
+          "ece": {
+            "ece": 0.273952380952381,
+            "sample_count": 100,
+            "bin_count": 10,
+            "binning": "equal-width [0,1], last bin includes 1",
+            "bins": [
+              {
+                "bin": 0,
+                "lower_bound": 0.0,
+                "upper_bound": 0.1,
+                "sample_count": 27,
+                "average_confidence": 0.0,
+                "accuracy": 0.5185185185185185
+              },
+              {
+                "bin": 1,
+                "lower_bound": 0.1,
+                "upper_bound": 0.2,
+                "sample_count": 1,
+                "average_confidence": 0.1785714285714286,
+                "accuracy": 1.0
+              },
+              {
+                "bin": 2,
+                "lower_bound": 0.2,
+                "upper_bound": 0.3,
+                "sample_count": 4,
+                "average_confidence": 0.24761904761904763,
+                "accuracy": 0.0
+              },
+              {
+                "bin": 3,
+                "lower_bound": 0.3,
+                "upper_bound": 0.4,
+                "sample_count": 20,
+                "average_confidence": 0.38214285714285723,
+                "accuracy": 0.3
+              },
+              {
+                "bin": 5,
+                "lower_bound": 0.5,
+                "upper_bound": 0.6,
+                "sample_count": 16,
+                "average_confidence": 0.5409226190476191,
+                "accuracy": 0.0
+              },
+              {
+                "bin": 6,
+                "lower_bound": 0.6,
+                "upper_bound": 0.7,
+                "sample_count": 4,
+                "average_confidence": 0.6785714285714286,
+                "accuracy": 1.0
+              },
+              {
+                "bin": 9,
+                "lower_bound": 0.9,
+                "upper_bound": 1.0,
+                "sample_count": 28,
+                "average_confidence": 1.0,
+                "accuracy": 1.0
+              }
+            ]
+          },
+          "abstention": {
+            "correct_abstentions": 25,
+            "incorrect_abstentions": 31,
+            "missed_abstentions": 5,
+            "abstention_precision": 0.44642857142857145,
+            "abstention_recall": 0.8333333333333334,
+            "ground_truth_abstention_tasks": 30,
+            "predicted_abstentions": 56
+          },
+          "latency": {
+            "average_seconds": 0.006704008000451722,
+            "median_seconds": 0.006493150001915637,
+            "sample_count": 100
+          },
+          "cost": {
+            "total_prompt_tokens": 0,
+            "total_completion_tokens": 0,
+            "total_tokens": 0,
+            "average_tokens": 0,
+            "total_cost_usd": 0.0,
+            "average_cost_usd": 0.0,
+            "sample_count": 100
+          }
+        }
+      }
+    ]
+  },
+  "limitations": [
+    "Small deterministic dataset limits external validity.",
+    "The dataset-authored action plan controls tool selection and does not evaluate free-form planner quality.",
+    "Local heuristic confidence is not a calibrated probability; ECE is reported only as an empirical diagnostic."
+  ]
+}
