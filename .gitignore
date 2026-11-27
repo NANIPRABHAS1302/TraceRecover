@@ -4,18 +4,30 @@
 !.env.example
 
 # Python virtual environments
-venv/
 .venv/
+venv/
 env/
 
 # Python caches and build artifacts
 __pycache__/
-*.py[cod]
-*$py.class
-*.egg-info/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+*.pyc
+*.py[cod]
+*$py.class
+*.egg-info/
+
+# Model weights, fine-tuning checkpoints, adapters, and experiment trackers
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.gguf
+checkpoints/
+outputs/
+adapters/
+wandb/
 
 # Runtime execution logs and temporary outputs
 logs/
@@ -24,5 +36,7 @@ data/unseen_benchmarks/
 data/connectors/
 .quarantine/
 *.log
+
+# OS metadata
 .DS_Store
 Thumbs.db

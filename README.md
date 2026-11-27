@@ -2,202 +2,132 @@
 
 **An Evidence-Grounded Self-Healing and Uncertainty-Aware Framework for Reliable Tool-Augmented Large Language Model Agents**
 
-TraceRecover is a B.Tech capstone reliability, evidence-verification, and observability platform for tool-augmented AI agents. It executes multi-step tool/research workflows with step-level trace logging, detects and localizes tool failures, performs bounded self-healing recovery, extracts provenance-preserving factual claims, verifies every claim independently against retrieved evidence with context-aware contradiction detection, estimates uncertainty, and abstains honestly when evidence is insufficient or synthesis fails.
+TraceRecover is a reliability, self-healing, evidence-verification, and observability framework for tool-augmented AI agents. Every query passes through an auditable **5-layer pipeline** (`Plan → Execute → Recover → Verify → Decide`) that separates trusted `committed` evidence from `discarded` tool failures, heals runtime tool faults within strict budgets, grounds atomic claims against committed observations, and gates responses into **`ANSWER`**, **`WARN`**, or **`ABSTAIN`**.
 
 ---
 
-## Problem Statement
-
-Tool-augmented LLM agents frequently fail silently in real workflows: tools return timeouts, malformed schemas, or incorrect values; synthesized answers mix claims from incompatible studies or fabricate unsupported citations; and provider outages are often masked by silent fallbacks. TraceRecover addresses these reliability gaps by enforcing deterministic provenance tracking (`COMMITTED` vs. `DISCARDED` tool outputs), detector-validated recovery, provenance-preserving claim verification, fail-closed synthesis integrity, and calibrated `ANSWER` / `WARN` / `ABSTAIN` decision policies.
-
----
-
-## System Architecture
+## 1. Five-Layer Reliability Pipeline (`Plan → Execute → Recover → Verify → Decide`)
 
 ```mermaid
 flowchart LR
-    UI["Web Dashboard SPA (static/index.html)"] -->|REST & SSE| API["FastAPI Backend (web_dashboard.py)"]
-    API --> Runner["OpenEndedAgentRunner"]
-    API --> Store["ConversationStore (atomic JSON)"]
-    API --> CM["ConnectorManager"]
-    Runner --> Planner["Dynamic & Multi-Step Planner"]
-    Runner --> Adapter["LLMProviderAdapter"]
-    Runner --> Recovery["ToolExecutor + Detector + RecoveryEngine"]
-    Runner --> Synth["EvidenceGroundedSynthesizer (fail-closed)"]
-    Runner --> Verify["EvidenceChecker + ClaimEvidenceVerifier + Uncertainty"]
-    CM --> MCP["MCP SDK Client"]
-    CM --> Sources["Scholarly & Web Sources (arXiv, Crossref, OpenAlex, Wikipedia)"]
-    CM --> Browser["Playwright Multi-Browser Engine"]
+    Q["User Query"] --> L1["1. Plan<br/>agent/planner.py<br/>config.py (LLMClient)"]
+    L1 --> L2["2. Execute<br/>agent/react_agent.py<br/>tools/executor.py<br/>trace/trace_logger.py"]
+    L2 --> L3["3. Recover<br/>tools/failure_injector.py<br/>healing/detector.py<br/>healing/localizer.py<br/>healing/recovery.py"]
+    L3 -- "Bounded Healing<br/>RETRY | ARGUMENT_REPAIR<br/>TOOL_SWITCH | REPLAN" --> L2
+    L3 -- "Committed Evidence Only" --> L4["4. Verify<br/>grounding/claim_extractor.py<br/>grounding/evidence_checker.py<br/>grounding/nli_verifier.py"]
+    L4 --> L5["5. Decide<br/>uncertainty/estimator.py<br/>uncertainty/calibrator.py<br/>uncertainty/abstention.py"]
+    L5 --> D1["ANSWER"]
+    L5 --> D2["WARN"]
+    L5 --> D3["ABSTAIN"]
 ```
 
-- **`web_dashboard.py` & `static/index.html`:** FastAPI REST/SSE backend (57 routes), security middleware (CORS, CSP/HSTS headers, chunked-safe request-size caps, sliding-window rate limits, optional admin Bearer/`X-API-Key` guard), mtime-validated artifact caching, operational `/api/health`, and a 13-view light-theme SPA.
-- **`agent/`:** `OpenEndedAgentRunner` (10-stage pipeline + 7-stage timing telemetry + redacted structured logging), `DynamicQueryPlanner`, `MultiStepResearchPlanner`, `LLMProviderAdapter`, `EvidenceGroundedSynthesizer` (`SynthesisFailureError`, zero silent live fallback), `ConversationStore` (atomic JSON + mtime summary cache), and core `ReactAgent`.
-- **`grounding/`, `healing/`, `uncertainty/`, `tools/`, `trace/`:** Protected core reliability stack covering claim extraction, evidence grounding, optional DeBERTa NLI, fault injection, failure detection/localization, bounded recovery (`RETRY`, `ARGUMENT_REPAIR`, `TOOL_SWITCH`, `REPLAN`), uncertainty estimation, abstention policy, and JSONL trace logging.
-- **`connectors/`:** `ConnectorManager`, `PermissionEngine` (SSRF/DNS-rebinding defense, allowlists, approval gates, untrusted-data framing), Fernet `SecretVault`, MCP SDK client, trust-tiered scholarly registry, and Playwright browser automation.
-- **`eval/`, `data/`, `results/`:** Canonical 100-task benchmark (`eval/tasks.json`), frozen 92-question Phase 7.4 holdout (`data/phase7_4_independent_holdout.json`), Phase 8.2 performance harness (`eval/phase8_2_performance.py`), statistical validation, and preserved experiment runs.
+| Layer | Core Modules | Responsibility |
+| :--- | :--- | :--- |
+| **1. Plan** | `agent/planner.py` (`RuleBasedPlanner`), `config.py` (`LLMClient`) | Multi-step planning & multi-provider LLM interface (`local`, `gemini`, `openai`, `anthropic`) with token/cost tracking and automatic `404`/`429`/`503`/timeout failover. |
+| **2. Execute** | `agent/react_agent.py` (`ReactAgent`), `tools/executor.py` (`ToolExecutor`), `trace/trace_logger.py` (`TraceLogger`) | AST/schema-validated tool execution (`calculator`, `python_exec`, `search`, `mock_api`) with explicit `committed` vs. `discarded` JSONL step provenance. |
+| **3. Recover** | `tools/failure_injector.py` (`FailureInjector`), `healing/detector.py` (`FailureDetector`), `healing/localizer.py` (`FailureLocalizer`), `healing/recovery.py` (`RecoveryEngine`) | Deterministic fault injection, independent failure detection, root-cause step localization, and bounded recovery (`RETRY`, `ARGUMENT_REPAIR`, `TOOL_SWITCH`, `REPLAN`; `max_retries=1`, `max_total_attempts=4`). |
+| **4. Verify** | `grounding/claim_extractor.py`, `grounding/evidence_checker.py` (`EvidenceChecker`), `grounding/nli_verifier.py` | Atomic factual claim extraction and entity-scoped NLI verification (DeBERTa-v3 NLI with deterministic offline fallback) strictly over committed steps. |
+| **5. Decide** | `uncertainty/estimator.py` (`UncertaintyEstimator`), `uncertainty/calibrator.py`, `uncertainty/abstention.py` (`AbstentionPolicy`) | 4-signal trace reliability scoring (`grounding`, `tool_success`, `recovery_reliability`, `self_consistency`) and tri-state **`ANSWER` / `WARN` / `ABSTAIN`** gating. |
 
 ---
 
-## Main Features
+## 2. Flagship 100-Task Benchmark Results (`seed = 42`)
 
-- **10-Stage Verifiable Execution Pipeline** with live Server-Sent Events (SSE) progress and replayable JSONL traces.
-- **Provenance-Preserving Claim Verification & Context-Aware Contradiction Detection** distinguishing differing independent studies from true single-experiment logical contradictions.
-- **Fail-Closed Execution Integrity:** Zero silent live-to-deterministic synthesis fallback; preserves retrieved connector evidence on post-retrieval synthesis failure and labels runs honestly.
-- **Self-Healing Tool Recovery:** Automated detection, root-cause localization, and bounded multi-strategy recovery with detector re-validation before committing evidence.
-- **Connect Hub & Research Ecosystem:** Trust-tiered academic/reference connectors, Playwright browser inspector with SSRF guards, universal MCP SDK client, and encrypted server-side secret vault.
-- **Observability & Persistent Conversations:** Redacted structured JSON logs (`tracerecover.observability`), per-stage latency breakdowns, 5-subsystem `/api/health`, and atomic disk-backed conversation threads surviving page reloads and server restarts (with zero `localStorage`/`sessionStorage` usage).
+Verified from `results/phase8-run-20261123T183333634001Z/` (`dataset_version = 2.0`, `100` multi-hop tasks: `70` answerable + `30` abstention-required, `n = 300` paired runs across `0%`, `20%`, and `40%` injected tool faults):
 
----
+| Fault Rate | Baseline ReAct Success | **TraceRecover Success** | Baseline Hallucination | **TraceRecover Hallucination** | **Validated Self-Healing** |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| **0%** | `86.0%` | **`100.0%`** | `13.1%` | **`0.0%`** | `—` *(clean regime)* |
+| **20%** | `58.0%` | **`89.0%`** | `40.4%` | **`0.0%`** | **`52.4%`** (`22/42`) |
+| **40%** | `40.0%` | **`79.0%`** | `57.6%` | **`0.0%`** | **`50.7%`** (`35/69`) |
 
-## Technologies
-
-- **Backend:** Python 3.12+ (verified on Python 3.14.4), FastAPI, Uvicorn, Pydantic v2, HTTPX, ReportLab (PDF export), `cryptography` (Fernet), Official MCP Python SDK.
-- **Frontend:** Vanilla HTML5/CSS3/ES2022 single-file SPA (`static/index.html`) with inline SVG charts and SSE streaming (zero frontend build step required).
-- **Browser Automation & Testing:** Playwright (Chromium/Firefox/WebKit detection & Chromium E2E), Pytest (`226` automated tests).
-- **Packaging:** Dockerfile (`python:3.12-slim`, non-root user), `docker-compose.yml` (loopback-bound), `render.yaml`.
+- **Statistical Significance (Pooled `n = 300`):** Paired McNemar exact two-sided **`p = 1.03 × 10⁻²⁵`** (`+84` net TraceRecover wins, **`0` regressions**).
+- **Calibration & Zero-Leakage Cross-Fitting:** Pooled Brier Score = **`0.165`** · 10-bin ECE = **`0.212`** · 5-fold group-by-`task_id` out-of-fold strict selective accuracy = **`99.4%`** (`178/179`, `abstain_recall = 100.0%`).
+- **Component Ablations (`0% / 20% / 40%` success):** `without_grounding` (`90% / 79% / 70%`, `11.1–14.9%` hallucination), `without_uncertainty` (`80% / 69% / 57%`, `20.0–43.0%` hallucination), `without_localization` (`100% / 73% / 53%`, `0.0%` recovery).
 
 ---
 
-## Installation
+## 3. Selective Gating: `ANSWER` / `WARN` / `ABSTAIN`
 
-### Windows (PowerShell)
+`AbstentionPolicy` combines hard safety gates with calibrated uncertainty thresholds (default `answer_threshold = 0.15`, `abstain_threshold = 0.55`):
+
+- **`ANSWER` (`U < 0.15`):** All factual claims are supported by committed tool evidence with zero contradictions and high trace reliability.
+- **`WARN` (`0.15 ≤ U < 0.55`):** Answer is returned with an explicit uncertainty or resilience-fallback disclosure (e.g., partial recovery or automatic 503 web-search fallback).
+- **`ABSTAIN` (`U ≥ 0.55` or Hard Safety Gate):** Triggered automatically whenever **any claim contradicts committed evidence**, **zero claims have usable supporting evidence**, or recovery is exhausted—preventing hallucinations on missing-entity or contradiction traps.
+
+---
+
+## 4. API vs. Offline / Local Execution
+
+TraceRecover supports both **zero-key deterministic local execution** and **live remote LLM providers**:
+
+- **Offline / Local Mode (`provider="local"`):**
+  - Runs 100% deterministically on all 100 benchmark tasks, all 4 Live Demo reliability presets (`Normal Grounded ANSWER`, `40% Fault + Self-Healing`, `Missing Evidence ABSTAIN`, `Contradiction Guard`), arithmetic expressions (`calculator` / `python_exec`), and TraceRecover identity queries.
+  - For arbitrary open-domain questions in Live Demo, safely falls back to `ExternalSearchAdapter` (Wikipedia/DuckDuckGo) with HTML unescaping while keeping missing-entity traps (`unobtainium-999`, `T-999`) strictly abstaining.
+- **Live Remote LLM Mode (`gemini`, `openai`, `anthropic`):**
+  - Configure keys either in `.env` (copy `.env.example` → `.env`, auto-loaded at startup) or directly from the collapsible **API Keys & Model Provider** card in **2. Live Demo** (`POST /api/keys`, server-side only, masked `****XXXX` in `GET /api/health` and `GET /api/settings`).
+  - `LLMClient` (`config.py`) includes automatic `404`/`429`/`503`/timeout failover across fast Gemini models (`gemini-2.5-flash-lite` → `gemini-3.5-flash-lite` → `gemini-3.8-flash` → `gemini-3.6-flash` → `gemini-2.5-flash`), and `web_dashboard.py` degrades gracefully to web synthesis (`200 OK`, `WARN`) if all upstream models experience a temporary 503 outage.
+
+---
+
+## 5. Standalone 4-Bit QLoRA Fine-Tuning Extension (`finetuning/`)
+
+To distill TraceRecover's recovery policy into a lightweight learned adapter without modifying the deterministic engine:
+
+- **`finetuning/prepare_qlora_dataset.py`:** Builds an 80/20 **task-grouped** split (`seed = 42`, **`0` task overlap**) from `data/tracerecover_step_level_telemetry.csv`:
+  - `data/qlora_train.jsonl`: **`934` examples** (`80` unique tasks)
+  - `data/qlora_val.jsonl`: **`235` examples** (`20` unique tasks)
+- **`finetuning/train_qlora_policy.py`:** 4-bit NF4 QLoRA configuration targeting **`Qwen/Qwen2.5-7B-Instruct`** (`r = 16`, `lora_alpha = 32`, `lora_dropout = 0.05`, `lr = 2e-4`, cosine schedule, `3` epochs, `7` projection modules) with CPU `--dry-run` validation (**`40,370,176` trainable LoRA parameters / `0.5273%`**).
+
+---
+
+## 6. Quick Start & Commands
+
+### Setup (Windows PowerShell)
 
 ```powershell
-# 1. Create and activate a virtual environment (Python 3.12+)
 python -m venv venv
 .\venv\Scripts\Activate.ps1
-
-# 2. Install runtime and test dependencies
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
-
-# 3. (Optional) Install Playwright for browser automation and Chromium E2E tests
-python -m pip install "playwright>=1.48,<2.0"
-```
-
-### Linux / macOS (Bash)
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-
-# Optional for browser automation and E2E tests:
-python -m pip install "playwright>=1.48,<2.0"
-```
-
----
-
-## Configuration
-
-Copy `.env.example` to `.env` for local overrides (`.env` is git-ignored — **never commit real credentials**):
-
-```powershell
-# Windows PowerShell
 Copy-Item .env.example .env
 ```
-```bash
-# Linux / macOS
-cp .env.example .env
-```
 
-| Variable | Default | Purpose |
-|---|---|---|
-| `LLM_PROVIDER` | `local` | Default provider (`local`, `gemini`, `openai`, `anthropic`, `ollama`, `local_openai`). |
-| `GEMINI_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` | *(empty)* | Optional server-side remote LLM keys (kept strictly server-side). |
-| `OLLAMA_BASE_URL`, `LOCAL_LLM_BASE_URL` | *(empty)* | Optional local OpenAI-compatible model server endpoints. |
-| `TRACERECOVER_ADMIN_TOKEN` | *(empty)* | Enables Bearer/`X-API-Key` auth on admin/mutation routes (**required before public exposure**). |
-| `TRACERECOVER_VAULT_KEY` | *(empty)* | Encryption key for connector `SecretVault` (**required via secret manager in production**). |
-| `TRACERECOVER_CORS_ORIGINS` | `http://127.0.0.1:8000,http://localhost:8000` | Comma-separated allowed CORS origins. |
-| `TRACERECOVER_ENABLE_DOCS` | `true` (`false` in Docker/Render) | Enables/disables Swagger UI (`/docs`). |
-| `TRACERECOVER_MAX_REQUEST_BYTES` | `65536` | Request body size cap (enforced on both `Content-Length` and chunked bodies). |
-| `TRACERECOVER_RATE_LIMIT_RUN` / `_EXPERIMENTS` | `60` / `10` | Per-IP requests per minute. |
-
----
-
-## Local Startup & Dashboard Usage
-
-### Start the Web Dashboard
+### Run Web Dashboard (6-Page Material Design 3 UI)
 
 ```powershell
-# Windows PowerShell
-.\venv\Scripts\python.exe -m uvicorn web_dashboard:app --host 127.0.0.1 --port 8000 --proxy-headers
-```
-```bash
-# Linux / macOS
-./venv/bin/python -m uvicorn web_dashboard:app --host 127.0.0.1 --port 8000 --proxy-headers
+.\venv\Scripts\python.exe -m uvicorn web_dashboard:app --host 127.0.0.1 --port 8000
 ```
 
-1. Verify health: `http://127.0.0.1:8000/api/health`
-2. Open dashboard: `http://127.0.0.1:8000`
-3. Use **Query Workspace** to create persistent threads, run queries, inspect 10-stage timelines, view claim verification, and check execution integrity/timings. Use **Live Runner** for the 6 one-click reliability presets, **Trace Replay** for step-by-step provenance playback, and **Connect Hub** for connectors and scholarly search.
+Open **`http://127.0.0.1:8000`** to access: **1. Overview**, **2. Live Demo**, **3. Results & Charts**, **4. Datasets**, **5. Execution Logs**, and **6. Research Report** (CSV/JSON/PDF export).
 
-See [docs/TRACE_RECOVER_FINAL_DEMO_GUIDE.md](docs/TRACE_RECOVER_FINAL_DEMO_GUIDE.md) for a step-by-step zero-API-key capstone demonstration script.
-
-### Start via CLI (Offline Mode)
+### Run Tests, Benchmarks & QLoRA Dry-Run
 
 ```powershell
-.\venv\Scripts\python.exe app.py --provider local --question "What is the capital of France?"
-.\venv\Scripts\python.exe app.py --provider local --failure-rate 40 --seed 42
-```
+# Run core engine + dashboard + LLM client test suite
+.\venv\Scripts\python.exe -m pytest tests/test_abstention.py tests/test_calibrator.py tests/test_claim_extractor.py tests/test_detector.py tests/test_evaluation.py tests/test_evidence_checker.py tests/test_executor.py tests/test_failure_injector.py tests/test_llm_client.py tests/test_localizer.py tests/test_metrics.py tests/test_nli_verifier.py tests/test_phase1.py tests/test_phase8_evaluation_tools.py tests/test_recovery.py tests/test_uncertainty.py tests/test_web_dashboard.py -v
 
----
-
-## Execution Modes
-
-- **`OFFLINE` (`provider="local"`):** Fully deterministic local tools and synthesizer; zero API keys or network calls required.
-- **`LIVE CONNECTOR`:** Local deterministic planner/synthesizer paired with live external/scholarly connectors (`arXiv`, `Crossref`, `OpenAlex`, `Wikipedia`) or Playwright inspection.
-- **`MOCK`:** Deterministic test LLM clients or mock search adapters (explicitly labeled `MOCK`, never `LIVE LLM`).
-- **`LIVE LLM` / `LIVE CONNECTOR + LIVE LLM`:** Supported official providers (`gemini`, `openai`, `anthropic`, `ollama`, `local_openai`). Fails closed (`HTTP 503` / `missing_credentials`) when unconfigured and preserves retrieved evidence without silent fallback if synthesis fails.
-
----
-
-## Live LLM Activation Status
-
-**Deliberately Deferred (Currently Unconfigured):** No external LLM API credentials or local model server endpoints are configured in this submission workspace. All engineering, security, observability, performance, and browser E2E validations run in **OFFLINE** and **MOCK** modes with zero fabricated provider responses. When ready to activate live inference, add `GEMINI_API_KEY` (or another supported provider key / `OLLAMA_BASE_URL`) to `.env` and restart Uvicorn.
-
----
-
-## Evaluation & Test Commands
-
-All tests and benchmarks run without external API credentials:
-
-```powershell
-# Full repository test suite (226 tests, including 10 Chromium Playwright E2E suites)
-.\venv\Scripts\python.exe -m pytest -v
-
-# Reproducible Phase 8.2/8.3 performance, concurrency, storage & dashboard benchmark
-.\venv\Scripts\python.exe eval/phase8_2_performance.py --label local-check
-
-# Canonical 100-task offline benchmark evaluation + SVG plots
+# Reproduce flagship 100-task benchmark (seed 42)
 .\venv\Scripts\python.exe -m eval.run_all --seed 42
+
+# Regenerate & dry-run validate QLoRA recovery-policy dataset
+.\venv\Scripts\python.exe finetuning\prepare_qlora_dataset.py
+.\venv\Scripts\python.exe finetuning\train_qlora_policy.py --dry-run
 ```
 
-**Latest Verified Full Test Suite Result (Phase 8.3):** **`226 passed, 0 failed, 0 skipped`** (`106.74s`), including all `10/10` real Chromium Playwright E2E suites.
-
 ---
 
-## Deployment Limitations
+## 7. Teammate Tasks & Handoff Checklist
 
-- **Local containerization:** `Dockerfile` and `docker-compose.yml` (loopback-bound `127.0.0.1:8000:8000`) are validated statically (`docker-compose config --quiet` exit `0`), but a live `docker build` was not executed because Docker Engine was stopped on the host.
-- **Single-node scope:** Atomic filesystem JSON persistence and in-memory rate limiting are designed for single-process demos; multi-worker public deployments require PostgreSQL/Redis, TLS termination, `TRACERECOVER_ADMIN_TOKEN`, `TRACERECOVER_VAULT_KEY`, and cryptographic user authentication.
+Use this repository (or the generated `TraceRecover_teammate_handoff.zip` archive) to execute the remaining collaborative tasks cleanly without modifying the protected core reliability layers (`agent/`, `grounding/`, `healing/`, `uncertainty/`, `tools/`, `trace/`):
 
-See [docs/TRACE_RECOVER_KNOWN_LIMITATIONS.md](docs/TRACE_RECOVER_KNOWN_LIMITATIONS.md) and [docs/PHASE8_3_DEPLOYMENT_VALIDATION.md](docs/PHASE8_3_DEPLOYMENT_VALIDATION.md) for complete details.
-
----
-
-## Documentation Index
-
-- **Final Completion & Demo (Phase 8.3):**
-  - [PHASE8_3_FINAL_REPORT.md](PHASE8_3_FINAL_REPORT.md)
-  - [Final Capstone Demo Guide](docs/TRACE_RECOVER_FINAL_DEMO_GUIDE.md)
-  - [Deployment Validation](docs/PHASE8_3_DEPLOYMENT_VALIDATION.md)
-  - [Known Limitations](docs/TRACE_RECOVER_KNOWN_LIMITATIONS.md)
-- **Performance, Observability & Security (Phases 8.1–8.2):**
-  - [PHASE8_2_FINAL_REPORT.md](PHASE8_2_FINAL_REPORT.md) · [Performance Analysis](docs/PHASE8_2_PERFORMANCE_ANALYSIS.md) · [Observability Architecture](docs/PHASE8_2_OBSERVABILITY_ARCHITECTURE.md) · [Reliability Testing](docs/PHASE8_2_RELIABILITY_TESTING.md)
-  - [PHASE8_1_FINAL_REPORT.md](PHASE8_1_FINAL_REPORT.md) · [System Architecture](docs/PHASE8_1_SYSTEM_ARCHITECTURE.md) · [Security Audit](docs/PHASE8_1_SECURITY_AUDIT.md) · [Deployment Readiness](docs/PHASE8_1_DEPLOYMENT_READINESS.md)
-- **Research Engine, Provenance & Historical Evaluations (Phases 1–7.5.3):**
-  - [Execution Integrity (Phase 7.5.2)](docs/PHASE7_5_2_EXECUTION_INTEGRITY.md) · [Live Activation Log (Phase 7.5.3)](docs/PHASE7_5_3_LIVE_EXECUTION.md)
-  - [Independent Holdout Evaluation (Phase 7.4)](docs/PHASE7_4_RELIABILITY_EVALUATION.md) · [Claim Provenance](docs/CLAIM_PROVENANCE_ARCHITECTURE.md) · [Context-Aware Contradictions](docs/CONTEXT_AWARE_CONTRADICTION_VERIFICATION.md)
-  - [Connector & MCP Guide](docs/CONNECTOR_GUIDE.md) · [Browser Automation](docs/BROWSER_AUTOMATION.md) · [Security Architecture](docs/SECURITY.md) · [Viva Preparation](docs/viva_preparation.md)
+1. **GPU Fine-Tuning of QLoRA Recovery Policy (`finetuning/`):**
+   - Run `finetuning/train_qlora_policy.py` on a CUDA GPU (e.g., Google Colab T4/A100 or local NVIDIA GPU) with `torch`, `transformers`, `peft`, `bitsandbytes`, and `datasets` installed using `data/qlora_train.jsonl` (`934` examples) and `data/qlora_val.jsonl` (`235` examples).
+   - Evaluate validation accuracy & macro-F1 on `failure_type` and `recovery_action` prediction; keep model weights (`*.safetensors`, `checkpoints/`, `adapters/`, `outputs/`) out of Git (already ignored in `.gitignore`).
+2. **Presentation Deck & Viva Preparation (`docs/`):**
+   - Review [docs/TraceRecover_Results_Evaluation_Slides.pptx](docs/TraceRecover_Results_Evaluation_Slides.pptx) and the 2× Retina PNG graphs in `results/phase8-run-20261123T183333634001Z/plots/png/`.
+   - Use [docs/TRACERECOVER_COMPLETE_PROJECT_HANDOFF.md](docs/TRACERECOVER_COMPLETE_PROJECT_HANDOFF.md) and [docs/FINAL_PROJECT_REPORT.md](docs/FINAL_PROJECT_REPORT.md) for final report submission and faculty viva Q&A.
+3. **Optional Live Commercial LLM Evaluation:**
+   - Add your own `GEMINI_API_KEY`, `OPENAI_API_KEY`, or `ANTHROPIC_API_KEY` into local `.env` (never commit `.env`) and test live questions in **2. Live Demo** alongside the 4 deterministic reliability presets.
+4. **Update Legacy Browser E2E Tests (Optional):**
+   - The 11 legacy multi-tab Playwright E2E tests (`test_browser_e2e.py`, `test_phase3_browser_e2e.py`, etc.) still reference removed developer tabs from the earlier 13-tab UI; update them if full browser E2E coverage of the streamlined 6-page Material Design 3 dashboard is desired.
