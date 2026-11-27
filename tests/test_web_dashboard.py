@@ -492,3 +492,392 @@ def test_replay_datasets_pdf_and_budget_explanation(
     )
     assert "AIza" not in str(s_data) and "sk-" not in str(s_data)
 
+
+def test_api_keys_save_masks_secrets_and_updates_recommended_provider(
+    client: TestClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Verify POST /api/keys updates .env cleanly and GET endpoints return masked hints only."""
+    temp_env = tmp_path / ".env"
+    temp_env.write_text(
+        "# Existing TraceRecover config\nEXISTING_FLAG=true\nGEMINI_API_KEY=old-placeholder-0000\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(web_dashboard, "ENV_FILE_PATH", temp_env)
+    for key_var in ("GEMINI_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "LLM_PROVIDER"):
+        monkeypatch.delenv(key_var, raising=False)
+
+    # Initially no live key configured -> recommended_provider is local
+    h0 = client.get("/api/health").json()
+    assert h0["recommended_provider"] == "local"
+    assert h0["api_keys"]["gemini"]["configured"] is False
+    assert h0["api_keys"]["gemini"]["last4"] is None
+
+    # Invalid provider and newline injection must be rejected (422)
+    assert client.post("/api/keys", json={"provider": "unknown", "api_key": "abc12345"}).status_code == 422
+    assert client.post("/api/keys", json={"provider": "gemini", "api_key": "bad\nINJECT=1"}).status_code == 422
+
+    # Save Gemini key into isolated temp .env
+    fake_secret = "AIzaSyUnitTestFakeSecret9876"
+    save_resp = client.post(
+        "/api/keys",
+        json={"provider": "gemini", "api_key": f"  {fake_secret}  "},
+    )
+    assert save_resp.status_code == 200
+    saved = save_resp.json()
+    assert saved["status"] == "saved"
+    assert saved["provider"] == "gemini"
+    assert saved["configured"] is True
+    assert saved["masked"] == "****9876"
+    assert saved["recommended_provider"] == "gemini"
+    assert os.environ["GEMINI_API_KEY"] == fake_secret
+
+    # Temp .env preserves unrelated lines and updates GEMINI_API_KEY in place without duplicates
+    env_lines = temp_env.read_text(encoding="utf-8").splitlines()
+    assert "# Existing TraceRecover config" in env_lines
+    assert "EXISTING_FLAG=true" in env_lines
+    assert env_lines.count(f"GEMINI_API_KEY={fake_secret}") == 1
+    assert not any("old-placeholder-0000" in line for line in env_lines)
+
+    # GET /api/health and GET /api/settings expose only masked last4, never the raw secret
+    for endpoint in ("/api/health", "/api/settings"):
+        resp = client.get(endpoint)
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["recommended_provider"] == "gemini"
+        assert body["api_keys"]["gemini"]["configured"] is True
+        assert body["api_keys"]["gemini"]["last4"] == "****9876"
+        gemini_prov = next(p for p in body["providers"] if p["id"] == "gemini")
+        assert gemini_prov["configured"] is True
+        assert gemini_prov["last4"] == "****9876"
+        assert fake_secret not in resp.text
+        assert "AIza" not in resp.text
+
+
+def test_run_arbitrary_question_local_web_fallback_and_live_provider(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Verify arbitrary open-domain queries work in both local fallback and live LLM modes."""
+    fallback_calls: list[str] = []
+
+    def _fake_external_fallback(query: str) -> str | None:
+        fallback_calls.append(query)
+        q_low = query.casefold()
+        if "python" in q_low:
+            return (
+                "Guido van Rossum created the Python programming language in 1991. "
+                "(Source: Python — Wikipedia, https://en.wikipedia.org/wiki/Python)"
+            )
+        if "photosynthesis" in q_low:
+            return (
+                "Photosynthesis is the process by which plants convert light energy into chemical energy. "
+                "(Source: Photosynthesis — Wikipedia, https://en.wikipedia.org/wiki/Photosynthesis)"
+            )
+        return None
+
+    monkeypatch.setattr(web_dashboard, "_external_search_fallback", _fake_external_fallback)
+
+    # 1. Arbitrary question in local mode uses safe external snippet fallback -> grounded ANSWER
+    local_resp = client.post(
+        "/api/run",
+        json={
+            "question": "Who invented the Python programming language?",
+            "provider": "local",
+            "failure_rate": 0,
+            "use_nli": True,
+        },
+    )
+    assert local_resp.status_code == 200
+    local_data = local_resp.json()
+    assert local_data["final_decision"] == "ANSWER"
+    assert "Guido van Rossum" in local_data["final_response"]
+    assert local_data["grounding_report"]["supported_count"] >= 1
+    assert len(fallback_calls) == 1
+
+    # 2. Missing-entity safety traps must NOT call external search and must ABSTAIN
+    trap_resp = client.post(
+        "/api/run",
+        json={
+            "question": "Who discovered the fictional element unobtainium?",
+            "provider": "local",
+            "failure_rate": 0,
+            "use_nli": True,
+        },
+    )
+    assert trap_resp.status_code == 200
+    assert trap_resp.json()["final_decision"] == "ABSTAIN"
+    assert len(fallback_calls) == 1  # unchanged
+
+    # 3. Live provider execution (auto-selected when key is set) uses fast single-call path
+    for key_var in ("GEMINI_API_KEY", "ANTHROPIC_API_KEY", "LLM_PROVIDER"):
+        monkeypatch.delenv(key_var, raising=False)
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-unit-test-live-4321")
+
+    def _fake_complete_meta(self: object, prompt: str):
+        from config import LLMCallMetrics
+
+        text = "Photosynthesis is the process by which plants convert light energy into chemical energy."
+        return text, LLMCallMetrics(
+            provider="openai",
+            model="gpt-4o-mini",
+            prompt_tokens=45,
+            completion_tokens=18,
+            total_tokens=63,
+            latency_seconds=0.35,
+            estimated_cost_usd=0.00002,
+        )
+
+    monkeypatch.setattr(web_dashboard.LLMClient, "complete_with_metadata", _fake_complete_meta)
+
+    live_resp = client.post(
+        "/api/run",
+        json={
+            "question": "What is photosynthesis?",
+            "provider": "auto",
+            "failure_rate": 0,
+            "use_nli": True,
+        },
+    )
+    assert live_resp.status_code == 200
+    live_data = live_resp.json()
+    assert live_data["provider"] == "openai"
+    assert live_data["provider_scope"] == "live_remote_llm"
+    assert live_data["fast_path"] is True
+    assert live_data["final_decision"] == "ANSWER"
+    assert "light energy into chemical energy" in live_data["final_response"]
+    assert live_data["grounded_answer"] == live_data["final_response"]
+    assert live_data["grounding_report"]["supported_count"] >= 1
+    assert "sk-unit-test-live-4321" not in live_resp.text
+
+    # 4. Blank/whitespace question returns a friendly 400 error
+    blank_resp = client.post("/api/run", json={"question": "   ", "provider": "local"})
+    assert blank_resp.status_code == 400
+    assert blank_resp.json()["detail"] == "Please enter a question first."
+
+
+def test_gemini_404_model_fallback_and_dotenv_autoload(
+    client: TestClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Verify LLMClient falls back from HTTP 404 Gemini models cleanly and .env autoload respects shell vars."""
+    import json
+    from urllib.error import HTTPError
+
+    class _FakeResp:
+        def __init__(self, payload: dict) -> None:
+            self._body = json.dumps(payload).encode("utf-8")
+
+        def read(self) -> bytes:
+            return self._body
+
+        def __enter__(self) -> "_FakeResp":
+            return self
+
+        def __exit__(self, *_args: object) -> bool:
+            return False
+
+    # 1. Default Gemini model in health, settings, and LLMClient is gemini-3.8-flash
+    monkeypatch.delenv("GEMINI_MODEL", raising=False)
+    monkeypatch.setenv("GEMINI_API_KEY", "test-gemini-fallback-key-1234")
+    for endpoint in ("/api/health", "/api/settings"):
+        body = client.get(endpoint).json()
+        gem = next(p for p in body["providers"] if p["id"] == "gemini")
+        assert gem["model"] == "gemini-3.8-flash"
+
+    # 2. HTTP 404 on gemini-2.0-flash AND gemini-3.8-flash falls back cleanly to gemini-3.6-flash
+    requested_urls: list[str] = []
+
+    def _fake_urlopen(req: object, timeout: float = 30) -> _FakeResp:
+        url = str(getattr(req, "full_url", ""))
+        requested_urls.append(url)
+        if "/models/gemini-3.6-flash:" in url:
+            return _FakeResp(
+                {
+                    "candidates": [{"content": {"parts": [{"text": "Recovered via gemini-3.6-flash"}]}}],
+                    "usageMetadata": {"promptTokenCount": 120, "candidatesTokenCount": 25},
+                }
+            )
+        raise HTTPError(url, 404, "Not Found", hdrs=None, fp=None)
+
+    monkeypatch.setattr("config.urlopen", _fake_urlopen)
+
+    llm = web_dashboard.LLMClient(provider="gemini", model="gemini-2.0-flash")
+    text, metrics = llm.complete_with_metadata("Test fallback prompt")
+    assert text == "Recovered via gemini-3.6-flash"
+    assert llm.model == "gemini-3.6-flash"
+    assert metrics.model == "gemini-3.6-flash"
+    assert metrics.total_tokens == 145
+    assert any("/models/gemini-2.0-flash:" in u for u in requested_urls)
+    assert any("/models/gemini-3.8-flash:" in u for u in requested_urls)
+    assert any("/models/gemini-3.6-flash:" in u for u in requested_urls)
+
+    # 3. _autoload_dotenv loads unset vars without overwriting existing process env vars
+    sample_env = tmp_path / ".env"
+    sample_env.write_text(
+        "TRACERECOVER_TEST_AUTOLOAD_NEW=loaded_from_file\n"
+        "TRACERECOVER_TEST_AUTOLOAD_KEEP=from_file_ignored\n",
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("TRACERECOVER_TEST_AUTOLOAD_NEW", raising=False)
+    monkeypatch.setenv("TRACERECOVER_TEST_AUTOLOAD_KEEP", "from_shell_preserved")
+    web_dashboard._autoload_dotenv(sample_env)
+    assert os.environ["TRACERECOVER_TEST_AUTOLOAD_NEW"] == "loaded_from_file"
+    assert os.environ["TRACERECOVER_TEST_AUTOLOAD_KEEP"] == "from_shell_preserved"
+
+    # 4. HTTP 503 overload on one Gemini model falls back cleanly to the next available model
+    seen_503_urls: list[str] = []
+
+    def _fake_503_urlopen(req: object, timeout: float = 30) -> _FakeResp:
+        url = str(getattr(req, "full_url", ""))
+        seen_503_urls.append(url)
+        if "/models/gemini-2.5-flash:" in url:
+            raise HTTPError(url, 503, "Service Unavailable", hdrs=None, fp=None)
+        if "/models/gemini-2.5-flash-lite:" in url:
+            return _FakeResp(
+                {
+                    "candidates": [{"content": {"parts": [{"text": "Recovered from 503 via lite"}]}}],
+                    "usageMetadata": {"promptTokenCount": 50, "candidatesTokenCount": 15},
+                }
+            )
+        raise HTTPError(url, 404, "Not Found", hdrs=None, fp=None)
+
+    monkeypatch.setattr("config.urlopen", _fake_503_urlopen)
+    llm_503 = web_dashboard.LLMClient(provider="gemini", model="gemini-2.5-flash")
+    assert llm_503.complete("Recover from overload") == "Recovered from 503 via lite"
+    assert llm_503.model == "gemini-2.5-flash-lite"
+    assert any("/models/gemini-2.5-flash:" in u for u in seen_503_urls)
+    assert any("/models/gemini-2.5-flash-lite:" in u for u in seen_503_urls)
+
+    # 5. Default timeout is 45.0s (overridable via LLM_TIMEOUT_SECONDS) and TimeoutError fails over cleanly
+    monkeypatch.delenv("LLM_TIMEOUT_SECONDS", raising=False)
+    monkeypatch.delenv("LLM_REQUEST_TIMEOUT", raising=False)
+    assert web_dashboard.LLMClient(provider="gemini").timeout == 45.0
+    monkeypatch.setenv("LLM_TIMEOUT_SECONDS", "60")
+    assert web_dashboard.LLMClient(provider="gemini").timeout == 60.0
+
+    def _fake_timeout_urlopen(req: object, timeout: float = 45) -> _FakeResp:
+        url = str(getattr(req, "full_url", ""))
+        if "/models/gemini-2.5-flash:" in url:
+            raise TimeoutError("The read operation timed out")
+        if "/models/gemini-2.5-flash-lite:" in url:
+            return _FakeResp(
+                {
+                    "candidates": [{"content": {"parts": [{"text": "Recovered from timeout via lite"}]}}],
+                    "usageMetadata": {"promptTokenCount": 40, "candidatesTokenCount": 12},
+                }
+            )
+        raise HTTPError(url, 404, "Not Found", hdrs=None, fp=None)
+
+    monkeypatch.setattr("config.urlopen", _fake_timeout_urlopen)
+    llm_to = web_dashboard.LLMClient(provider="gemini", model="gemini-2.5-flash")
+    assert llm_to.complete("Recover from read timeout") == "Recovered from timeout via lite"
+    assert llm_to.model == "gemini-2.5-flash-lite"
+
+    # 6. Gemini 503/timeout on general open-ended question triggers automatic resilience fallback (HTTP 200, never 502)
+    monkeypatch.setattr(
+        "config.urlopen",
+        lambda req, timeout=45: (_ for _ in ()).throw(HTTPError(str(getattr(req, "full_url", "")), 503, "Service Unavailable", hdrs=None, fp=None)),
+    )
+    monkeypatch.setattr(
+        web_dashboard,
+        "_external_search_fallback",
+        lambda q: "Gravity is a fundamental interaction causing mutual attraction between all things with mass or energy. (Source: Gravity — Wikipedia, https://en.wikipedia.org/wiki/Gravity)",
+    )
+    resilience_resp = client.post(
+        "/api/run",
+        json={"question": "Explain gravity", "provider": "gemini", "failure_rate": 0},
+    )
+    assert resilience_resp.status_code == 200
+    r_data = resilience_resp.json()
+    assert r_data["resilience_fallback"] is True
+    assert r_data["final_decision"] == "WARN"
+    assert "Gravity is a fundamental interaction" in r_data["final_response"]
+    assert "resilience fallback" in r_data["uncertainty_report"]["decision_explanation"].lower()
+    assert r_data["recovery_report"]["successful_recoveries"] == 1
+
+
+def test_four_live_demo_presets_including_missing_evidence_and_contradiction_guard(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Verify all 4 Live Demo presets route through ReactAgent with deterministic outcomes."""
+    ext_calls: list[str] = []
+    monkeypatch.setattr(
+        web_dashboard,
+        "_external_search_fallback",
+        lambda q: (ext_calls.append(q) or "SHOULD NOT BE CALLED"),
+    )
+
+    # Preset 1: Normal Grounded ANSWER
+    p1 = client.post(
+        "/api/run",
+        json={
+            "question": "What is the capital of France?",
+            "provider": "local",
+            "fault_rate": 0.0,
+            "override_tool_output": "The capital of France is Paris.",
+            "use_nli": True,
+        },
+    )
+    assert p1.status_code == 200
+    d1 = p1.json()
+    assert d1["decision"] == "ANSWER"
+    assert d1["final_decision"] == "ANSWER"
+    assert d1["grounding_report"]["supported_count"] >= 1
+
+    # Preset 2: 40% Fault + Self-Healing (fault_rate=0.4 normalized to 40%)
+    p2 = client.post(
+        "/api/run",
+        json={
+            "question": "Compute 248 * 19",
+            "provider": "local",
+            "fault_rate": 0.4,
+            "seed": 13,
+            "use_nli": True,
+        },
+    )
+    assert p2.status_code == 200
+    d2 = p2.json()
+    assert d2["failure_report"]["total_failures"] >= 1
+    assert d2["recovery_report"]["successful_recoveries"] >= 1
+    assert d2["decision"] in {"ANSWER", "WARN"}
+    assert "4712" in d2["final_response"]
+
+    # Preset 3: Missing Evidence ABSTAIN (unobtainium-999 must NOT fuzzy-match local KB or call external search)
+    p3 = client.post(
+        "/api/run",
+        json={
+            "question": "What is the melting point of unobtainium-999?",
+            "provider": "local",
+            "fault_rate": 0.0,
+            "use_nli": True,
+        },
+    )
+    assert p3.status_code == 200
+    d3 = p3.json()
+    assert d3["decision"] == "ABSTAIN"
+    assert d3["final_decision"] == "ABSTAIN"
+    assert d3["grounding_report"]["supported_count"] == 0
+    assert ext_calls == []
+
+    # Preset 4: Contradiction Guard (contradiction_probe=True + Berlin vs Paris -> 1 contradicted -> ABSTAIN)
+    p4 = client.post(
+        "/api/run",
+        json={
+            "question": "What is the capital of France?",
+            "provider": "local",
+            "fault_rate": 0.0,
+            "contradiction_probe": True,
+            "override_tool_output": "The capital of France is Berlin.",
+            "use_nli": True,
+        },
+    )
+    assert p4.status_code == 200
+    d4 = p4.json()
+    assert d4["decision"] == "ABSTAIN"
+    assert d4["final_decision"] == "ABSTAIN"
+    assert d4["grounding_report"]["contradicted_count"] == 1
+    assert ext_calls == []
+
+
+
+
+
+

@@ -1,0 +1,44 @@
+services:
+  tracerecover:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: tracerecover-dashboard:local
+    container_name: tracerecover-dashboard
+    restart: unless-stopped
+    # Bound strictly to localhost by default; put behind an authenticated TLS reverse proxy before public exposure.
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "8000"
+      LLM_PROVIDER: "local"
+      TRACERECOVER_ENABLE_DOCS: "false"
+      TRACERECOVER_RESULTS_DIR: "/var/data/results"
+      TRACERECOVER_LOGS_DIR: "/var/data/logs"
+      TRACERECOVER_DATASET_VERSIONS_DIR: "/var/data/versions"
+      TRACERECOVER_CONVERSATIONS_DIR: "/var/data/conversations"
+      TRACERECOVER_UNSEEN_DATASETS_DIR: "/var/data/unseen_benchmarks"
+      TRACERECOVER_CONNECTORS_DIR: "/var/data/connectors"
+      TRACERECOVER_CORS_ORIGINS: "http://127.0.0.1:8000,http://localhost:8000"
+      TRACERECOVER_RATE_LIMIT_RUN: "60"
+      TRACERECOVER_RATE_LIMIT_EXPERIMENTS: "10"
+      TRACERECOVER_MAX_REQUEST_BYTES: "65536"
+      # Set TRACERECOVER_ADMIN_TOKEN and TRACERECOVER_VAULT_KEY via .env or secret manager before shared deployment.
+    volumes:
+      - tracerecover_data:/var/data
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import os, urllib.request; p = os.getenv('PORT', '8000'); urllib.request.urlopen(f'http://127.0.0.1:{p}/api/health', timeout=3)",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  tracerecover_data:

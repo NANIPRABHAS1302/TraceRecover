@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import socket
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -15,9 +16,25 @@ from urllib.request import Request, urlopen
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 SUPPORTED_PROVIDERS = ("gemini", "anthropic", "openai", "local")
+DEFAULT_GEMINI_MODEL = "gemini-3.8-flash"
+DEFAULT_LLM_TIMEOUT_SECONDS = 45.0
+GEMINI_FALLBACK_MODELS: tuple[str, ...] = (
+    "gemini-2.5-flash-lite",
+    "gemini-3.5-flash-lite",
+    "gemini-3.8-flash",
+    "gemini-3.6-flash",
+    "gemini-2.5-flash",
+    "gemini-2.0-flash-lite",
+)
 
 # Published USD pricing per 1,000,000 tokens: (input_per_1m, output_per_1m)
 MODEL_PRICING_PER_1M: dict[str, tuple[float, float]] = {
+    "gemini-3.8-flash": (0.10, 0.40),
+    "gemini-3.6-flash": (0.10, 0.40),
+    "gemini-3.5-flash-lite": (0.075, 0.30),
+    "gemini-2.5-flash": (0.15, 0.60),
+    "gemini-2.5-flash-lite": (0.10, 0.40),
+    "gemini-2.0-flash-lite": (0.075, 0.30),
     "gemini-2.0-flash": (0.10, 0.40),
     "gemini-1.5-flash": (0.075, 0.30),
     "claude-3-5-haiku-latest": (0.80, 4.00),
@@ -28,7 +45,7 @@ MODEL_PRICING_PER_1M: dict[str, tuple[float, float]] = {
 }
 
 
-def _load_env_file(path: Path) -> None:
+def load_env_file(path: Path) -> None:
     """Load simple KEY=VALUE entries without overriding process variables."""
     if not path.is_file():
         return
@@ -36,6 +53,8 @@ def _load_env_file(path: Path) -> None:
         entry = line.strip()
         if not entry or entry.startswith("#") or "=" not in entry:
             continue
+        if entry.startswith("export "):
+            entry = entry[7:].strip()
         key, value = entry.split("=", 1)
         key = key.strip()
         value = value.strip().strip("\"'")
@@ -43,7 +62,8 @@ def _load_env_file(path: Path) -> None:
             os.environ[key] = value
 
 
-_load_env_file(PROJECT_ROOT / ".env")
+_load_env_file = load_env_file
+load_env_file(PROJECT_ROOT / ".env")
 
 
 @dataclass(frozen=True)
@@ -51,7 +71,11 @@ class Settings:
     """Runtime settings populated from the environment and .env file."""
 
     provider: str = os.getenv("LLM_PROVIDER", "gemini").lower()
-    request_timeout: float = float(os.getenv("LLM_REQUEST_TIMEOUT", "30"))
+    request_timeout: float = float(
+        os.getenv("LLM_TIMEOUT_SECONDS")
+        or os.getenv("LLM_REQUEST_TIMEOUT")
+        or str(DEFAULT_LLM_TIMEOUT_SECONDS)
+    )
 
 
 @dataclass(frozen=True)
@@ -102,12 +126,21 @@ def get_settings() -> Settings:
             f"Unsupported LLM_PROVIDER {provider!r}; choose from "
             f"{', '.join(SUPPORTED_PROVIDERS)}."
         )
+    raw_timeout = (
+        os.getenv("LLM_TIMEOUT_SECONDS", "").strip()
+        or os.getenv("LLM_REQUEST_TIMEOUT", "").strip()
+        or str(DEFAULT_LLM_TIMEOUT_SECONDS)
+    )
     try:
-        timeout = float(os.getenv("LLM_REQUEST_TIMEOUT", "30"))
+        timeout = float(raw_timeout)
     except ValueError as exc:
-        raise ValueError("LLM_REQUEST_TIMEOUT must be a positive number.") from exc
+        raise ValueError(
+            "LLM_TIMEOUT_SECONDS / LLM_REQUEST_TIMEOUT must be a positive number."
+        ) from exc
     if timeout <= 0:
-        raise ValueError("LLM_REQUEST_TIMEOUT must be a positive number.")
+        raise ValueError(
+            "LLM_TIMEOUT_SECONDS / LLM_REQUEST_TIMEOUT must be a positive number."
+        )
     return Settings(provider=provider, request_timeout=timeout)
 
 
@@ -127,20 +160,19 @@ class LLMClient:
                 f"Unsupported provider {self.provider!r}; choose from "
                 f"{', '.join(SUPPORTED_PROVIDERS)}."
             )
-        self.model = model or os.getenv(
-            {
-                "gemini": "GEMINI_MODEL",
-                "anthropic": "ANTHROPIC_MODEL",
-                "openai": "OPENAI_MODEL",
-                "local": "LOCAL_MODEL",
-            }[self.provider],
-            {
-                "gemini": "gemini-2.0-flash",
-                "anthropic": "claude-3-5-haiku-latest",
-                "openai": "gpt-4o-mini",
-                "local": "deterministic-local",
-            }[self.provider],
-        )
+        env_var = {
+            "gemini": "GEMINI_MODEL",
+            "anthropic": "ANTHROPIC_MODEL",
+            "openai": "OPENAI_MODEL",
+            "local": "LOCAL_MODEL",
+        }[self.provider]
+        fallback_model = {
+            "gemini": DEFAULT_GEMINI_MODEL,
+            "anthropic": "claude-3-5-haiku-latest",
+            "openai": "gpt-4o-mini",
+            "local": "deterministic-local",
+        }[self.provider]
+        self.model = (model or "").strip() or os.getenv(env_var, "").strip() or fallback_model
         self.timeout = timeout if timeout is not None else settings.request_timeout
         self.call_history: list[LLMCallMetrics] = []
 
@@ -240,8 +272,14 @@ class LLMClient:
         return key
 
     def _post_json(
-        self, url: str, payload: dict[str, Any], headers: dict[str, str]
+        self,
+        url: str,
+        payload: dict[str, Any],
+        headers: dict[str, str],
+        *,
+        timeout: float | None = None,
     ) -> dict[str, Any]:
+        active_timeout = self.timeout if timeout is None else timeout
         request = Request(
             url,
             data=json.dumps(payload).encode("utf-8"),
@@ -249,13 +287,26 @@ class LLMClient:
             method="POST",
         )
         try:
-            with urlopen(request, timeout=self.timeout) as response:
+            with urlopen(request, timeout=active_timeout) as response:
                 body = response.read().decode("utf-8")
         except HTTPError as exc:
+            detail = _extract_http_error_detail(exc)
+            if detail:
+                raise RuntimeError(
+                    f"{self.provider} API returned HTTP {exc.code}: {detail}"
+                ) from None
             raise RuntimeError(
                 f"{self.provider} API returned HTTP {exc.code}."
             ) from None
+        except (TimeoutError, socket.timeout):
+            raise RuntimeError(
+                f"{self.provider} request timed out after {active_timeout:g}s."
+            ) from None
         except URLError as exc:
+            if isinstance(exc.reason, (TimeoutError, socket.timeout)):
+                raise RuntimeError(
+                    f"{self.provider} request timed out after {active_timeout:g}s."
+                ) from None
             raise RuntimeError(
                 f"{self.provider} request failed: {exc.reason}."
             ) from None
@@ -269,15 +320,75 @@ class LLMClient:
 
     def _complete_gemini(self, prompt: str) -> tuple[str, int, int]:
         key = self._api_key("GEMINI_API_KEY")
-        url = (
-            "https://generativelanguage.googleapis.com/v1beta/models/"
-            f"{quote(self.model, safe='')}:generateContent?key={quote(key, safe='')}"
-        )
-        result = self._post_json(
-            url,
-            {"contents": [{"parts": [{"text": prompt}]}]},
-            {"Content-Type": "application/json"},
-        )
+        payload = {"contents": [{"parts": [{"text": prompt}]}]}
+        headers = {"Content-Type": "application/json"}
+        attempt_timeout = min(self.timeout, 12.0)
+        candidates: list[str] = [self.model]
+        for fallback_model in GEMINI_FALLBACK_MODELS:
+            if fallback_model not in candidates:
+                candidates.append(fallback_model)
+
+        result: dict[str, Any] | None = None
+        last_retryable_error: RuntimeError | None = None
+        transient_models: list[str] = []
+        for candidate_model in candidates:
+            url = (
+                "https://generativelanguage.googleapis.com/v1beta/models/"
+                f"{quote(candidate_model, safe='')}:generateContent?key={quote(key, safe='')}"
+            )
+            try:
+                result = self._post_json(url, payload, headers, timeout=attempt_timeout)
+                self.model = candidate_model
+                break
+            except (TimeoutError, socket.timeout):
+                last_retryable_error = RuntimeError(
+                    f"gemini request timed out after {attempt_timeout:g}s."
+                )
+                continue
+            except URLError as exc:
+                last_retryable_error = RuntimeError(
+                    f"gemini request failed: {exc.reason}."
+                )
+                continue
+            except HTTPError as exc:
+                if exc.code in {404, 429, 503}:
+                    last_retryable_error = RuntimeError(
+                        f"gemini API returned HTTP {exc.code}."
+                    )
+                    if exc.code in {429, 503}:
+                        transient_models.append(candidate_model)
+                    continue
+                raise RuntimeError(f"gemini API returned HTTP {exc.code}.") from None
+            except RuntimeError as exc:
+                msg = str(exc)
+                low = msg.lower()
+                if "http 404" in low or "timed out" in low or "request failed" in low:
+                    last_retryable_error = exc
+                    continue
+                if "http 503" in low or "http 429" in low:
+                    last_retryable_error = exc
+                    transient_models.append(candidate_model)
+                    continue
+                raise
+
+        if result is None and transient_models:
+            # One brief retry on the first temporarily overloaded (503/429) model
+            time.sleep(0.8)
+            retry_model = transient_models[0]
+            url = (
+                "https://generativelanguage.googleapis.com/v1beta/models/"
+                f"{quote(retry_model, safe='')}:generateContent?key={quote(key, safe='')}"
+            )
+            try:
+                result = self._post_json(url, payload, headers, timeout=attempt_timeout)
+                self.model = retry_model
+            except (RuntimeError, HTTPError, TimeoutError, socket.timeout, URLError) as exc:
+                last_retryable_error = (
+                    exc if isinstance(exc, RuntimeError) else RuntimeError(str(exc))
+                )
+
+        if result is None:
+            raise last_retryable_error or RuntimeError("gemini API returned HTTP 404.")
         try:
             text = str(result["candidates"][0]["content"]["parts"][0]["text"])
         except (KeyError, IndexError, TypeError) as exc:
@@ -350,3 +461,26 @@ def _extract_token_int(value: Any, *, fallback: int) -> int:
     if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
         return value
     return fallback
+
+
+def _extract_http_error_detail(exc: HTTPError) -> str:
+    """Safely extract a short provider error message from an HTTPError body."""
+    try:
+        raw = exc.read()
+        if not raw:
+            return ""
+        data = json.loads(raw.decode("utf-8", errors="replace"))
+    except Exception:
+        return ""
+    if not isinstance(data, dict):
+        return ""
+    err = data.get("error")
+    msg = ""
+    if isinstance(err, dict):
+        msg = str(err.get("message") or "").strip()
+    elif isinstance(err, str):
+        msg = err.strip()
+    elif isinstance(data.get("message"), str):
+        msg = str(data["message"]).strip()
+    msg = " ".join(msg.split())
+    return msg[:180] if msg else ""

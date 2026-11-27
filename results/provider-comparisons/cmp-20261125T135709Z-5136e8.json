@@ -1,0 +1,63 @@
+{
+  "comparison_id": "cmp-20261125T135709Z-5136e8",
+  "created_at": "2026-11-25T13:57:11.239959+00:00",
+  "question": "what was the capital city of andhra",
+  "config": {
+    "providers": [
+      "local"
+    ],
+    "enable_external_search": true,
+    "search_provider": "auto",
+    "failure_rate": 0.0,
+    "seed": 42,
+    "use_nli": false
+  },
+  "results": [
+    {
+      "provider": "local",
+      "model": "deterministic-local",
+      "status": "completed",
+      "execution_mode": "offline_deterministic_local",
+      "final_decision": "WARN",
+      "final_response": "Uncertainty warning: Some factual claims are unsupported; they are labeled in the response.\n\n2024 Andhra Pradesh Legislative Assembly election — Wikipedia: The 2024 Andhra Pradesh Legislative Assembly election was held in the Indian state of Andhra Pradesh on 13 May 2024 for constituting the sixteenth Andhra. [UNSUPPORTED]\nCapital city — Wikipedia: seat of government. [UNSUPPORTED]\nA capital is typically a city that physically encompasses the government's offices and meeting places [SUPPORTED; evidence: step 1]\nthe status as capital is often. [SUPPORTED; evidence: step 1]\nHyderabad — Wikipedia: Hyderabad is the capital and largest city of the Indian state of Telangana. [UNSUPPORTED]\nIt occupies 650 km2 (250 sq mi) on the Deccan Plateau along the banks of the Musi. [SUPPORTED; evidence: step 1]\n\nVerified External Sources:\n- [2024 Andhra Pradesh Legislative Assembly election — Wikipedia](https://en.wikipedia.org/wiki/2024_Andhra_Pradesh_Legislative_Assembly_election)\n- [Capital city — Wikipedia](https://en.wikipedia.org/wiki/Capital_city)\n- [Hyderabad — Wikipedia](https://en.wikipedia.org/wiki/Hyderabad)",
+      "knowledge_source": "external_search_grounded",
+      "tools_selected": [
+        "external_search"
+      ],
+      "evidence_coverage": 0.5,
+      "supported_claims": 3,
+      "total_claims": 6,
+      "recovery_attempted": false,
+      "successful_recoveries": 0,
+      "latency_seconds": 1.3135,
+      "total_tokens": 0,
+      "estimated_cost_usd": 0.0,
+      "cache_hits": 0,
+      "external_sources": [
+        {
+          "step_id": 1,
+          "title": "2024 Andhra Pradesh Legislative Assembly election — Wikipedia",
+          "url": "https://en.wikipedia.org/wiki/2024_Andhra_Pradesh_Legislative_Assembly_election",
+          "snippet": "The 2024 Andhra Pradesh Legislative Assembly election was held in the Indian state of Andhra Pradesh on 13 May 2024 for constituting the sixteenth Andhra",
+          "provider": "wikipedia"
+        },
+        {
+          "step_id": 1,
+          "title": "Capital city — Wikipedia",
+          "url": "https://en.wikipedia.org/wiki/Capital_city",
+          "snippet": "seat of government. A capital is typically a city that physically encompasses the government's offices and meeting places; the status as capital is often",
+          "provider": "wikipedia"
+        },
+        {
+          "step_id": 1,
+          "title": "Hyderabad — Wikipedia",
+          "url": "https://en.wikipedia.org/wiki/Hyderabad",
+          "snippet": "Hyderabad is the capital and largest city of the Indian state of Telangana. It occupies 650 km2 (250 sq mi) on the Deccan Plateau along the banks of the Musi",
+          "provider": "wikipedia"
+        }
+      ],
+      "trace_id": "trace-20261125T135709Z-12833199",
+      "error": null
+    }
+  ]
+}

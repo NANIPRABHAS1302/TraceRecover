@@ -17,6 +17,7 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 # Copy application source, datasets, and baseline benchmark artifacts
 COPY app.py config.py report_generator.py web_dashboard.py ./
 COPY agent/ ./agent/
+COPY connectors/ ./connectors/
 COPY grounding/ ./grounding/
 COPY healing/ ./healing/
 COPY uncertainty/ ./uncertainty/
@@ -29,7 +30,7 @@ COPY results/ ./results/
 
 # Prepare writable non-root runtime directories
 RUN useradd --create-home --shell /bin/bash tracerecover \
-    && mkdir -p /app/logs /var/data/results /var/data/logs /var/data/versions /var/data/conversations /var/data/unseen_benchmarks \
+    && mkdir -p /app/logs /var/data/results /var/data/logs /var/data/versions /var/data/conversations /var/data/unseen_benchmarks /var/data/connectors \
     && chown -R tracerecover:tracerecover /app /var/data
 
 USER tracerecover

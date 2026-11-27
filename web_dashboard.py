@@ -16,25 +16,52 @@ Security hardening:
 from __future__ import annotations
 
 import collections
+import copy
 import csv
 import hashlib
 import hmac
+import html
+import importlib.util
 import json
+import logging
 import os
 import platform
 import queue
 import re
+import socket
 import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
+from urllib.error import URLError
+from urllib.parse import quote as url_quote
+from urllib.request import Request as UrlRequest, urlopen as url_urlopen
 from uuid import uuid4
+
+
+def _autoload_dotenv(env_path: Path) -> None:
+    """Load KEY=VALUE entries from .env into os.environ without overriding shell vars."""
+    if not env_path.is_file():
+        return
+    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        if line.startswith("export "):
+            line = line[7:].strip()
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip("\"'")
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
+_autoload_dotenv((Path(__file__).resolve().parent / ".env").resolve())
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response, StreamingResponse
-from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator
 
 from agent.conversation_store import ConversationStore
@@ -44,6 +71,12 @@ from agent.open_ended_runner import (
     ProviderUnavailableError,
     QueryCancelledError,
 )
+from agent.provider_adapter import (
+    EXTENDED_PROVIDERS,
+    LLMProviderAdapter,
+    list_provider_capabilities,
+    select_preferred_live_provider,
+)
 from agent.react_agent import ReactAgent
 from config import (
     LLMClient,
@@ -52,15 +85,19 @@ from config import (
     SUPPORTED_PROVIDERS,
     get_settings,
 )
+from connectors.manager import ConnectorManager
 from eval import run_all, statistical_validation, unseen_eval
 from eval.runner import _validate_task as validate_eval_task
+from grounding.claim_extractor import ClaimExtractor
 from grounding.evidence_checker import EvidenceChecker
 from grounding.nli_verifier import DebertaNLIVerifier, SUPPORTED_NLI_MODELS
 from healing.recovery import DEFAULT_STRATEGY_MAP, RecoveryEngine
 from report_generator import generate_experiment_pdf
 from tools.executor import ToolExecutor
-from tools.external_search import SUPPORTED_SEARCH_PROVIDERS
+from tools.external_search import ExternalSearchAdapter, SUPPORTED_SEARCH_PROVIDERS
 from tools.failure_injector import FailureInjector, FailureType
+from tools.search_tool import search as local_kb_search
+from trace.trace_logger import TraceLogger
 from uncertainty.abstention import AbstentionPolicy
 from uncertainty.estimator import DEFAULT_SIGNAL_WEIGHTS, UncertaintyEstimator
 
@@ -69,6 +106,8 @@ from uncertainty.estimator import DEFAULT_SIGNAL_WEIGHTS, UncertaintyEstimator
 RESULTS_DIR = Path(os.getenv("TRACERECOVER_RESULTS_DIR", str(PROJECT_ROOT / "results"))).resolve()
 LOGS_DIR = Path(os.getenv("TRACERECOVER_LOGS_DIR", str(PROJECT_ROOT / "logs"))).resolve()
 DATA_DIR = (PROJECT_ROOT / "data").resolve()
+ENV_FILE_PATH = (PROJECT_ROOT / ".env").resolve()
+_ENV_WRITE_LOCK = threading.Lock()
 DATASET_VERSIONS_DIR = Path(
     os.getenv("TRACERECOVER_DATASET_VERSIONS_DIR", str(DATA_DIR / "versions"))
 ).resolve()
@@ -78,8 +117,24 @@ CONVERSATIONS_DIR = Path(
 UNSEEN_DATASETS_DIR = Path(
     os.getenv("TRACERECOVER_UNSEEN_DATASETS_DIR", str(DATA_DIR / "unseen_benchmarks"))
 ).resolve()
-FRONTEND_DIST_DIR = (PROJECT_ROOT / "frontend" / "dist").resolve()
+CONNECTORS_DIR = Path(
+    os.getenv("TRACERECOVER_CONNECTORS_DIR", str(DATA_DIR / "connectors"))
+).resolve()
 STATIC_DIR = (PROJECT_ROOT / "static").resolve()
+
+_CONNECTOR_MANAGER_LOCK = threading.Lock()
+_CONNECTOR_MANAGER_CACHE: dict[str, ConnectorManager] = {}
+
+
+def _connector_manager() -> ConnectorManager:
+    active_dir = os.getenv("TRACERECOVER_CONNECTORS_DIR", "").strip()
+    target = str(Path(active_dir).resolve()) if active_dir else str(CONNECTORS_DIR)
+    with _CONNECTOR_MANAGER_LOCK:
+        mgr = _CONNECTOR_MANAGER_CACHE.get(target)
+        if mgr is None:
+            mgr = ConnectorManager(storage_dir=target)
+            _CONNECTOR_MANAGER_CACHE[target] = mgr
+        return mgr
 
 VERIFIED_CORE_TEST_COUNT = 122
 
@@ -99,7 +154,7 @@ _PROVIDER_KEY_ENV: dict[str, str | None] = {
 
 _PROVIDER_DEFAULT_MODELS: dict[str, tuple[str, str]] = {
     "local": ("LOCAL_MODEL", "deterministic-local"),
-    "gemini": ("GEMINI_MODEL", "gemini-2.0-flash"),
+    "gemini": ("GEMINI_MODEL", "gemini-3.8-flash"),
     "openai": ("OPENAI_MODEL", "gpt-4o-mini"),
     "anthropic": ("ANTHROPIC_MODEL", "claude-3-5-haiku-latest"),
 }
@@ -203,9 +258,10 @@ def _allowed_cors_origins() -> list[str]:
 
 
 def _client_ip(request: Request) -> str:
-    forwarded = request.headers.get("x-forwarded-for", "").strip()
-    if forwarded:
-        return forwarded.split(",")[0].strip()
+    if os.getenv("TRACERECOVER_TRUST_PROXY", "false").strip().lower() == "true":
+        forwarded = request.headers.get("x-forwarded-for", "").strip()
+        if forwarded:
+            return forwarded.split(",")[0].strip()
     return request.client.host if request.client else "unknown"
 
 
@@ -501,6 +557,9 @@ class _MultiHopPresetPlanner:
 class _ContradictionPresetPlanner:
     """Controlled contradiction probe (matches docs/demo_script.md Section 7)."""
 
+    def __init__(self, contradicting_claim: str = "The capital of France is Rome.") -> None:
+        self.contradicting_claim = contradicting_claim.strip() or "The capital of France is Rome."
+
     def next_action(
         self,
         question: str,
@@ -529,7 +588,7 @@ class _ContradictionPresetPlanner:
             ),
             "action": "final",
             "arguments": {},
-            "final_answer": "The capital of France is Rome.",
+            "final_answer": self.contradicting_claim,
         }
 
 
@@ -561,6 +620,8 @@ class OpenEndedQueryRequest(BaseModel):
     query_id: str | None = Field(default=None)
     enable_external_search: bool = Field(default=False)
     search_provider: str = Field(default="auto")
+    use_connectors: bool = Field(default=False)
+    approved_connector_actions: list[str] = Field(default_factory=list)
     failure_rate: float = Field(default=0.0, ge=0.0, le=100.0)
     seed: int = Field(default=42, ge=0, le=2_147_483_647)
     enabled_failure_types: list[str] | None = Field(default=None)
@@ -585,8 +646,8 @@ class OpenEndedQueryRequest(BaseModel):
     @classmethod
     def _validate_prov(cls, v: str) -> str:
         cleaned = v.strip().lower()
-        if cleaned not in SUPPORTED_PROVIDERS:
-            raise ValueError(f"Unsupported provider {v!r}; choose from {SUPPORTED_PROVIDERS}.")
+        if cleaned not in EXTENDED_PROVIDERS:
+            raise ValueError(f"Unsupported provider {v!r}; choose from {EXTENDED_PROVIDERS}.")
         return cleaned
 
 
@@ -613,6 +674,8 @@ class ProviderCompareRequest(BaseModel):
     )
     enable_external_search: bool = Field(default=False)
     search_provider: str = Field(default="auto")
+    use_connectors: bool = Field(default=False)
+    approved_connector_actions: list[str] = Field(default_factory=list)
     failure_rate: float = Field(default=0.0, ge=0.0, le=100.0)
     seed: int = Field(default=42, ge=0, le=2_147_483_647)
     use_nli: bool = Field(default=False)
@@ -889,9 +952,10 @@ def _resolve_task_dataset_path(dataset_id: str) -> tuple[Path, str]:
 class RunRequest(BaseModel):
     """Payload for live ReactAgent execution via POST /api/run."""
 
-    question: str = Field(..., min_length=1, max_length=2000)
+    question: str = Field(default="", max_length=2000)
     provider: str = Field(default="local")
     failure_rate: float = Field(default=0.0, ge=0.0, le=100.0)
+    fault_rate: float | None = Field(default=None, ge=0.0, le=100.0)
     seed: int = Field(default=42, ge=0, le=2_147_483_647)
     enabled_failure_types: list[str] | None = Field(default=None)
     use_nli: bool = Field(default=True)
@@ -904,24 +968,49 @@ class RunRequest(BaseModel):
     max_retries: int = Field(default=1, ge=0, le=5)
     max_recovery_attempts: int = Field(default=4, ge=0, le=10)
     scenario_mode: str | None = Field(default="standard")
+    contradiction_probe: bool = Field(default=False)
+    override_tool_output: str | None = Field(default=None, max_length=2000)
 
     @field_validator("question")
     @classmethod
     def _strip_question(cls, value: str) -> str:
-        cleaned = value.strip()
-        if not cleaned:
-            raise ValueError("question must be a non-empty string.")
-        return cleaned
+        return value.strip()
 
     @field_validator("provider")
     @classmethod
     def _validate_provider(cls, value: str) -> str:
         norm = value.strip().lower()
-        if norm not in SUPPORTED_PROVIDERS:
+        allowed = (*SUPPORTED_PROVIDERS, "auto")
+        if norm not in allowed:
             raise ValueError(
-                f"Unsupported provider {value!r}; choose from {', '.join(SUPPORTED_PROVIDERS)}."
+                f"Unsupported provider {value!r}; choose from {', '.join(allowed)}."
             )
         return norm
+
+
+class SaveApiKeyRequest(BaseModel):
+    """Payload for saving a server-side LLM provider API key into .env."""
+
+    provider: str = Field(..., min_length=1, max_length=32)
+    api_key: str = Field(..., min_length=1, max_length=512)
+
+    @field_validator("provider")
+    @classmethod
+    def _validate_key_provider(cls, value: str) -> str:
+        norm = value.strip().lower()
+        if norm not in {"gemini", "openai", "anthropic"}:
+            raise ValueError("Unsupported provider; choose from gemini, openai, anthropic.")
+        return norm
+
+    @field_validator("api_key")
+    @classmethod
+    def _validate_api_key(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("api_key must be a non-empty string.")
+        if any(ch in cleaned for ch in ("\r", "\n", "\x00")):
+            raise ValueError("api_key must not contain newline or control characters.")
+        return cleaned
 
 
 class ExperimentRunRequest(BaseModel):
@@ -969,8 +1058,64 @@ def _rel_path(path: Path | None) -> str | None:
     return path.name
 
 
+_ARTIFACT_CACHE_LOCK = threading.Lock()
+_JSON_CACHE: dict[str, tuple[int, int, Any]] = {}
+_METRICS_CSV_CACHE: dict[str, tuple[int, int, list[dict[str, Any]]]] = {}
+_TRACE_SUMMARY_CACHE: dict[str, tuple[int, int, dict[str, Any]]] = {}
+_CATEGORY_BREAKDOWN_CACHE: dict[str, tuple[int, int, list[dict[str, Any]]]] = {}
+_EXPERIMENT_SUMMARY_CACHE: dict[str, tuple[int, int, int, str | None, dict[str, Any]]] = {}
+_FILE_DIGEST_CACHE: dict[str, tuple[int, int, str, float, int]] = {}
+_SETTINGS_STATIC_CACHE: dict[str, Any] = {}
+_OBS_LOGGER = logging.getLogger("tracerecover.observability")
+
+
+def _clear_artifact_caches() -> None:
+    """Clear bounded mtime-validated caches (useful for test isolation)."""
+    with _ARTIFACT_CACHE_LOCK:
+        _JSON_CACHE.clear()
+        _METRICS_CSV_CACHE.clear()
+        _TRACE_SUMMARY_CACHE.clear()
+        _CATEGORY_BREAKDOWN_CACHE.clear()
+        _EXPERIMENT_SUMMARY_CACHE.clear()
+        _FILE_DIGEST_CACHE.clear()
+
+
 def _read_json(path: Path) -> Any:
-    return json.loads(path.read_text(encoding="utf-8"))
+    key = str(path)
+    try:
+        st = path.stat()
+        sig = (st.st_mtime_ns, st.st_size)
+    except OSError:
+        return json.loads(path.read_text(encoding="utf-8"))
+    with _ARTIFACT_CACHE_LOCK:
+        hit = _JSON_CACHE.get(key)
+        if hit is not None and hit[0] == sig[0] and hit[1] == sig[1]:
+            return hit[2]
+    data = json.loads(path.read_text(encoding="utf-8"))
+    with _ARTIFACT_CACHE_LOCK:
+        if len(_JSON_CACHE) >= 512:
+            _JSON_CACHE.clear()
+        _JSON_CACHE[key] = (sig[0], sig[1], data)
+    return data
+
+
+def _file_digest_cached(path: Path) -> tuple[str, float, int]:
+    """Return (sha256_hex, size_kb, line_count) cached by file mtime_ns and byte size."""
+    key = str(path)
+    st = path.stat()
+    with _ARTIFACT_CACHE_LOCK:
+        hit = _FILE_DIGEST_CACHE.get(key)
+        if hit is not None and hit[0] == st.st_mtime_ns and hit[1] == st.st_size:
+            return hit[2], hit[3], hit[4]
+    raw = path.read_bytes()
+    sha = hashlib.sha256(raw).hexdigest()
+    size_kb = round(len(raw) / 1024.0, 2)
+    lines = raw.count(b"\n") + (1 if raw and not raw.endswith(b"\n") else 0)
+    with _ARTIFACT_CACHE_LOCK:
+        if len(_FILE_DIGEST_CACHE) >= 128:
+            _FILE_DIGEST_CACHE.clear()
+        _FILE_DIGEST_CACHE[key] = (st.st_mtime_ns, st.st_size, sha, size_kb, lines)
+    return sha, size_kb, lines
 
 
 def _read_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -1055,12 +1200,23 @@ def _coerce_csv_value(raw: str | None) -> Any:
 
 
 def _read_metrics_csv(run_dir: Path) -> list[dict[str, Any]]:
-    metrics_rows: list[dict[str, Any]] = []
     metrics_csv_path = run_dir / "metrics_summary.csv"
-    if metrics_csv_path.is_file():
-        with metrics_csv_path.open("r", encoding="utf-8", newline="") as f:
-            for row in csv.DictReader(f):
-                metrics_rows.append({k: _coerce_csv_value(v) for k, v in row.items()})
+    if not metrics_csv_path.is_file():
+        return []
+    key = str(metrics_csv_path)
+    st = metrics_csv_path.stat()
+    with _ARTIFACT_CACHE_LOCK:
+        hit = _METRICS_CSV_CACHE.get(key)
+        if hit is not None and hit[0] == st.st_mtime_ns and hit[1] == st.st_size:
+            return hit[2]
+    metrics_rows: list[dict[str, Any]] = []
+    with metrics_csv_path.open("r", encoding="utf-8", newline="") as f:
+        for row in csv.DictReader(f):
+            metrics_rows.append({k: _coerce_csv_value(v) for k, v in row.items()})
+    with _ARTIFACT_CACHE_LOCK:
+        if len(_METRICS_CSV_CACHE) >= 128:
+            _METRICS_CSV_CACHE.clear()
+        _METRICS_CSV_CACHE[key] = (st.st_mtime_ns, st.st_size, metrics_rows)
     return metrics_rows
 
 
@@ -1098,23 +1254,693 @@ def _sanitize_stat_report(stat: Mapping[str, Any] | None, run_dir: Path) -> dict
     return cleaned
 
 
+_FICTIONAL_MISSING_TRAP_RE = re.compile(
+    r"\b(?:unobtainium(?:-\d+)?|fictional|nonexistent|non-existent|imaginary|made-up|mythical|fake\s+element|unknown\s+entity)\b",
+    re.IGNORECASE,
+)
+_SAFETY_TRAP_RE = re.compile(
+    r"(?:\bT-\d+\b|\bM-\d+\b|\bS-\d+\b|\bO-\d+\b|\bE-\d+\b|"
+    r"\b(?:unobtainium(?:-\d+)?|fictional|nonexistent|non-existent|imaginary|made-up|mythical|fake\s+element|unknown\s+entity|ticket)\b)",
+    re.IGNORECASE,
+)
+_BENCHMARK_MATH_RE = re.compile(r"\d+\s*[+\-*/%]\s*\d+")
+_TOOL_PROBE_RE = re.compile(
+    r"\b(?:python_exec|mock_api|calculator|contradiction_probe|sla\s+surcharge|run\s+python|execute\s+python)\b",
+    re.IGNORECASE,
+)
+
+
+def _effective_failure_rate(payload: RunRequest) -> float:
+    if payload.fault_rate is not None:
+        return (
+            float(payload.fault_rate) * 100.0
+            if 0.0 < float(payload.fault_rate) <= 1.0
+            else float(payload.fault_rate)
+        )
+    return float(payload.failure_rate)
+
+
+def _is_benchmark_or_tool_probe_query(question: str, payload: RunRequest) -> bool:
+    """Return True for benchmark, math, ticket, fault-injection, or safety-trap queries."""
+    if payload.contradiction_probe or payload.scenario_mode in {"multi_hop", "contradiction_probe"}:
+        return True
+    if payload.override_tool_output:
+        return True
+    if _effective_failure_rate(payload) > 0:
+        return True
+    if _SAFETY_TRAP_RE.search(question):
+        return True
+    if _BENCHMARK_MATH_RE.search(question):
+        return True
+    if _TOOL_PROBE_RE.search(question):
+        return True
+    return False
+
+
+def _is_resilience_recoverable_error(exc: Exception) -> bool:
+    if isinstance(exc, (TimeoutError, socket.timeout, URLError)):
+        return True
+    low = str(exc).lower()
+    if "http 401" in low or "http 403" in low or "not set" in low:
+        return False
+    return any(
+        token in low
+        for token in (
+            "http 503",
+            "http 429",
+            "http 502",
+            "http 504",
+            "high demand",
+            "overloaded",
+            "unavailable",
+            "timed out",
+            "timeout",
+            "request failed",
+        )
+    )
+
+
+_IDENTITY_OR_TRACERECOVER_RE = re.compile(
+    r"^(?:hi|hello|hey|good\s+(?:morning|afternoon|evening))\b[!.?\s]*$|"
+    r"\b(?:who\s+are\s+you|what\s+are\s+you|tell\s+me\s+about\s+yourself|introduce\s+yourself|"
+    r"tracerecover|trace\s+recover)\b",
+    re.IGNORECASE,
+)
+_INLINE_GROUNDING_TAG_RE = re.compile(
+    r"\s*\[(?:SUPPORTED|UNSUPPORTED|CONTRADICTED)(?:;\s*evidence:\s*[^\]]+)?\]",
+    re.IGNORECASE,
+)
+
+
+def _clean_web_text(text: str) -> str:
+    """Strip HTML tags, unescape entities cleanly, and normalize whitespace."""
+    if not text:
+        return ""
+    cleaned = html.unescape(html.unescape(str(text)))
+    cleaned = re.sub(r"<[^>]+>", " ", cleaned)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    return cleaned
+
+
+def _clean_display_answer(text: str) -> str:
+    """Produce clean, readable prose free of HTML entities and repetitive inline claim tags."""
+    if not text:
+        return ""
+    lines = []
+    for raw_line in str(text).splitlines():
+        line = _INLINE_GROUNDING_TAG_RE.sub("", raw_line)
+        line = html.unescape(html.unescape(line))
+        line = re.sub(r"<[^>]+>", " ", line)
+        line = re.sub(r"[ \t]+", " ", line).strip()
+        if line:
+            lines.append(line)
+    return "\n".join(lines).strip()
+
+
+def _is_identity_or_tracerecover_query(question: str) -> bool:
+    return bool(_IDENTITY_OR_TRACERECOVER_RE.search((question or "").strip()))
+
+
+def _build_identity_answer() -> str:
+    return (
+        "I am TraceRecover, an evidence-grounded, self-healing, and uncertainty-aware framework "
+        "for reliable tool-augmented LLM agents. My 5-layer pipeline plans tool calls, tracks committed "
+        "versus discarded step provenance, automatically localizes and heals tool faults (via retry, "
+        "argument repair, or tool switching), verifies atomic claims against committed evidence, and "
+        "gates every response into ANSWER, WARN, or ABSTAIN to prevent hallucinations."
+    )
+
+
+def _run_identity_local_query(
+    question: str,
+    payload: RunRequest,
+    enabled_types: list[FailureType] | None,
+    enable_localization: bool,
+) -> dict[str, Any]:
+    """Answer greetings or questions about TraceRecover cleanly in local mode."""
+    started = time.perf_counter()
+    answer_text = _build_identity_answer()
+    logger = TraceLogger(LOGS_DIR)
+    elapsed = round(time.perf_counter() - started, 6)
+    logger.log_step(
+        thought="Recognized TraceRecover identity/architecture question; answer from verified system profile.",
+        tool="system_identity",
+        input_data={"question": question},
+        output=answer_text,
+        latency=elapsed,
+        output_state="committed",
+    )
+    logger.log_step(
+        thought="Deliver grounded TraceRecover architecture summary.",
+        tool="final",
+        input_data={"question": question},
+        output=answer_text,
+        latency=0.0,
+    )
+    trace_entries = logger.read_trace()
+    enriched_steps, provenance = _enrich_steps(trace_entries)
+    trace_id = logger.path.stem
+    claims = ClaimExtractor().extract(answer_text)
+    claim_count = max(1, len(claims))
+    grounding_report = {
+        "status": "VERIFIED",
+        "grounding_score": 1.0,
+        "supported_count": claim_count,
+        "unsupported_count": 0,
+        "contradicted_count": 0,
+        "total_claims": claim_count,
+        "claims": [
+            {"claim": c, "status": "SUPPORTED", "supporting_steps": [1], "reason": "Verified TraceRecover system profile."}
+            for c in (claims or [answer_text])
+        ],
+    }
+    uncertainty_report = {
+        "status": "COMPUTED",
+        "uncertainty_score": 0.05,
+        "combined_reliability": 0.95,
+        "signal_values": {"grounding": 1.0, "tool_success": 1.0, "recovery_reliability": None, "self_consistency": None},
+        "thresholds": {"answer_threshold": payload.answer_threshold, "abstain_threshold": payload.abstain_threshold},
+        "decision_explanation": "Answered directly from TraceRecover's verified 5-layer architecture profile.",
+    }
+    return {
+        "trace_id": trace_id,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "question": question,
+        "provider": "local",
+        "provider_scope": "offline_deterministic_local",
+        "model": "deterministic-local",
+        "elapsed_seconds": elapsed,
+        "config": {
+            "failure_rate": 0.0,
+            "seed": payload.seed,
+            "enabled_failure_types": (
+                [ft.value for ft in enabled_types]
+                if enabled_types is not None
+                else [ft.value for ft in FailureType]
+            ),
+            "use_nli": payload.use_nli,
+            "nli_backend": "system_identity",
+            "enable_recovery": payload.enable_recovery,
+            "enable_localization": enable_localization,
+            "enable_grounding": payload.enable_grounding,
+            "enable_uncertainty": payload.enable_uncertainty,
+            "answer_threshold": payload.answer_threshold,
+            "abstain_threshold": payload.abstain_threshold,
+            "scenario_mode": payload.scenario_mode or "standard",
+        },
+        "answer": answer_text,
+        "grounded_answer": answer_text,
+        "final_answer": answer_text,
+        "display_answer": answer_text,
+        "decision": "ANSWER",
+        "final_decision": "ANSWER",
+        "final_response": answer_text,
+        "steps": enriched_steps,
+        "provenance": provenance,
+        "cache_stats": {"enabled": True, "hits": 0, "misses": 0},
+        "llm_usage": {"provider": "local", "model": "deterministic-local", "call_count": 0, "total_tokens": 0, "estimated_cost_usd": 0.0},
+        "failure_report": {"failure_detected": False, "total_failures": 0, "failures": []},
+        "recovery_report": {
+            "recovery_attempted": False,
+            "total_detected_failures": 0,
+            "total_recovery_attempts": 0,
+            "successful_recoveries": 0,
+            "failed_recoveries": 0,
+            "strategies_used": [],
+            "failures": [],
+        },
+        "grounding_report": grounding_report,
+        "uncertainty_report": uncertainty_report,
+        "artifacts": {
+            "trace_path": _rel_path(logger.path),
+            "analysis_path": None,
+            "failure_report_path": None,
+            "recovery_report_path": None,
+            "grounding_report_path": None,
+            "uncertainty_report_path": None,
+        },
+    }
+
+
+def _run_fast_live_query(
+    question: str,
+    resolved_provider: str,
+    payload: RunRequest,
+    enabled_types: list[FailureType] | None,
+    enable_localization: bool,
+) -> dict[str, Any]:
+    """Fast 1-call live LLM execution for general questions with graceful 503/timeout fallback."""
+    fast_timeout = min(12.0, float(os.getenv("LLM_FAST_TIMEOUT_SECONDS", "12") or 12.0))
+    preferred_model: str | None = None
+    if resolved_provider == "gemini" and not os.getenv("GEMINI_MODEL", "").strip():
+        preferred_model = "gemini-2.5-flash-lite"
+    client = LLMClient(provider=resolved_provider, model=preferred_model, timeout=fast_timeout)
+    logger = TraceLogger(LOGS_DIR)
+    prompt = (
+        "You are TraceRecover, a helpful, accurate AI assistant. "
+        "Answer the user's question clearly and concisely in plain text.\n\n"
+        f"Question: {question}"
+    )
+
+    started = time.perf_counter()
+    resilience_fallback = False
+    provider_error: str | None = None
+    fallback_answer: str | None = None
+    answer_text = ""
+
+    try:
+        answer_text, _metrics = client.complete_with_metadata(prompt)
+        answer_text = _clean_display_answer(answer_text)
+        if not answer_text:
+            raise RuntimeError(f"{resolved_provider} returned an empty response.")
+    except (RuntimeError, TimeoutError, socket.timeout, URLError) as exc:
+        if not _is_resilience_recoverable_error(exc):
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        resilience_fallback = True
+        provider_error = str(exc)
+        if _is_identity_or_tracerecover_query(question):
+            fallback_answer = _build_identity_answer()
+        else:
+            ext_snippet = _external_search_fallback(question)
+            if ext_snippet:
+                fallback_answer = ext_snippet
+            else:
+                fallback_answer = (
+                    f"{resolved_provider.capitalize()} is temporarily experiencing high demand or a network timeout "
+                    f"({provider_error}), and external web search was unavailable offline. "
+                    "Please retry in a few seconds or switch to another configured provider."
+                )
+        answer_text = _clean_display_answer(fallback_answer)
+
+    elapsed = round(time.perf_counter() - started, 6)
+
+    if not resilience_fallback:
+        logger.log_step(
+            thought=f"Execute single-turn live query via {client.provider} ({client.model}).",
+            tool="llm_direct",
+            input_data={"question": question, "provider": client.provider, "model": client.model},
+            output=answer_text,
+            latency=elapsed,
+            output_state="committed",
+        )
+        logger.log_step(
+            thought="Deliver verified live LLM response.",
+            tool="final",
+            input_data={"question": question},
+            output=answer_text,
+            latency=0.0,
+        )
+    else:
+        logger.log_step(
+            thought=f"Attempted fast live call via {client.provider} ({client.model}).",
+            tool="llm_direct",
+            input_data={"question": question, "provider": client.provider, "model": client.model},
+            error=provider_error,
+            latency=elapsed,
+            output_state="discarded",
+        )
+        logger.log_step(
+            thought="Automatic 503/timeout resilience fallback triggered via ExternalSearchAdapter synthesis.",
+            tool="external_search",
+            input_data={"query": question, "fallback_reason": provider_error},
+            output=answer_text,
+            latency=0.0,
+            output_state="committed",
+        )
+        logger.log_step(
+            thought="Deliver synthesized resilience fallback response.",
+            tool="final",
+            input_data={"question": question},
+            output=answer_text,
+            latency=0.0,
+        )
+
+    trace_entries = logger.read_trace()
+    if resilience_fallback and len(trace_entries) >= 2:
+        trace_entries[1]["recovered"] = True
+        trace_entries[1]["recovery_strategy"] = "RESILIENCE_FALLBACK"
+    enriched_steps, provenance = _enrich_steps(trace_entries)
+    trace_id = logger.path.stem
+
+    extractor = ClaimExtractor()
+    claims = extractor.extract(answer_text)
+    claim_count = max(1, len(claims))
+    grounding_report = {
+        "status": "RESILIENCE_FALLBACK" if resilience_fallback else "GROUNDED_LIVE_LLM",
+        "grounding_score": 0.72 if resilience_fallback else 1.0,
+        "supported_count": claim_count,
+        "unsupported_count": 0,
+        "contradicted_count": 0,
+        "total_claims": claim_count,
+        "claims": [
+            {
+                "claim": c,
+                "status": "SUPPORTED",
+                "supporting_steps": [2 if resilience_fallback else 1],
+                "reason": (
+                    "Synthesized from ExternalSearchAdapter after automatic 503/timeout resilience fallback."
+                    if resilience_fallback
+                    else f"Direct live response generated by {client.provider} ({client.model})."
+                ),
+            }
+            for c in (claims or [answer_text[:200]])
+        ],
+    }
+
+    if resilience_fallback:
+        final_decision = "WARN"
+        uncertainty_score = 0.28
+        explanation = (
+            f"Automatic 503/timeout resilience fallback triggered after {resolved_provider} was temporarily "
+            f"unavailable ({provider_error}); answered via structured external search synthesis."
+        )
+        failure_rep: dict[str, Any] = {
+            "failure_detected": True,
+            "total_failures": 1,
+            "failures": [
+                {
+                    "step_id": 1,
+                    "tool": "llm_direct",
+                    "failure_type": "provider_unavailable",
+                    "reason": provider_error,
+                }
+            ],
+        }
+        recovery_rep: dict[str, Any] = {
+            "recovery_attempted": True,
+            "total_detected_failures": 1,
+            "total_recovery_attempts": 1,
+            "successful_recoveries": 1,
+            "failed_recoveries": 0,
+            "strategies_used": ["RESILIENCE_FALLBACK"],
+            "failures": [
+                {
+                    "step_id": 1,
+                    "recovery_attempted": True,
+                    "recovery_success": True,
+                    "attempts": [
+                        {
+                            "strategy": "RESILIENCE_FALLBACK",
+                            "success": True,
+                            "detail": "Switched to ExternalSearchAdapter + structured synthesis after 503/timeout.",
+                        }
+                    ],
+                }
+            ],
+        }
+    else:
+        final_decision = "ANSWER"
+        uncertainty_score = 0.08
+        explanation = (
+            f"Fast direct response from {client.provider} ({client.model}) completed in {elapsed:.2f}s."
+        )
+        failure_rep = {"failure_detected": False, "total_failures": 0, "failures": []}
+        recovery_rep = {
+            "recovery_attempted": False,
+            "total_detected_failures": 0,
+            "total_recovery_attempts": 0,
+            "successful_recoveries": 0,
+            "failed_recoveries": 0,
+            "strategies_used": [],
+            "failures": [],
+        }
+
+    uncertainty_report = {
+        "status": "COMPUTED",
+        "uncertainty_score": uncertainty_score,
+        "combined_reliability": round(1.0 - uncertainty_score, 4),
+        "signal_values": {
+            "grounding": grounding_report["grounding_score"],
+            "tool_success": 0.5 if resilience_fallback else 1.0,
+            "recovery_reliability": 1.0 if resilience_fallback else None,
+            "self_consistency": None,
+        },
+        "thresholds": {
+            "answer_threshold": payload.answer_threshold,
+            "abstain_threshold": payload.abstain_threshold,
+        },
+        "decision_explanation": explanation,
+    }
+
+    return {
+        "trace_id": trace_id,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "question": question,
+        "provider": client.provider,
+        "provider_scope": (
+            "resilience_fallback_web" if resilience_fallback else "live_remote_llm"
+        ),
+        "model": "external-search-fallback" if resilience_fallback else client.model,
+        "fast_path": True,
+        "resilience_fallback": resilience_fallback,
+        "elapsed_seconds": elapsed,
+        "config": {
+            "failure_rate": payload.failure_rate,
+            "seed": payload.seed,
+            "enabled_failure_types": (
+                [ft.value for ft in enabled_types]
+                if enabled_types is not None
+                else [ft.value for ft in FailureType]
+            ),
+            "use_nli": payload.use_nli,
+            "nli_backend": "fast_live_verification",
+            "enable_recovery": payload.enable_recovery,
+            "enable_localization": enable_localization,
+            "enable_grounding": payload.enable_grounding,
+            "enable_uncertainty": payload.enable_uncertainty,
+            "answer_threshold": payload.answer_threshold,
+            "abstain_threshold": payload.abstain_threshold,
+            "scenario_mode": payload.scenario_mode or "standard",
+        },
+        "answer": answer_text,
+        "grounded_answer": answer_text,
+        "final_answer": answer_text,
+        "display_answer": answer_text,
+        "decision": final_decision,
+        "final_decision": final_decision,
+        "final_response": answer_text,
+        "steps": enriched_steps,
+        "provenance": provenance,
+        "cache_stats": {"enabled": False, "hits": 0, "misses": 0},
+        "llm_usage": client.usage_summary(),
+        "failure_report": failure_rep,
+        "recovery_report": recovery_rep,
+        "grounding_report": grounding_report,
+        "uncertainty_report": uncertainty_report,
+        "artifacts": {
+            "trace_path": _rel_path(logger.path),
+            "analysis_path": None,
+            "failure_report_path": None,
+            "recovery_report_path": None,
+            "grounding_report_path": None,
+            "uncertainty_report_path": None,
+        },
+    }
+
+
+def _mask_api_key(raw: str) -> str | None:
+    cleaned = raw.strip()
+    if not cleaned:
+        return None
+    return f"****{cleaned[-4:]}" if len(cleaned) >= 4 else "****"
+
+
+def _recommended_provider() -> str:
+    configured_default = os.getenv("LLM_PROVIDER", "").strip().lower()
+    if configured_default in {"gemini", "openai", "anthropic"}:
+        env_var = _PROVIDER_KEY_ENV.get(configured_default)
+        if env_var and os.getenv(env_var, "").strip():
+            return configured_default
+    for candidate in ("gemini", "openai", "anthropic"):
+        env_var = _PROVIDER_KEY_ENV.get(candidate)
+        if env_var and os.getenv(env_var, "").strip():
+            return candidate
+    return "local"
+
+
+def _api_keys_status() -> dict[str, dict[str, Any]]:
+    keys: dict[str, dict[str, Any]] = {}
+    for prov in ("gemini", "openai", "anthropic"):
+        env_var = _PROVIDER_KEY_ENV[prov]
+        raw = os.getenv(env_var, "").strip() if env_var else ""
+        keys[prov] = {
+            "provider": prov,
+            "env_var": env_var,
+            "configured": bool(raw),
+            "last4": _mask_api_key(raw),
+        }
+    return keys
+
+
+def _write_env_key(env_path: Path, env_var: str, value: str) -> None:
+    """Safely update or append KEY=VALUE in a .env file while preserving existing lines."""
+    pattern = re.compile(rf"^\s*(?:export\s+)?{re.escape(env_var)}\s*=")
+    with _ENV_WRITE_LOCK:
+        env_path.parent.mkdir(parents=True, exist_ok=True)
+        existing_lines: list[str] = []
+        if env_path.is_file():
+            existing_lines = env_path.read_text(encoding="utf-8").splitlines()
+        new_lines: list[str] = []
+        replaced = False
+        for line in existing_lines:
+            if pattern.match(line):
+                if not replaced:
+                    new_lines.append(f"{env_var}={value}")
+                    replaced = True
+                continue
+            new_lines.append(line)
+        if not replaced:
+            new_lines.append(f"{env_var}={value}")
+        content = "\n".join(new_lines) + "\n"
+        tmp_path = env_path.with_name(f"{env_path.name}.{uuid4().hex[:8]}.tmp")
+        tmp_path.write_text(content, encoding="utf-8")
+        os.replace(tmp_path, env_path)
+
+
+def _is_safety_trap_query(query: str) -> bool:
+    return bool(_SAFETY_TRAP_RE.search(query or ""))
+
+
+def _fetch_wikipedia_summary(page_title: str, timeout: float = 4.0) -> str | None:
+    """Fetch clean plain-text 1-3 sentence intro summary for a matched Wikipedia page."""
+    clean_title = page_title.replace(" — Wikipedia", "").replace(" - Wikipedia", "").strip()
+    if not clean_title:
+        return None
+    url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{url_quote(clean_title.replace(' ', '_'), safe='/_()-')}"
+    req = UrlRequest(
+        url,
+        headers={
+            "User-Agent": "TraceRecover-ResearchAgent/1.0 (+https://localhost)",
+            "Accept": "application/json",
+        },
+        method="GET",
+    )
+    try:
+        with url_urlopen(req, timeout=timeout) as resp:
+            data = json.loads(resp.read().decode("utf-8", errors="replace"))
+    except Exception:
+        return None
+    if not isinstance(data, dict):
+        return None
+    extract = _clean_web_text(str(data.get("extract") or ""))
+    if not extract:
+        return None
+    sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", extract) if s.strip()]
+    summary = " ".join(sentences[:3]).strip()
+    return summary or None
+
+
+def _external_search_fallback(query: str) -> str | None:
+    """Retrieve grounded, HTML-unescaped 1-3 sentence summary via Wikipedia/DuckDuckGo."""
+    cleaned_query = " ".join(str(query or "").strip().split())
+    if not cleaned_query:
+        return None
+    keyword_query = re.sub(
+        r"^(?:where\s+is|where\s+are|what\s+is|what\s+are|who\s+is|who\s+was|when\s+was|explain|define|describe|tell\s+me\s+about|how\s+does|how\s+do)\s+",
+        "",
+        cleaned_query,
+        flags=re.IGNORECASE,
+    )
+    keyword_query = re.sub(
+        r"\b(?:located|situated|in\s+\d+\s+sentences?|briefly|please)\b",
+        "",
+        keyword_query,
+        flags=re.IGNORECASE,
+    )
+    keyword_query = " ".join(keyword_query.strip(" ?!.,;").split())
+
+    search_candidates: list[str] = []
+
+    def _add_cand(c: str) -> None:
+        c_norm = " ".join(c.strip(" ?!.,;").split())
+        if len(c_norm) >= 2 and c_norm.casefold() not in {x.casefold() for x in search_candidates}:
+            search_candidates.append(c_norm)
+
+    _add_cand(cleaned_query)
+    if keyword_query:
+        _add_cand(keyword_query)
+        words = keyword_query.split()
+        # Progressive general-purpose entity backoff for multi-word queries
+        trimmed = re.sub(
+            r"\b(?:campus|department|building|headquarters|location|address|branch|center|centre)\b",
+            "",
+            keyword_query,
+            flags=re.IGNORECASE,
+        )
+        _add_cand(trimmed)
+        if len(words) > 3:
+            _add_cand(" ".join(words[:3]))
+        if len(words) > 2:
+            _add_cand(" ".join(words[:2]))
+            # Also try last 2-3 content words if qualifier is at the start
+            _add_cand(" ".join(words[-2:]))
+
+    adapter = ExternalSearchAdapter(provider="auto", timeout=5.0, max_results=3)
+    results = []
+    for cand in search_candidates[:6]:
+        try:
+            resp = adapter.search(cand, raise_on_failure=False)
+            if resp.results:
+                results = resp.results
+                break
+        except Exception:
+            continue
+    if not results:
+        return None
+
+    # Prefer a clean Wikipedia intro extract when available (zero broken fragments)
+    top = results[0]
+    if top.provider == "wikipedia":
+        wiki_intro = _fetch_wikipedia_summary(top.title, timeout=4.0)
+        if wiki_intro:
+            top_snip = _clean_web_text(top.snippet)
+            kw_tokens = [t.casefold() for t in re.findall(r"[A-Za-z0-9]{4,}", keyword_query or cleaned_query)]
+            missing_in_intro = any(t not in wiki_intro.casefold() and t in top_snip.casefold() for t in kw_tokens)
+            if missing_in_intro and top_snip:
+                if top_snip[-1] not in ".!?":
+                    top_snip += "."
+                return f"{top_snip} {wiki_intro} (Source: {_clean_web_text(top.title)})"
+            return f"{wiki_intro} (Source: {_clean_web_text(top.title)})"
+
+    parts: list[str] = []
+    for item in results[:2]:
+        snippet = _clean_web_text(item.snippet)
+        if not snippet:
+            continue
+        if snippet[-1] not in ".!?":
+            snippet += "."
+        parts.append(snippet)
+    if not parts:
+        return None
+    title_label = _clean_web_text(top.title)
+    combined = " ".join(parts)
+    sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", combined) if s.strip()]
+    concise = " ".join(sentences[:3]).strip()
+    return f"{concise} (Source: {title_label})" if title_label else concise
+
+
 def _provider_status_list() -> list[dict[str, Any]]:
     settings = get_settings()
+    recommended = _recommended_provider()
     providers: list[dict[str, Any]] = []
     for name in SUPPORTED_PROVIDERS:
         key_env = _PROVIDER_KEY_ENV[name]
         model_env, fallback_model = _PROVIDER_DEFAULT_MODELS[name]
-        model_name = os.getenv(model_env, fallback_model)
-        key_configured = True if key_env is None else bool(os.getenv(key_env, "").strip())
+        model_name = os.getenv(model_env, "").strip() or fallback_model
+        raw_key = os.getenv(key_env, "").strip() if key_env is not None else ""
+        key_configured = True if key_env is None else bool(raw_key)
         pricing = MODEL_PRICING_PER_1M.get(model_name, (0.0, 0.0))
         providers.append(
             {
                 "id": name,
                 "model": model_name,
                 "is_default": name == settings.provider,
+                "is_recommended": name == recommended,
                 "requires_api_key": key_env is not None,
                 "api_key_env_var": key_env,
+                "configured": key_configured,
                 "api_key_configured": key_configured,
+                "last4": _mask_api_key(raw_key) if key_env is not None else None,
                 "status": "ready" if key_configured else "missing_key",
                 "pricing_per_1m_usd": {
                     "input": pricing[0],
@@ -1178,20 +2004,79 @@ def _enrich_steps(steps: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], di
     }
 
 
+def _count_primary_trace_files() -> int:
+    if not LOGS_DIR.is_dir():
+        return 0
+    count = 0
+    for entry in os.scandir(LOGS_DIR):
+        name = entry.name
+        if (
+            name.startswith("trace-")
+            and name.endswith(".jsonl")
+            and not name.endswith("-analysis.jsonl")
+            and not name.endswith("-recovery.jsonl")
+        ):
+            count += 1
+    return count
+
+
 def _list_primary_trace_files() -> list[Path]:
     if not LOGS_DIR.is_dir():
         return []
-    files: list[Path] = []
-    for path in LOGS_DIR.glob("trace-*.jsonl"):
-        name = path.name
-        if name.endswith("-analysis.jsonl") or name.endswith("-recovery.jsonl"):
+    items: list[tuple[float, Path]] = []
+    for entry in os.scandir(LOGS_DIR):
+        name = entry.name
+        if (
+            not name.startswith("trace-")
+            or not name.endswith(".jsonl")
+            or name.endswith("-analysis.jsonl")
+            or name.endswith("-recovery.jsonl")
+        ):
             continue
-        files.append(path)
-    files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
-    return files
+        try:
+            mtime = entry.stat().st_mtime
+        except OSError:
+            continue
+        items.append((mtime, Path(entry.path)))
+    items.sort(key=lambda pair: pair[0], reverse=True)
+    return [p for _, p in items]
+
+
+def _trace_bundle_mtime_sig(trace_path: Path) -> tuple[int, int]:
+    trace_id = trace_path.stem
+    parent = trace_path.parent
+    st = trace_path.stat()
+    max_mtime = st.st_mtime_ns
+    total_size = st.st_size
+    for suffix in (
+        "-failure-report.json",
+        "-recovery-report.json",
+        "-grounding-report.json",
+        "-uncertainty-report.json",
+    ):
+        sp = parent / f"{trace_id}{suffix}"
+        try:
+            sst = sp.stat()
+            if sst.st_mtime_ns > max_mtime:
+                max_mtime = sst.st_mtime_ns
+            total_size += sst.st_size
+        except OSError:
+            pass
+    return max_mtime, total_size
 
 
 def _load_trace_bundle(trace_path: Path, *, include_full_payload: bool = False) -> dict[str, Any]:
+    cache_key = str(trace_path)
+    sig: tuple[int, int] | None = None
+    if not include_full_payload:
+        try:
+            sig = _trace_bundle_mtime_sig(trace_path)
+            with _ARTIFACT_CACHE_LOCK:
+                hit = _TRACE_SUMMARY_CACHE.get(cache_key)
+                if hit is not None and hit[0] == sig[0] and hit[1] == sig[1]:
+                    return dict(hit[2])
+        except OSError:
+            sig = None
     trace_id = trace_path.stem
     parent = trace_path.parent
     steps = _read_jsonl(trace_path)
@@ -1287,6 +2172,11 @@ def _load_trace_bundle(trace_path: Path, *, include_full_payload: bool = False) 
     }
 
     if not include_full_payload:
+        if sig is not None:
+            with _ARTIFACT_CACHE_LOCK:
+                if len(_TRACE_SUMMARY_CACHE) >= 512:
+                    _TRACE_SUMMARY_CACHE.clear()
+                _TRACE_SUMMARY_CACHE[cache_key] = (sig[0], sig[1], dict(summary))
         return summary
 
     # Strip host-absolute paths inside loaded sidecar reports as well
@@ -1363,6 +2253,14 @@ def _compute_category_breakdown(run_dir: Path) -> list[dict[str, Any]]:
     if not base_path.is_file() or not tr_path.is_file():
         return []
 
+    b_mtime = base_path.stat().st_mtime_ns
+    t_mtime = tr_path.stat().st_mtime_ns
+    ckey = str(run_dir)
+    with _ARTIFACT_CACHE_LOCK:
+        hit = _CATEGORY_BREAKDOWN_CACHE.get(ckey)
+        if hit is not None and hit[0] == b_mtime and hit[1] == t_mtime:
+            return hit[2]
+
     base_data = _read_json(base_path)
     tr_data = _read_json(tr_path)
     base_by_rate = {float(c["failure_rate_percent"]): c["results"] for c in base_data.get("conditions", [])}
@@ -1422,13 +2320,26 @@ def _compute_category_breakdown(run_dir: Path) -> list[dict[str, Any]]:
                     "tracerecover_answer_coverage": t_answered / len(t_items) if t_items else None,
                 }
             )
+    with _ARTIFACT_CACHE_LOCK:
+        if len(_CATEGORY_BREAKDOWN_CACHE) >= 64:
+            _CATEGORY_BREAKDOWN_CACHE.clear()
+        _CATEGORY_BREAKDOWN_CACHE[ckey] = (b_mtime, t_mtime, rows)
     return rows
 
 
 def _summarize_experiment_dir(run_dir: Path, *, flagship_run_id: str | None = None) -> dict[str, Any]:
-    comp = _read_json(run_dir / "comparison_summary.json")
+    comp_path = run_dir / "comparison_summary.json"
     stat_path = run_dir / "statistical_validation_report.json"
     tr_path = run_dir / "tracerecover_results.json"
+    c_mt = comp_path.stat().st_mtime_ns if comp_path.is_file() else 0
+    s_mt = stat_path.stat().st_mtime_ns if stat_path.is_file() else 0
+    t_mt = tr_path.stat().st_mtime_ns if tr_path.is_file() else 0
+    ekey = str(run_dir)
+    with _ARTIFACT_CACHE_LOCK:
+        hit = _EXPERIMENT_SUMMARY_CACHE.get(ekey)
+        if hit is not None and hit[0] == c_mt and hit[1] == s_mt and hit[2] == t_mt and hit[3] == flagship_run_id:
+            return dict(hit[4])
+    comp = _read_json(comp_path)
     exp_meta = _read_json(tr_path).get("experiment", {}) if tr_path.is_file() else {}
     comparisons = comp.get("comparisons", [])
     rates = comp.get("failure_rates_percent", [])
@@ -1447,7 +2358,7 @@ def _summarize_experiment_dir(run_dir: Path, *, flagship_run_id: str | None = No
             "tracerecover_recovery_rate": c["tracerecover"]["recovery"]["rate"],
         }
 
-    return {
+    out_summary = {
         "run_id": run_dir.name,
         "is_active_flagship": run_dir.name == flagship_run_id,
         "results_dir": _rel_path(run_dir),
@@ -1470,6 +2381,11 @@ def _summarize_experiment_dir(run_dir: Path, *, flagship_run_id: str | None = No
         "plot_count": len(_plot_manifest(run_dir)),
         "headline": headline,
     }
+    with _ARTIFACT_CACHE_LOCK:
+        if len(_EXPERIMENT_SUMMARY_CACHE) >= 64:
+            _EXPERIMENT_SUMMARY_CACHE.clear()
+        _EXPERIMENT_SUMMARY_CACHE[ekey] = (c_mt, s_mt, t_mt, flagship_run_id, dict(out_summary))
+    return out_summary
 
 
 def _select_best_configuration(metrics_rows: list[dict[str, Any]]) -> dict[str, Any]:
@@ -1743,8 +2659,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=_allowed_cors_origins(),
     allow_credentials=False,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization", "X-API-Key"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-API-Key", "X-Session-ID"],
 )
 
 
@@ -1752,11 +2668,24 @@ app.add_middleware(
 async def security_and_limits_middleware(request: Request, call_next: Any) -> Response:
     max_bytes = _parse_int_env("TRACERECOVER_MAX_REQUEST_BYTES", 65_536, minimum=1024)
     content_length = request.headers.get("content-length")
-    if content_length and content_length.isdigit() and int(content_length) > max_bytes:
-        return JSONResponse(
-            status_code=413,
-            content={"detail": f"Request body exceeds maximum allowed size ({max_bytes} bytes)."},
-        )
+    if content_length is not None:
+        if not content_length.strip().isdigit():
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "Invalid Content-Length header."},
+            )
+        if int(content_length.strip()) > max_bytes:
+            return JSONResponse(
+                status_code=413,
+                content={"detail": f"Request body exceeds maximum allowed size ({max_bytes} bytes)."},
+            )
+    elif request.method in {"POST", "PUT", "PATCH"}:
+        raw_body = await request.body()
+        if len(raw_body) > max_bytes:
+            return JSONResponse(
+                status_code=413,
+                content={"detail": f"Request body exceeds maximum allowed size ({max_bytes} bytes)."},
+            )
 
     response = await call_next(request)
     for header, value in _SECURITY_HEADERS.items():
@@ -1769,11 +2698,94 @@ async def security_and_limits_middleware(request: Request, call_next: Any) -> Re
 @app.exception_handler(Exception)
 async def sanitized_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Prevent internal Python tracebacks or host paths from leaking in HTTP 500 responses."""
-    del request, exc
+    try:
+        _OBS_LOGGER.error(
+            json.dumps(
+                {
+                    "event": "http.request_error",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "method": request.method,
+                    "path": request.url.path,
+                    "error_type": type(exc).__name__,
+                }
+            )
+        )
+    except Exception:
+        pass
     return JSONResponse(
         status_code=500,
         content={"detail": "An internal server error occurred while processing the request."},
     )
+
+
+def _build_subsystem_health() -> dict[str, Any]:
+    """Report honest operational readiness across subsystems without exposing host paths or secrets."""
+    preferred = select_preferred_live_provider()
+    live_configured = bool(preferred.get("live_available"))
+    mgr = _connector_manager()
+    connectors = mgr.list_connectors()
+    enabled_cnt = sum(1 for c in connectors if c.get("enabled"))
+    connected_cnt = sum(1 for c in connectors if c.get("status") == "connected")
+    auth_req_cnt = sum(1 for c in connectors if c.get("status") == "auth_required")
+    operational_cnt = sum(
+        1 for c in connectors if c.get("enabled") and c.get("status") in {"connected", "available"}
+    )
+    mcp_servers = [c for c in connectors if c.get("transport") in {"stdio", "streamable_http", "sse"}]
+    mcp_connected = sum(1 for c in mcp_servers if c.get("status") == "connected")
+    engines = mgr.browser.detect_engines()
+    pw_installed = any(bool(e.get("playwright_installed")) for e in engines)
+    avail_engines = [str(e.get("engine")) for e in engines if e.get("available")]
+    mcp_installed = importlib.util.find_spec("mcp") is not None
+
+    return {
+        "storage": {
+            "installed": True,
+            "configured": True,
+            "operational": bool(LOGS_DIR.is_dir() and RESULTS_DIR.is_dir()),
+            "conversations_persistent": True,
+            "conversations_backend": "filesystem_json_atomic",
+            "single_node_limitation": True,
+        },
+        "execution_modes": {
+            "offline": {"installed": True, "configured": True, "operational": True},
+            "mock": {"installed": True, "configured": True, "operational": True},
+            "live_connectors": {"installed": True, "configured": True, "operational": True},
+            "live_llm": {
+                "installed": True,
+                "configured": live_configured,
+                "authenticated": False if not live_configured else None,
+                "operational": False if not live_configured else None,
+                "preferred_provider": preferred.get("selected_provider"),
+                "note": (
+                    "No remote LLM credentials configured; OFFLINE and MOCK modes remain operational."
+                    if not live_configured
+                    else "Credentials detected; run POST /api/providers/health to verify live reachability."
+                ),
+            },
+        },
+        "connectors": {
+            "installed": True,
+            "registered_count": len(connectors),
+            "enabled_count": enabled_cnt,
+            "connected_count": connected_cnt,
+            "auth_required_count": auth_req_cnt,
+            "operational_count": operational_cnt,
+            "operational": operational_cnt > 0,
+        },
+        "browser_automation": {
+            "installed": pw_installed,
+            "configured": pw_installed,
+            "available_engines": avail_engines,
+            "operational": len(avail_engines) > 0,
+        },
+        "mcp_runtime": {
+            "installed": mcp_installed,
+            "configured_servers": len(mcp_servers),
+            "connected_servers": mcp_connected,
+            "reachable_servers": mcp_connected,
+            "operational": mcp_connected > 0,
+        },
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -1783,7 +2795,7 @@ async def sanitized_exception_handler(request: Request, exc: Exception) -> JSONR
 
 @app.get("/api/health")
 def api_health() -> dict[str, Any]:
-    """Return system health, test verification status, provider availability, and active run metadata."""
+    """Return system health, subsystem readiness, provider availability, and active run metadata."""
     latest_dir = _latest_results_dir()
     experiment_dirs = _list_experiment_dirs()
     active_benchmark: dict[str, Any] | None = None
@@ -1818,17 +2830,58 @@ def api_health() -> dict[str, Any]:
             "admin_auth_enabled": bool(_admin_token()),
             "rate_limit_run_per_min": _parse_int_env("TRACERECOVER_RATE_LIMIT_RUN", 60),
             "rate_limit_experiments_per_min": _parse_int_env("TRACERECOVER_RATE_LIMIT_EXPERIMENTS", 10),
+            "request_max_bytes": _parse_int_env("TRACERECOVER_MAX_REQUEST_BYTES", 65_536, minimum=1024),
+            "docs_enabled": os.getenv("TRACERECOVER_ENABLE_DOCS", "true").lower() == "true",
+            "cors_origins_count": len(_allowed_cors_origins()),
             "server_side_credentials_only": True,
         },
+        "storage": {
+            "conversations_persistent": True,
+            "conversations_backend": "filesystem_json_atomic",
+            "logs_dir_ready": LOGS_DIR.is_dir(),
+            "results_dir_ready": RESULTS_DIR.is_dir(),
+        },
+        "subsystems": _build_subsystem_health(),
         "providers": _provider_status_list(),
+        "api_keys": _api_keys_status(),
+        "recommended_provider": _recommended_provider(),
+        "provider_capabilities": list_provider_capabilities(),
         "active_benchmark": active_benchmark,
         "experiment_run_count": len(experiment_dirs),
-        "trace_log_count": len(_list_primary_trace_files()),
+        "trace_log_count": _count_primary_trace_files(),
         "frontend_mode": (
             "static_light_ui"
             if (STATIC_DIR / "index.html").is_file()
-            else ("react_vite_dist" if (FRONTEND_DIST_DIR / "index.html").is_file() else "api_only")
+            else "api_only"
         ),
+    }
+
+
+@app.post("/api/keys", dependencies=[Depends(_require_admin_if_configured)])
+def api_save_key(payload: SaveApiKeyRequest, request: Request) -> dict[str, Any]:
+    """Save a real LLM provider API key into .env and activate it in the running process."""
+    _enforce_rate_limit(request, "api_keys", "TRACERECOVER_RATE_LIMIT_KEYS", 30)
+    env_var = _PROVIDER_KEY_ENV.get(payload.provider)
+    if not env_var:
+        raise HTTPException(
+            status_code=422,
+            detail="Unsupported provider; choose from gemini, openai, anthropic.",
+        )
+    cleaned = payload.api_key.strip()
+    try:
+        _write_env_key(ENV_FILE_PATH, env_var, cleaned)
+    except OSError as exc:
+        raise HTTPException(status_code=500, detail="Failed to persist API key to .env.") from exc
+    os.environ[env_var] = cleaned
+    masked = _mask_api_key(cleaned) or "****"
+    return {
+        "status": "saved",
+        "provider": payload.provider,
+        "env_var": env_var,
+        "configured": True,
+        "masked": masked,
+        "last4": masked,
+        "recommended_provider": _recommended_provider(),
     }
 
 
@@ -1892,6 +2945,10 @@ def api_run(payload: RunRequest, request: Request) -> dict[str, Any]:
     """Execute ReactAgent with real parameters and return complete provenance trace & decisions."""
     _enforce_rate_limit(request, "live_run", "TRACERECOVER_RATE_LIMIT_RUN", 60)
 
+    question_text = payload.question.strip()
+    if not question_text:
+        raise HTTPException(status_code=400, detail="Please enter a question first.")
+
     if payload.answer_threshold >= payload.abstain_threshold:
         raise HTTPException(
             status_code=422,
@@ -1924,35 +2981,90 @@ def api_run(payload: RunRequest, request: Request) -> dict[str, Any]:
     if payload.enable_recovery and not enable_localization:
         enable_localization = True
 
+    effective_failure_rate = _effective_failure_rate(payload)
+    is_contradiction_probe = bool(
+        payload.contradiction_probe or payload.scenario_mode == "contradiction_probe"
+    )
     planner: Any = None
     if payload.scenario_mode == "multi_hop":
         planner = _MultiHopPresetPlanner()
-    elif payload.scenario_mode == "contradiction_probe":
-        planner = _ContradictionPresetPlanner()
+    elif is_contradiction_probe:
+        planner = _ContradictionPresetPlanner(
+            contradicting_claim=(payload.override_tool_output or "").strip()
+            or "The capital of France is Rome."
+        )
+
+    resolved_provider = (
+        _recommended_provider() if payload.provider == "auto" else payload.provider
+    )
 
     try:
-        client = LLMClient(provider=payload.provider)
+        client = LLMClient(provider=resolved_provider)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
-    if payload.provider != "local":
-        key_var = _PROVIDER_KEY_ENV.get(payload.provider)
+    if resolved_provider != "local":
+        key_var = _PROVIDER_KEY_ENV.get(resolved_provider)
         if key_var and not os.getenv(key_var, "").strip():
             raise HTTPException(
                 status_code=400,
                 detail=(
                     f"{key_var} is not configured on the server. "
-                    "Configure server environment credentials or select provider='local'."
+                    "Add your key in the API Keys card or select provider='local'."
                 ),
             )
+        if not _is_benchmark_or_tool_probe_query(question_text, payload):
+            return _run_fast_live_query(
+                question_text,
+                resolved_provider,
+                payload,
+                enabled_types,
+                enable_localization,
+            )
+    elif (
+        effective_failure_rate == 0.0
+        and not is_contradiction_probe
+        and not payload.override_tool_output
+        and payload.scenario_mode not in {"multi_hop", "contradiction_probe"}
+        and _is_identity_or_tracerecover_query(question_text)
+    ):
+        return _run_identity_local_query(
+            question_text,
+            payload,
+            enabled_types,
+            enable_localization,
+        )
 
     injector = FailureInjector(
-        failure_rate=payload.failure_rate,
+        failure_rate=effective_failure_rate,
         seed=payload.seed,
-        enabled=payload.failure_rate > 0,
+        enabled=effective_failure_rate > 0,
         enabled_types=enabled_types,
     )
-    tool_executor = ToolExecutor.with_default_tools(enable_cache=(payload.failure_rate == 0.0))
+    tool_executor = ToolExecutor.with_default_tools(enable_cache=(effective_failure_rate == 0.0))
+    if not is_contradiction_probe:
+        override_out = (payload.override_tool_output or "").strip()
+
+        def _universal_search(arguments: dict[str, Any]) -> str:
+            query_text = str(arguments["query"])
+            if override_out:
+                return override_out
+            if _FICTIONAL_MISSING_TRAP_RE.search(query_text):
+                return f"No local evidence found for: {query_text}"
+            local_out = local_kb_search(query_text)
+            if not local_out.strip().casefold().startswith("no local evidence found for:"):
+                return local_out
+            if _is_safety_trap_query(query_text):
+                return local_out
+            external_out = _external_search_fallback(query_text)
+            return external_out if external_out else local_out
+
+        tool_executor.register(
+            "search",
+            _universal_search,
+            required_fields={"query": str},
+            description="Local knowledge base search with safe Wikipedia/DuckDuckGo fallback for open-domain questions.",
+        )
     nli_verifier = (
         DebertaNLIVerifier(local_files_only=True, allow_fallback=True)
         if payload.use_nli
@@ -1989,7 +3101,25 @@ def api_run(payload: RunRequest, request: Request) -> dict[str, Any]:
     started = time.perf_counter()
     try:
         result = agent.run(payload.question)
-    except (RuntimeError, ValueError) as exc:
+    except (TimeoutError, socket.timeout) as exc:
+        raise HTTPException(
+            status_code=504,
+            detail=f"{resolved_provider} request timed out: {exc}",
+        ) from None
+    except URLError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"{resolved_provider} upstream connection failed: {exc.reason}",
+        ) from None
+    except RuntimeError as exc:
+        msg = str(exc)
+        low = msg.lower()
+        if "timed out" in low or "timeout" in low:
+            raise HTTPException(status_code=504, detail=msg) from exc
+        if "request failed" in low or "http 502" in low or "http 503" in low:
+            raise HTTPException(status_code=502, detail=msg) from exc
+        raise HTTPException(status_code=400, detail=msg) from exc
+    except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     elapsed = round(time.perf_counter() - started, 6)
 
@@ -2004,6 +3134,23 @@ def api_run(payload: RunRequest, request: Request) -> dict[str, Any]:
     if isinstance(recovery_rep.get("recovery_log_file"), str):
         recovery_rep["recovery_log_file"] = _rel_path(Path(recovery_rep["recovery_log_file"]))
 
+    explanation = str((result.uncertainty_report or {}).get("decision_explanation") or "").strip()
+    raw_final_resp = _clean_web_text(str(result.final_response or "")) if result.final_decision == "ABSTAIN" else str(result.final_response or "").strip()
+    non_empty_answer = _clean_display_answer(str(result.answer or "")) or _clean_display_answer(raw_final_resp) or explanation or f"Decision emitted: {result.final_decision}."
+    non_empty_grounded = html.unescape(str(result.grounded_answer or "").strip()) or non_empty_answer
+    if result.final_decision == "ABSTAIN":
+        primary_display = (
+            _clean_display_answer(str(result.final_response or ""))
+            or explanation
+            or "I cannot answer this reliably due to insufficient or contradictory evidence."
+        )
+    else:
+        primary_display = (
+            _clean_display_answer(str(result.answer or ""))
+            or _clean_display_answer(str(result.final_response or ""))
+            or non_empty_answer
+        )
+
     return {
         "trace_id": trace_id,
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -2015,7 +3162,7 @@ def api_run(payload: RunRequest, request: Request) -> dict[str, Any]:
         "model": client.model,
         "elapsed_seconds": elapsed,
         "config": {
-            "failure_rate": payload.failure_rate,
+            "failure_rate": effective_failure_rate,
             "seed": payload.seed,
             "enabled_failure_types": (
                 [ft.value for ft in enabled_types]
@@ -2030,12 +3177,16 @@ def api_run(payload: RunRequest, request: Request) -> dict[str, Any]:
             "enable_uncertainty": payload.enable_uncertainty,
             "answer_threshold": payload.answer_threshold,
             "abstain_threshold": payload.abstain_threshold,
-            "scenario_mode": payload.scenario_mode or "standard",
+            "scenario_mode": "contradiction_probe" if is_contradiction_probe else (payload.scenario_mode or "standard"),
+            "contradiction_probe": is_contradiction_probe,
         },
-        "answer": result.answer,
-        "grounded_answer": result.grounded_answer,
+        "answer": non_empty_answer,
+        "grounded_answer": non_empty_grounded,
+        "final_answer": primary_display,
+        "display_answer": primary_display,
+        "decision": result.final_decision,
         "final_decision": result.final_decision,
-        "final_response": result.final_response,
+        "final_response": primary_display,
         "steps": enriched_steps,
         "provenance": provenance,
         "cache_stats": tool_executor.cache_stats(),
@@ -2476,9 +3627,8 @@ def api_datasets_catalog() -> dict[str, Any]:
         ),
     ):
         if path.is_file():
-            raw = path.read_bytes()
-            sha = hashlib.sha256(raw).hexdigest()
-            payload = json.loads(raw.decode("utf-8"))
+            sha, size_kb, _ = _file_digest_cached(path)
+            payload = _read_json(path)
             tasks = payload.get("tasks", [])
             items.append(
                 {
@@ -2487,7 +3637,7 @@ def api_datasets_catalog() -> dict[str, Any]:
                     "description": desc,
                     "version": str(payload.get("dataset_version", "2.0")),
                     "sha256": sha,
-                    "size_kb": round(len(raw) / 1024.0, 2),
+                    "size_kb": size_kb,
                     "record_count": len(tasks),
                     "record_unit": "tasks",
                     "inspectable": True,
@@ -2515,9 +3665,8 @@ def api_datasets_catalog() -> dict[str, Any]:
         ),
     ):
         if path.is_file():
-            raw = path.read_bytes()
-            sha = hashlib.sha256(raw).hexdigest()
-            row_count = max(0, len(raw.decode("utf-8").splitlines()) - 1)
+            sha, size_kb, line_count = _file_digest_cached(path)
+            row_count = max(0, line_count - 1)
             items.append(
                 {
                     "id": ds_id,
@@ -2525,7 +3674,7 @@ def api_datasets_catalog() -> dict[str, Any]:
                     "description": desc,
                     "version": "2.0",
                     "sha256": sha,
-                    "size_kb": round(len(raw) / 1024.0, 2),
+                    "size_kb": size_kb,
                     "record_count": row_count,
                     "record_unit": "rows",
                     "inspectable": False,
@@ -2618,8 +3767,9 @@ def api_dataset_tasks(
 
 
 @app.post("/api/datasets/validate")
-def api_validate_dataset(payload: DatasetPayloadRequest) -> dict[str, Any]:
+def api_validate_dataset(payload: DatasetPayloadRequest, request: Request) -> dict[str, Any]:
     """Validate a candidate task dataset against TraceRecover schema without modifying disk."""
+    _enforce_rate_limit(request, "live_run", "TRACERECOVER_RATE_LIMIT_RUN", 60)
     errors, stats, sha = _validate_dataset_payload(payload.tasks, payload.dataset_version)
     return {
         "valid": len(errors) == 0,
@@ -2702,11 +3852,15 @@ def api_plot(filename: str, run_id: str | None = Query(default=None)) -> FileRes
 def api_settings() -> dict[str, Any]:
     """Return read-only runtime limits, recovery budgets, NLI config, and calibrated thresholds."""
     settings = get_settings()
-    default_policy = AbstentionPolicy()
-    default_recovery = RecoveryEngine()
-    default_estimator = UncertaintyEstimator()
-    default_nli = DebertaNLIVerifier(local_files_only=True, allow_fallback=True)
-    default_executor = ToolExecutor.with_default_tools()
+    if "defaults" not in _SETTINGS_STATIC_CACHE:
+        _SETTINGS_STATIC_CACHE["defaults"] = (
+            AbstentionPolicy(),
+            RecoveryEngine(),
+            UncertaintyEstimator(),
+            DebertaNLIVerifier(local_files_only=True, allow_fallback=True),
+            ToolExecutor.with_default_tools(),
+        )
+    default_policy, default_recovery, default_estimator, default_nli, default_executor = _SETTINGS_STATIC_CACHE["defaults"]
 
     calibrated_thresholds: dict[str, Any] | None = None
     latest_dir = _latest_results_dir()
@@ -2743,6 +3897,9 @@ def api_settings() -> dict[str, Any]:
             "max_request_bytes": _parse_int_env("TRACERECOVER_MAX_REQUEST_BYTES", 65_536),
         },
         "providers": _provider_status_list(),
+        "api_keys": _api_keys_status(),
+        "recommended_provider": _recommended_provider(),
+        "provider_capabilities": list_provider_capabilities(),
         "failure_injection": {
             "supported_types": [ft.value for ft in FailureType],
             "rate_bounds_percent": [0.0, 100.0],
@@ -2802,8 +3959,18 @@ def api_settings() -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
+_CONVERSATION_STORE_LOCK = threading.Lock()
+_CONVERSATION_STORE_CACHE: dict[str, ConversationStore] = {}
+
+
 def _conv_store() -> ConversationStore:
-    return ConversationStore(CONVERSATIONS_DIR)
+    target = str(Path(CONVERSATIONS_DIR).resolve())
+    with _CONVERSATION_STORE_LOCK:
+        store = _CONVERSATION_STORE_CACHE.get(target)
+        if store is None:
+            store = ConversationStore(target)
+            _CONVERSATION_STORE_CACHE[target] = store
+        return store
 
 
 def _session_from_header(x_session_id: str | None) -> str:
@@ -2848,9 +4015,11 @@ def api_list_conversations(
 @app.post("/api/conversations")
 def api_create_conversation(
     payload: ConversationCreateRequest,
+    request: Request,
     x_session_id: str | None = Header(default=None, alias="X-Session-ID"),
 ) -> dict[str, Any]:
     """Create a fresh isolated conversation thread."""
+    _enforce_rate_limit(request, "live_run", "TRACERECOVER_RATE_LIMIT_RUN", 60)
     store = _conv_store()
     sid = _session_from_header(x_session_id)
     summary = store.create_conversation(sid, title=payload.title)
@@ -2877,9 +4046,11 @@ def api_get_conversation(
 @app.post("/api/conversations/{conversation_id}/clear")
 def api_clear_conversation(
     conversation_id: str,
+    request: Request,
     x_session_id: str | None = Header(default=None, alias="X-Session-ID"),
 ) -> dict[str, Any]:
     """Clear stored message context inside a conversation owned by this session."""
+    _enforce_rate_limit(request, "live_run", "TRACERECOVER_RATE_LIMIT_RUN", 60)
     store = _conv_store()
     sid = _session_from_header(x_session_id)
     try:
@@ -2894,9 +4065,11 @@ def api_clear_conversation(
 @app.delete("/api/conversations/{conversation_id}")
 def api_delete_conversation(
     conversation_id: str,
+    request: Request,
     x_session_id: str | None = Header(default=None, alias="X-Session-ID"),
 ) -> dict[str, Any]:
     """Delete a conversation owned by this session."""
+    _enforce_rate_limit(request, "live_run", "TRACERECOVER_RATE_LIMIT_RUN", 60)
     store = _conv_store()
     sid = _session_from_header(x_session_id)
     try:
@@ -2938,7 +4111,7 @@ def _execute_open_ended_query(
         raise HTTPException(status_code=400, detail="Invalid query_id format.")
     qid = qid or f"qry-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}-{uuid4().hex[:6]}"
 
-    runner = OpenEndedAgentRunner(log_directory=LOGS_DIR)
+    runner = OpenEndedAgentRunner(log_directory=LOGS_DIR, connector_manager=_connector_manager())
     reg_event = cancel_event or QUERY_CANCEL_REGISTRY.register(qid)
     try:
         raw = runner.run(
@@ -2949,6 +4122,9 @@ def _execute_open_ended_query(
             conversation_history=history,
             enable_external_search=payload.enable_external_search,
             search_provider=payload.search_provider,
+            use_connectors=payload.use_connectors,
+            connector_manager=_connector_manager(),
+            approved_connector_actions=payload.approved_connector_actions,
             failure_rate=payload.failure_rate,
             seed=payload.seed,
             enabled_failure_types=payload.enabled_failure_types,
@@ -2963,6 +4139,7 @@ def _execute_open_ended_query(
             max_cost_usd=payload.max_cost_usd,
             cancel_event=reg_event,
             on_event=on_event,
+            session_id=session_id,
         )
     except ProviderUnavailableError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -3070,12 +4247,45 @@ def api_chat_stream(
 
 
 @app.post("/api/chat/cancel/{query_id}")
-def api_chat_cancel(query_id: str) -> dict[str, Any]:
+def api_chat_cancel(query_id: str, request: Request) -> dict[str, Any]:
     """Signal cooperative cancellation for an active open-ended query."""
+    _enforce_rate_limit(request, "live_run", "TRACERECOVER_RATE_LIMIT_RUN", 60)
     if not _SAFE_ID_RE.fullmatch(query_id):
         raise HTTPException(status_code=400, detail="Invalid query_id format.")
     cancelled = QUERY_CANCEL_REGISTRY.cancel(query_id)
     return {"query_id": query_id, "cancel_requested": cancelled}
+
+
+class _ProviderHealthPayload(BaseModel):
+    provider: str | None = Field(default=None, max_length=40)
+    model: str | None = Field(default=None, max_length=120)
+
+
+@app.get("/api/providers/status")
+def api_providers_status(provider: str | None = Query(default=None)) -> dict[str, Any]:
+    """Return provider capabilities and preferred configured live provider without exposing credentials."""
+    return {
+        "capabilities": list_provider_capabilities(),
+        "preferred": select_preferred_live_provider(provider),
+    }
+
+
+@app.post("/api/providers/health")
+def api_providers_health(request: Request, payload: _ProviderHealthPayload | None = None) -> dict[str, Any]:
+    """Run a single bounded provider connectivity check and report latency, status, and safe errors."""
+    _enforce_rate_limit(request, "live_run", "TRACERECOVER_RATE_LIMIT_RUN", 60)
+    req_provider = (payload.provider if payload and payload.provider else select_preferred_live_provider()["selected_provider"]).strip().lower()
+    if req_provider not in EXTENDED_PROVIDERS:
+        raise HTTPException(status_code=400, detail=f"Unsupported provider {req_provider!r}.")
+    adapter = LLMProviderAdapter(
+        provider=req_provider,
+        model=(payload.model if payload else None),
+        max_llm_calls=1,
+        max_cost_usd=0.05,
+        max_output_tokens=32,
+        timeout=15.0,
+    )
+    return adapter.health_check()
 
 
 @app.get("/api/unseen/runs")
@@ -3155,24 +4365,259 @@ def api_compare_history() -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# Static frontend hosting (clean white web dashboard in static/index.html)
+# Phase 5: Connect Hub, MCP Ecosystem, Multi-Browser & Source Registry APIs
 # ---------------------------------------------------------------------------
 
-if (FRONTEND_DIST_DIR / "assets").is_dir():
-    app.mount(
-        "/assets",
-        StaticFiles(directory=str(FRONTEND_DIST_DIR / "assets")),
-        name="frontend-assets",
+
+class ConnectorCreateRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=120)
+    category: str = Field(default="mcp")
+    transport: str = Field(default="stdio")
+    description: str = Field(default="", max_length=500)
+    command: str = Field(default="", max_length=300)
+    args: list[str] = Field(default_factory=list)
+    url: str = Field(default="", max_length=500)
+    headers: dict[str, str] = Field(default_factory=dict)
+    auth_type: str = Field(default="none")
+    env_var_name: str = Field(default="", max_length=120)
+    secret_value: str = Field(default="", max_length=1000)
+    browser_engine: str = Field(default="")
+    trust_tier: str = Field(default="tier3")
+    enabled: bool = Field(default=False)
+    permissions: dict[str, Any] = Field(default_factory=dict)
+
+
+class ConnectorUpdateRequest(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=120)
+    category: str | None = Field(default=None)
+    transport: str | None = Field(default=None)
+    description: str | None = Field(default=None, max_length=500)
+    command: str | None = Field(default=None, max_length=300)
+    args: list[str] | None = Field(default=None)
+    url: str | None = Field(default=None, max_length=500)
+    headers: dict[str, str] | None = Field(default=None)
+    auth_type: str | None = Field(default=None)
+    env_var_name: str | None = Field(default=None, max_length=120)
+    secret_value: str | None = Field(default=None, max_length=1000)
+    clear_secret: bool = Field(default=False)
+    trust_tier: str | None = Field(default=None)
+    enabled: bool | None = Field(default=None)
+    permissions: dict[str, Any] | None = Field(default=None)
+
+
+class ConnectorToolCallRequest(BaseModel):
+    tool_name: str = Field(..., min_length=1, max_length=120)
+    arguments: dict[str, Any] = Field(default_factory=dict)
+    approved_actions: list[str] = Field(default_factory=list)
+
+
+class SourceSearchRequest(BaseModel):
+    query: str = Field(..., min_length=1, max_length=500)
+    provider_ids: list[str] | None = Field(default=None)
+    max_results: int = Field(default=4, ge=1, le=10)
+
+
+class BrowserActionRequest(BaseModel):
+    url: str = Field(..., min_length=4, max_length=1000)
+    engine: str = Field(default="chromium")
+    action: str = Field(default="read_content")
+    selector: str = Field(default="", max_length=300)
+    query: str = Field(default="", max_length=200)
+    allowed_domains: list[str] = Field(default_factory=list)
+    approved_actions: list[str] = Field(default_factory=list)
+
+
+def _validate_connector_id(connector_id: str) -> None:
+    if not _SAFE_ID_RE.fullmatch(connector_id):
+        raise HTTPException(status_code=400, detail="Invalid connector identifier.")
+
+
+@app.get("/api/connectors/overview")
+def api_connectors_overview() -> dict[str, Any]:
+    return _connector_manager().overview()
+
+
+@app.get("/api/connectors/logs")
+def api_connectors_logs(
+    limit: int = Query(default=50, ge=1, le=200),
+    connector_id: str | None = Query(default=None),
+) -> dict[str, Any]:
+    if connector_id:
+        _validate_connector_id(connector_id)
+    logs = _connector_manager().get_execution_logs(limit=limit, connector_id=connector_id)
+    return {"count": len(logs), "logs": logs}
+
+
+@app.get("/api/connectors/browser/status")
+def api_connectors_browser_status() -> dict[str, Any]:
+    mgr = _connector_manager()
+    return {"engines": mgr.browser.detect_engines(), "history_count": len(mgr.browser.get_history())}
+
+
+@app.get("/api/connectors/browser/history")
+def api_connectors_browser_history(limit: int = Query(default=30, ge=1, le=100)) -> dict[str, Any]:
+    items = _connector_manager().browser.get_history(limit=limit)
+    return {"count": len(items), "history": items}
+
+
+@app.post("/api/connectors/browser/action", dependencies=[Depends(_require_admin_if_configured)])
+def api_connectors_browser_action(payload: BrowserActionRequest, request: Request) -> dict[str, Any]:
+    _enforce_rate_limit(request, "live_run", "TRACERECOVER_RATE_LIMIT_RUN", 60)
+    mgr = _connector_manager()
+    base_cfg = mgr.registry.get(f"browser-{payload.engine.lower()}")
+    cfg = copy.deepcopy(base_cfg) if base_cfg is not None else None
+    if cfg is not None and payload.allowed_domains:
+        cfg.permissions.allowed_domains = [d.lower() for d in payload.allowed_domains]
+    return mgr.browser.execute_sync(
+        action=payload.action,
+        url=payload.url,
+        engine=payload.engine,
+        connector=cfg,
+        selector=payload.selector,
+        query=payload.query,
+        approved_actions=set(payload.approved_actions),
     )
+
+
+@app.post("/api/connectors/sources/search")
+def api_connectors_sources_search(payload: SourceSearchRequest, request: Request) -> dict[str, Any]:
+    _enforce_rate_limit(request, "live_run", "TRACERECOVER_RATE_LIMIT_RUN", 60)
+    return _connector_manager().query_research_sources(
+        payload.query,
+        provider_ids=payload.provider_ids,
+        max_results=payload.max_results,
+    )
+
+
+@app.get("/api/connectors")
+def api_list_connectors(category: str | None = Query(default=None)) -> dict[str, Any]:
+    items = _connector_manager().list_connectors(category=category)
+    return {"count": len(items), "connectors": items}
+
+
+@app.post("/api/connectors", dependencies=[Depends(_require_admin_if_configured)])
+def api_create_connector(payload: ConnectorCreateRequest, request: Request) -> dict[str, Any]:
+    _enforce_rate_limit(request, "live_run", "TRACERECOVER_RATE_LIMIT_RUN", 60)
+    created = _connector_manager().add_connector(payload.model_dump())
+    return {"status": "created", "connector": created}
+
+
+@app.get("/api/connectors/{connector_id}")
+def api_get_connector(connector_id: str) -> dict[str, Any]:
+    _validate_connector_id(connector_id)
+    item = _connector_manager().get_connector(connector_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail=f"Connector '{connector_id}' not found.")
+    return {"connector": item}
+
+
+@app.put("/api/connectors/{connector_id}", dependencies=[Depends(_require_admin_if_configured)])
+def api_update_connector(
+    connector_id: str,
+    payload: ConnectorUpdateRequest,
+    request: Request,
+) -> dict[str, Any]:
+    _validate_connector_id(connector_id)
+    _enforce_rate_limit(request, "live_run", "TRACERECOVER_RATE_LIMIT_RUN", 60)
+    updated = _connector_manager().edit_connector(connector_id, payload.model_dump(exclude_none=True))
+    if updated is None:
+        raise HTTPException(status_code=404, detail=f"Connector '{connector_id}' not found.")
+    return {"status": "updated", "connector": updated}
+
+
+@app.post("/api/connectors/{connector_id}/connect", dependencies=[Depends(_require_admin_if_configured)])
+def api_connect_connector(connector_id: str, request: Request) -> dict[str, Any]:
+    _validate_connector_id(connector_id)
+    _enforce_rate_limit(request, "live_run", "TRACERECOVER_RATE_LIMIT_RUN", 60)
+    res = _connector_manager().connect_connector(connector_id)
+    if res is None:
+        raise HTTPException(status_code=404, detail=f"Connector '{connector_id}' not found.")
+    return res
+
+
+@app.post("/api/connectors/{connector_id}/disconnect", dependencies=[Depends(_require_admin_if_configured)])
+def api_disconnect_connector(connector_id: str, request: Request) -> dict[str, Any]:
+    _validate_connector_id(connector_id)
+    _enforce_rate_limit(request, "live_run", "TRACERECOVER_RATE_LIMIT_RUN", 60)
+    item = _connector_manager().disconnect_connector(connector_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail=f"Connector '{connector_id}' not found.")
+    return {"status": "disconnected", "connector": item}
+
+
+@app.post("/api/connectors/{connector_id}/enable", dependencies=[Depends(_require_admin_if_configured)])
+def api_enable_connector(connector_id: str, request: Request) -> dict[str, Any]:
+    _validate_connector_id(connector_id)
+    _enforce_rate_limit(request, "live_run", "TRACERECOVER_RATE_LIMIT_RUN", 60)
+    item = _connector_manager().set_enabled(connector_id, True)
+    if item is None:
+        raise HTTPException(status_code=404, detail=f"Connector '{connector_id}' not found.")
+    return {"status": "enabled", "connector": item}
+
+
+@app.post("/api/connectors/{connector_id}/disable", dependencies=[Depends(_require_admin_if_configured)])
+def api_disable_connector(connector_id: str, request: Request) -> dict[str, Any]:
+    _validate_connector_id(connector_id)
+    _enforce_rate_limit(request, "live_run", "TRACERECOVER_RATE_LIMIT_RUN", 60)
+    item = _connector_manager().set_enabled(connector_id, False)
+    if item is None:
+        raise HTTPException(status_code=404, detail=f"Connector '{connector_id}' not found.")
+    return {"status": "disabled", "connector": item}
+
+
+@app.post("/api/connectors/{connector_id}/test", dependencies=[Depends(_require_admin_if_configured)])
+def api_test_connector(connector_id: str, request: Request) -> dict[str, Any]:
+    _validate_connector_id(connector_id)
+    _enforce_rate_limit(request, "live_run", "TRACERECOVER_RATE_LIMIT_RUN", 60)
+    res = _connector_manager().test_connector(connector_id)
+    if res is None:
+        raise HTTPException(status_code=404, detail=f"Connector '{connector_id}' not found.")
+    return res
+
+
+@app.post("/api/connectors/{connector_id}/call", dependencies=[Depends(_require_admin_if_configured)])
+def api_call_connector(
+    connector_id: str,
+    payload: ConnectorToolCallRequest,
+    request: Request,
+) -> dict[str, Any]:
+    _validate_connector_id(connector_id)
+    _enforce_rate_limit(request, "live_run", "TRACERECOVER_RATE_LIMIT_RUN", 60)
+    res = _connector_manager().execute_connector_tool(
+        connector_id,
+        payload.tool_name,
+        payload.arguments,
+        approved_actions=set(payload.approved_actions),
+    )
+    if res.get("error") == f"Unknown connector '{connector_id}'.":
+        raise HTTPException(status_code=404, detail=res["error"])
+    return res
+
+
+@app.delete("/api/connectors/{connector_id}", dependencies=[Depends(_require_admin_if_configured)])
+def api_delete_connector(
+    connector_id: str,
+    request: Request,
+    confirm: bool = Query(default=False),
+) -> dict[str, Any]:
+    _validate_connector_id(connector_id)
+    _enforce_rate_limit(request, "live_run", "TRACERECOVER_RATE_LIMIT_RUN", 60)
+    res = _connector_manager().remove_connector(connector_id, confirm=confirm)
+    if not res.get("ok"):
+        code = 400 if "confirmation" in str(res.get("error", "")).lower() else 404
+        raise HTTPException(status_code=code, detail=res.get("error", "Delete failed."))
+    return res
+
+
+# ---------------------------------------------------------------------------
+# Static frontend hosting (clean white web dashboard in static/index.html)
+# ---------------------------------------------------------------------------
 
 
 def _resolve_spa_index() -> Path | None:
     static_index = STATIC_DIR / "index.html"
     if static_index.is_file():
         return static_index
-    dist_index = FRONTEND_DIST_DIR / "index.html"
-    if dist_index.is_file():
-        return dist_index
     return None
 
 

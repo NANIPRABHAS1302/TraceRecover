@@ -40,27 +40,50 @@ def build_prompt(
 
 
 def parse_decision(text: str) -> dict[str, Any]:
-    """Parse and minimally validate a model's JSON action."""
-    content = text.strip()
+    """Parse and minimally validate a model's JSON action, wrapping plain text safely."""
+    raw_text = (text or "").strip()
+    if not raw_text:
+        raise ValueError("The LLM returned an empty response.")
+    content = raw_text
     if content.startswith("```"):
-        content = re.sub(r"^```(?:json)?\s*|\s*```$", "", content, flags=re.I)
+        content = re.sub(r"^```(?:json)?\s*|\s*```$", "", content, flags=re.I).strip()
+    decision: Any = None
     try:
         decision = json.loads(content)
-    except json.JSONDecodeError as exc:
-        raise ValueError("The LLM response was not a JSON action object.") from exc
-    if not isinstance(decision, dict):
-        raise ValueError("The LLM response must be a JSON object.")
-    if not isinstance(decision.get("thought", ""), str):
-        raise ValueError("The LLM action 'thought' must be a string.")
-    if not isinstance(decision.get("action"), str):
-        raise ValueError("The LLM action must include an action name.")
-    if not isinstance(decision.get("arguments", {}), dict):
-        raise ValueError("The LLM action 'arguments' must be an object.")
-    if decision["action"] == "final" and not isinstance(
-        decision.get("final_answer"), str
+    except json.JSONDecodeError:
+        match = re.search(r"\{.*\}", content, flags=re.S)
+        if match:
+            try:
+                decision = json.loads(match.group(0))
+            except json.JSONDecodeError:
+                decision = None
+    if (
+        isinstance(decision, dict)
+        and isinstance(decision.get("action"), str)
+        and decision["action"].strip()
     ):
-        raise ValueError("A final action must include a string final_answer.")
-    return decision
+        thought = decision.get("thought", "")
+        if not isinstance(thought, str):
+            thought = str(thought)
+        arguments = decision.get("arguments", {})
+        if not isinstance(arguments, dict):
+            arguments = {}
+        action = decision["action"].strip()
+        final_answer = decision.get("final_answer")
+        if action == "final" and not isinstance(final_answer, str):
+            final_answer = raw_text
+        return {
+            "thought": thought,
+            "action": action,
+            "arguments": arguments,
+            "final_answer": final_answer,
+        }
+    return {
+        "thought": "Direct LLM answer",
+        "action": "final",
+        "arguments": {},
+        "final_answer": content or raw_text,
+    }
 
 
 class RuleBasedPlanner:

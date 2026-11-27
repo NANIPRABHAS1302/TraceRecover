@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+import hashlib
+import html
+import json
+import logging
 import os
+import re
 import threading
 import time
 from datetime import datetime, timezone
@@ -10,8 +15,43 @@ from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 from uuid import uuid4
 
+OBSERVABILITY_LOGGER = logging.getLogger("tracerecover.observability")
+
+
+def _mask_session_id(session_id: str | None) -> str | None:
+    if not session_id:
+        return None
+    digest = hashlib.sha256(str(session_id).encode("utf-8")).hexdigest()[:10]
+    return f"sess_{digest}"
+
+
+def _emit_structured_log(event: str, *, level: int = logging.INFO, **fields: Any) -> None:
+    """Emit a consistent structured JSON log line with secrets scrubbed and zero raw credentials."""
+    safe_fields: dict[str, Any] = {
+        "event": event,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    for k, v in fields.items():
+        if isinstance(v, str):
+            safe_fields[k] = redact_secret_text(v)
+        else:
+            safe_fields[k] = v
+    try:
+        OBSERVABILITY_LOGGER.log(level, json.dumps(safe_fields, ensure_ascii=False, default=str))
+    except Exception:
+        pass
+
 from agent.dynamic_planner import DynamicQueryPlanner, QueryAnalysis, sanitize_and_guard_query
+from agent.provider_adapter import (
+    LLMProviderAdapter,
+    ProviderAdapterError,
+    classify_provider_exception,
+    redact_secret_text,
+)
+from agent.synthesizer import EvidenceGroundedSynthesizer, SynthesisFailureError
+from agent.uncertainty_taxonomy import classify_abstention_and_uncertainty
 from config import LLMClient
+from connectors.sources.verifier import ClaimEvidenceVerifier, create_llm_entailment_evaluator
 from grounding.claim_extractor import ClaimExtractor
 from grounding.evidence_checker import EvidenceChecker
 from grounding.nli_verifier import DebertaNLIVerifier
@@ -29,6 +69,131 @@ from tools.failure_injector import FailureInjector, FailureType, ToolExecution
 from trace.trace_logger import TraceLogger
 from uncertainty.abstention import AbstentionPolicy
 from uncertainty.estimator import UncertaintyEstimator
+
+
+_QUERY_STOPWORDS = {
+    "a", "an", "and", "are", "as", "at", "be", "between", "by", "can", "compare", "compared",
+    "did", "differ", "difference", "do", "does", "during", "explain", "for", "from", "how",
+    "in", "is", "it", "its", "of", "on", "or", "that", "the", "their", "this", "to", "under",
+    "use", "uses", "using", "versus", "vs", "was", "were", "what", "when", "where", "which",
+    "who", "why", "will", "with", "without", "mode", "form", "reduce", "handle", "handling",
+    "convert", "encode", "predict", "eliminate", "approximate", "approximately", "according",
+}
+_FUTURE_TENSE_RE = re.compile(r"\b(?:will\s+(?:win|release|achieve|assign|record|ship|launch|publish|announce)|next\s+year|upcoming\s+\d{4})\b", re.I)
+_FUTURE_YEAR_RE = re.compile(r"\b(20(?:2[89]|[3-9]\d))\b")
+
+
+def _compact_external_query(query: str) -> str:
+    """Distill a verbose natural-language question into concise high-signal search keywords."""
+    raw_tokens = re.findall(r"[A-Za-z0-9_+./-]{2,}", query or "")
+    scored: list[tuple[int, int, str]] = []
+    seen: set[str] = set()
+    for idx, tok in enumerate(raw_tokens):
+        low = tok.lower().strip(".,?!:;()")
+        if not low or low in _QUERY_STOPWORDS or low in seen:
+            continue
+        seen.add(low)
+        # Prioritize acronyms, proper nouns, hyphenated/underscore technical identifiers, and version/RFC tokens
+        priority = 0
+        if any(c.isupper() for c in tok[1:]) or tok.isupper():
+            priority += 4
+        elif tok[0].isupper() and idx > 0:
+            priority += 3
+        if any(ch in tok for ch in ("_", "-", "/", ".")) or any(ch.isdigit() for ch in tok):
+            priority += 3
+        if len(tok) >= 6:
+            priority += 1
+        scored.append((priority, idx, tok.strip(".,?!:;()")))
+    scored.sort(key=lambda item: (-item[0], item[1]))
+    top = sorted(scored[:5], key=lambda item: item[1])
+    return " ".join(tok for _p, _i, tok in top).strip()
+
+
+def _filter_and_clean_external_output(query: str, output: Any) -> Any:
+    """Unescape HTML entities, prune clearly off-topic hits, and enforce honest future-year abstention."""
+    if not isinstance(output, Mapping):
+        return output
+    results = output.get("results")
+    if not isinstance(results, list) or not results:
+        return output
+
+    cleaned_results: list[dict[str, Any]] = []
+    for item in results:
+        if not isinstance(item, Mapping):
+            continue
+        c_item = dict(item)
+        if isinstance(c_item.get("title"), str):
+            c_item["title"] = html.unescape(c_item["title"])
+        if isinstance(c_item.get("snippet"), str):
+            c_item["snippet"] = html.unescape(c_item["snippet"])
+        cleaned_results.append(c_item)
+
+    # Future-tense queries naming an explicit future year (>=2028) require evidence referencing that year
+    future_years = _FUTURE_YEAR_RE.findall(query or "")
+    if future_years and _FUTURE_TENSE_RE.search(query or ""):
+        year_matched = [
+            r for r in cleaned_results
+            if any(y in f"{r.get('title', '')} {r.get('snippet', '')}" for y in future_years)
+        ]
+        if not year_matched:
+            return f"{NO_EXTERNAL_EVIDENCE_PREFIX} {query}"
+        cleaned_results = year_matched
+
+    # Score query-to-document lexical relevance to drop unrelated search noise (only when >1 doc returned)
+    q_toks = {
+        t.lower() for t in re.findall(r"[A-Za-z0-9_+-]{3,}", query or "")
+        if t.lower() not in _QUERY_STOPWORDS
+    }
+    if q_toks and len(cleaned_results) > 1:
+        kept: list[tuple[float, dict[str, Any]]] = []
+        for r in cleaned_results:
+            blob = f"{r.get('title', '')} {r.get('snippet', '')}".lower()
+            d_toks = set(re.findall(r"[A-Za-z0-9_+-]{3,}", blob))
+            ov = len(q_toks & d_toks) / max(len(q_toks), 1)
+            if ov >= 0.14:
+                kept.append((ov, r))
+        if kept:
+            cleaned_results = [r for _ov, r in kept]
+
+    # Reconstruct clean summary & sources matching filtered/unescaped results
+    parts: list[str] = []
+    for idx, item in enumerate(cleaned_results, start=1):
+        snip = str(item.get("snippet") or "").strip()
+        if snip and snip[-1] not in ".!?":
+            snip += "."
+        parts.append(f"[{idx}] {item.get('title', '')} ({item.get('url', '')}): {snip}")
+    updated = dict(output)
+    updated["results"] = cleaned_results
+    updated["result_count"] = len(cleaned_results)
+    updated["sources"] = [
+        {"title": r.get("title", ""), "url": r.get("url", ""), "provider": r.get("provider", "")}
+        for r in cleaned_results
+    ]
+    updated["summary"] = "\n".join(parts)
+    return updated
+
+
+def _wrap_external_search_with_hygiene(
+    base_tool: Callable[[dict[str, Any]], dict[str, Any] | str],
+    *,
+    allow_compact_retry: bool = True,
+) -> Callable[[dict[str, Any]], dict[str, Any] | str]:
+    """Wrap external_search tool with HTML entity unescaping, noise pruning, and compact-query fallback."""
+    def _run(arguments: dict[str, Any]) -> dict[str, Any] | str:
+        query = str(arguments.get("query") or "").strip()
+        out = base_tool(arguments)
+        is_empty = isinstance(out, str) and out.strip().casefold().startswith(NO_EXTERNAL_EVIDENCE_PREFIX.casefold())
+        if is_empty and allow_compact_retry and len(query.split()) >= 7 and not (_FUTURE_YEAR_RE.search(query) and _FUTURE_TENSE_RE.search(query)):
+            compact_q = _compact_external_query(query)
+            if compact_q and len(compact_q.split()) < len(query.split()):
+                retry_args = dict(arguments)
+                retry_args["query"] = compact_q
+                retry_out = base_tool(retry_args)
+                if not (isinstance(retry_out, str) and retry_out.strip().casefold().startswith(NO_EXTERNAL_EVIDENCE_PREFIX.casefold())):
+                    out = retry_out
+        return _filter_and_clean_external_output(query, out)
+
+    return _run
 
 
 _PROVIDER_KEY_ENV: dict[str, str | None] = {
@@ -83,8 +248,6 @@ def _extract_verified_external_sources(
     sources: list[dict[str, Any]] = []
     seen_urls: set[str] = set()
     for step in trace_entries:
-        if step.get("tool") != "external_search":
-            continue
         if step.get("output_state") == "discarded" or step.get("error") is not None:
             continue
         if step.get("failure_injected") is True:
@@ -92,8 +255,20 @@ def _extract_verified_external_sources(
         output = step.get("output")
         if not isinstance(output, Mapping):
             continue
-        results = output.get("results", [])
+        results = output.get("results") or output.get("documents") or []
         if not isinstance(results, list):
+            final_url = output.get("final_url")
+            if isinstance(final_url, str) and is_valid_http_url(final_url) and final_url not in seen_urls:
+                seen_urls.add(final_url)
+                sources.append(
+                    {
+                        "title": str(output.get("title") or final_url),
+                        "url": final_url,
+                        "snippet": str(output.get("content_excerpt") or "")[:300],
+                        "provider": f"browser:{output.get('engine', 'chromium')}",
+                        "trust_tier": "tier3",
+                    }
+                )
             continue
         for item in results:
             if not isinstance(item, Mapping):
@@ -116,7 +291,7 @@ def _extract_verified_external_sources(
     return sources
 
 
-def _check_provider_credentials(provider: str, client: LLMClient) -> None:
+def _check_provider_credentials(provider: str, client: Any) -> None:
     if provider == "local":
         return
     env_var = _PROVIDER_KEY_ENV.get(provider)
@@ -168,10 +343,12 @@ class OpenEndedAgentRunner:
         *,
         planner: DynamicQueryPlanner | None = None,
         search_adapter: ExternalSearchAdapter | None = None,
+        connector_manager: Any | None = None,
         log_directory: Path | str = "logs",
     ) -> None:
         self.planner = planner or DynamicQueryPlanner()
         self.search_adapter = search_adapter
+        self.connector_manager = connector_manager
         self.log_directory = Path(log_directory)
 
     def run(
@@ -186,6 +363,9 @@ class OpenEndedAgentRunner:
         conversation_history: Sequence[Mapping[str, Any]] = (),
         enable_external_search: bool = False,
         search_provider: str = "auto",
+        use_connectors: bool = False,
+        connector_manager: Any | None = None,
+        approved_connector_actions: Sequence[str] = (),
         failure_rate: float = 0.0,
         seed: int = 42,
         enabled_failure_types: Sequence[str] | None = None,
@@ -201,11 +381,31 @@ class OpenEndedAgentRunner:
         recovery_failure_injector: Any | None = None,
         cancel_event: threading.Event | None = None,
         on_event: Callable[[dict[str, Any]], None] | None = None,
+        session_id: str | None = None,
     ) -> dict[str, Any]:
         """Run one open-ended query, emitting real 10-stage events and writing a replayable trace."""
         started_perf = time.perf_counter()
+        started_at_iso = datetime.now(timezone.utc).isoformat()
+        stage_timings_ms: dict[str, float] = {
+            "intent_and_planning_ms": 0.0,
+            "tool_and_connector_ms": 0.0,
+            "failure_detection_and_recovery_ms": 0.0,
+            "synthesis_ms": 0.0,
+            "evidence_verification_ms": 0.0,
+            "claim_verification_ms": 0.0,
+            "uncertainty_ms": 0.0,
+        }
         active_qid = query_id or f"qry-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}-{uuid4().hex[:6]}"
+        masked_sid = _mask_session_id(session_id)
         events: list[dict[str, Any]] = []
+        _emit_structured_log(
+            "query.started",
+            query_id=active_qid,
+            session_ref=masked_sid,
+            requested_provider=provider,
+            enable_external_search=enable_external_search,
+            use_connectors=use_connectors,
+        )
 
         def emit(stage: str, title: str, status: str, data: Mapping[str, Any]) -> None:
             event = {
@@ -226,6 +426,13 @@ class OpenEndedAgentRunner:
         def check_cancelled() -> None:
             if cancel_event is not None and cancel_event.is_set():
                 emit("cancelled", "Query Cancelled", "cancelled", {"query_id": active_qid})
+                _emit_structured_log(
+                    "query.cancelled",
+                    level=logging.WARNING,
+                    query_id=active_qid,
+                    session_ref=masked_sid,
+                    elapsed_ms=round((time.perf_counter() - started_perf) * 1000.0, 2),
+                )
                 raise QueryCancelledError(f"Query {active_qid} was cancelled.")
 
         guard = sanitize_and_guard_query(question)
@@ -247,25 +454,61 @@ class OpenEndedAgentRunner:
         )
         check_cancelled()
 
-        active_client = client or LLMClient(provider=provider, model=model)
-        if client is None:
-            _check_provider_credentials(active_client.provider, active_client)
+        provider_adapter = LLMProviderAdapter(
+            provider=provider,
+            model=model,
+            client=client,
+            max_llm_calls=max_llm_calls,
+            max_cost_usd=max_cost_usd,
+        )
+        try:
+            if client is None:
+                provider_adapter.check_credentials()
+        except ProviderAdapterError as exc:
+            raise ProviderUnavailableError(str(exc)) from exc
+        active_client: Any = provider_adapter if client is None else client
 
-        # Configure tool executor with safe registry + optional external_search
+        # Configure tool executor with safe registry + optional external_search & connectors
         tool_executor = ToolExecutor.with_default_tools(enable_cache=(failure_rate == 0.0))
+        connector_tools_registered: list[str] = []
         if enable_external_search:
             adapter = self.search_adapter or ExternalSearchAdapter(provider=search_provider)
+            base_ext_tool = create_external_search_tool(adapter, context_messages=conversation_history)
+            is_mock_ext = getattr(adapter, "_provider_fn", None) is not None
             tool_executor.register(
                 "external_search",
-                create_external_search_tool(adapter, context_messages=conversation_history),
+                _wrap_external_search_with_hygiene(base_ext_tool, allow_compact_retry=not is_mock_ext),
                 required_fields={"query": str},
                 description=(
                     "Retrieve real-time external search results with verified titles, snippets, and URLs. "
                     "Input: {query: string}."
                 ),
             )
+        active_conn_mgr = connector_manager or self.connector_manager
+        if use_connectors and active_conn_mgr is not None:
+            connector_tools_registered = active_conn_mgr.register_agent_tools(
+                tool_executor,
+                approved_actions=set(approved_connector_actions or ()),
+            )
+
+            def _research_sources_tool(arguments: Any = None, **kwargs: Any) -> dict[str, Any]:
+                args = dict(arguments) if isinstance(arguments, dict) else {}
+                args.update(kwargs)
+                return active_conn_mgr.query_research_sources(
+                    query=str(args.get("query") or ""),
+                    provider_ids=args.get("provider_ids"),
+                )
+
+            tool_executor.register(
+                "research_sources",
+                _research_sources_tool,
+                required_fields={"query": str},
+                description="Query trust-tiered scholarly & reference sources (arXiv, Crossref, OpenAlex, Wikipedia).",
+            )
+            connector_tools_registered.append("research_sources")
 
         # Stage 2: Intent Understood
+        _t_intent = time.perf_counter()
         analysis: QueryAnalysis = self.planner.analyze_query(
             cleaned_question,
             conversation_history=conversation_history,
@@ -273,6 +516,7 @@ class OpenEndedAgentRunner:
             provider=active_client.provider,
             enable_external_search=enable_external_search,
         )
+        stage_timings_ms["intent_and_planning_ms"] += (time.perf_counter() - _t_intent) * 1000.0
         emit("intent_understood", "2. Intent Understood", "blocked" if analysis.prompt_injection_flagged else "ok", analysis.to_dict())
         check_cancelled()
 
@@ -307,6 +551,20 @@ class OpenEndedAgentRunner:
         selected_tools: list[str] = []
         final_decision_payload: dict[str, Any] | None = None
 
+        requested_provider = str(provider or "local").strip().lower()
+        is_mock_llm = active_client.provider != "local" and client is not None
+        is_live_llm = active_client.provider != "local" and client is None
+        planning_status = "not_run"
+        synthesis_status = "not_run"
+        failed_stage: str | None = None
+        failure_category: str | None = None
+        failure_reason: str | None = None
+        answer_origin = "deterministic_synthesizer"
+        fallback_used = False
+        fallback_reason: str | None = None
+        llm_produced_final_answer = False
+        synthesis_failed = False
+
         tool_map = tool_executor.as_tool_map()
 
         def _recovery_exec(tool_name: str, tool_fn: Any, args: dict[str, Any]) -> ToolExecution:
@@ -328,6 +586,7 @@ class OpenEndedAgentRunner:
 
         for step_num in range(1, max_steps + 1):
             check_cancelled()
+            _t_plan_step = time.perf_counter()
             try:
                 decision = self.planner.next_action(
                     cleaned_question,
@@ -339,19 +598,66 @@ class OpenEndedAgentRunner:
                     max_llm_calls=max_llm_calls,
                     max_cost_usd=max_cost_usd,
                 )
-            except (RuntimeError, ValueError, TimeoutError, OSError) as exc:
+            except (ProviderAdapterError, RuntimeError, ValueError, TimeoutError, OSError) as exc:
+                stage_timings_ms["intent_and_planning_ms"] += (time.perf_counter() - _t_plan_step) * 1000.0
+                err_cat, err_msg = classify_provider_exception(exc, provider=active_client.provider)
                 logger.log_step(
                     thought="Request next dynamic plan step.",
                     tool="llm",
                     input_data={"question": cleaned_question, "step": step_num},
-                    error=str(exc),
+                    error=err_msg,
                     latency=time.perf_counter() - started_perf,
+                    metadata={"failure_category": err_cat, "stage": "synthesis" if observations else "planning"},
                 )
+                has_committed_evidence = any("output" in o and not o.get("error") for o in observations)
+                if active_client.provider != "local" and has_committed_evidence:
+                    # Preserve already retrieved tool/connector evidence instead of discarding it or silently falling back.
+                    planning_status = "succeeded" if planned_actions else "failed"
+                    synthesis_status = "failed"
+                    synthesis_failed = True
+                    failed_stage = "synthesis"
+                    failure_category = err_cat
+                    failure_reason = err_msg
+                    answer_origin = "none_failed"
+                    llm_produced_final_answer = False
+                    fallback_used = False
+                    fallback_reason = None
+                    emit(
+                        "synthesis",
+                        "Answer Synthesis",
+                        "failed",
+                        {
+                            "step": step_num,
+                            "provider": active_client.provider,
+                            "failed_stage": failed_stage,
+                            "failure_category": failure_category,
+                            "failure_reason": failure_reason,
+                            "preserved_observations": sum(
+                                1 for o in observations if "output" in o and not o.get("error")
+                            ),
+                            "fallback_used": False,
+                        },
+                    )
+                    final_decision_payload = {
+                        "thought": (
+                            f"Provider '{active_client.provider}' failed during post-retrieval synthesis ({err_cat}); "
+                            "retrieved evidence preserved without silent deterministic fallback."
+                        ),
+                        "action": "final",
+                        "final_answer": "",
+                        "synthesis_failed": True,
+                    }
+                    break
                 if active_client.provider != "local":
                     raise ProviderUnavailableError(
-                        f"Configured provider '{active_client.provider}' failed during planning: {exc}"
+                        redact_secret_text(
+                            f"Configured provider '{active_client.provider}' failed during planning ({err_cat}): {err_msg}"
+                        )
                     ) from exc
                 raise
+
+            stage_timings_ms["intent_and_planning_ms"] += (time.perf_counter() - _t_plan_step) * 1000.0
+            planning_status = "succeeded"
 
             action = str(decision["action"])
             thought = str(decision.get("thought", ""))
@@ -369,6 +675,7 @@ class OpenEndedAgentRunner:
                     "thought": thought,
                     "is_multi_step": analysis.is_multi_step,
                     "provider": active_client.provider,
+                    "research_plan": analysis.research_plan,
                 },
             )
 
@@ -408,11 +715,13 @@ class OpenEndedAgentRunner:
             check_cancelled()
 
             # Stage 5: Tool Execution (via ToolExecutor + FailureInjector)
+            _t_tool = time.perf_counter()
             outcome = tool_executor.execute(
                 action,
                 arguments,
                 failure_injector=injector,
             )
+            stage_timings_ms["tool_and_connector_ms"] += (time.perf_counter() - _t_tool) * 1000.0
             execution = outcome.execution
             failure_meta = execution.trace_metadata(action) if execution.failure_injected else None
             tool_step = logger.log_step(
@@ -444,6 +753,7 @@ class OpenEndedAgentRunner:
             )
 
             # Stage 6: Failure Detection & Localization
+            _t_fdr = time.perf_counter()
             trace_entries = logger.read_trace()
             detections = detector.detect_trace(trace_entries)
             latest_detections = [d for d in detections if d.step_id == tool_step["step_id"]]
@@ -570,22 +880,101 @@ class OpenEndedAgentRunner:
                     observations.append({"tool": action, "input": arguments, "error": execution.error})
                 else:
                     observations.append({"tool": action, "input": arguments, "output": execution.output})
+            stage_timings_ms["failure_detection_and_recovery_ms"] += (time.perf_counter() - _t_fdr) * 1000.0
 
+        _t_synth = time.perf_counter()
         if final_decision_payload is None:
             if observations and any("output" in o and not o.get("error") for o in observations):
-                synth = "\n".join(str(o["output"]) for o in observations if "output" in o and not o.get("error"))
-                final_decision_payload = {
-                    "thought": "Max tool steps reached; synthesize committed tool observations.",
-                    "action": "final",
-                    "final_answer": synth,
-                }
+                synth_adapter = active_client if active_client.provider != "local" else None
+                synth_exec_mode = "live_llm" if is_live_llm else ("mock_llm" if is_mock_llm else "offline_deterministic")
+                try:
+                    synth_meta = EvidenceGroundedSynthesizer().synthesize_with_metadata(
+                        cleaned_question,
+                        observations,
+                        provider_adapter=synth_adapter,
+                        execution_mode=synth_exec_mode,
+                        allow_deterministic_fallback=False,
+                    )
+                    synthesis_status = str(synth_meta["synthesis_status"])
+                    answer_origin = str(synth_meta["answer_origin"])
+                    fallback_used = bool(synth_meta["fallback_used"])
+                    fallback_reason = synth_meta.get("fallback_reason")
+                    llm_produced_final_answer = bool(synth_meta["llm_produced_final_answer"])
+                    final_decision_payload = {
+                        "thought": "Max tool steps reached; synthesize committed tool observations.",
+                        "action": "final",
+                        "final_answer": str(synth_meta["answer"]),
+                    }
+                except (SynthesisFailureError, ProviderAdapterError, RuntimeError, ValueError, TimeoutError, OSError) as exc:
+                    err_cat, err_msg = classify_provider_exception(exc, provider=active_client.provider)
+                    synthesis_failed = True
+                    synthesis_status = "failed"
+                    failed_stage = "synthesis"
+                    failure_category = err_cat
+                    failure_reason = err_msg
+                    answer_origin = "none_failed"
+                    fallback_used = False
+                    fallback_reason = None
+                    llm_produced_final_answer = False
+                    logger.log_step(
+                        thought="Synthesize committed tool observations with configured provider.",
+                        tool="llm",
+                        input_data={"question": cleaned_question, "stage": "synthesis"},
+                        error=err_msg,
+                        latency=time.perf_counter() - started_perf,
+                        metadata={"failure_category": err_cat, "stage": "synthesis"},
+                    )
+                    emit(
+                        "synthesis",
+                        "Answer Synthesis",
+                        "failed",
+                        {
+                            "provider": active_client.provider,
+                            "failed_stage": failed_stage,
+                            "failure_category": failure_category,
+                            "failure_reason": failure_reason,
+                            "preserved_observations": sum(
+                                1 for o in observations if "output" in o and not o.get("error")
+                            ),
+                            "fallback_used": False,
+                        },
+                    )
+                    final_decision_payload = {
+                        "thought": (
+                            f"Provider '{active_client.provider}' failed during synthesis ({err_cat}); "
+                            "retrieved evidence preserved without silent deterministic fallback."
+                        ),
+                        "action": "final",
+                        "final_answer": "",
+                        "synthesis_failed": True,
+                    }
             else:
+                synthesis_status = "skipped_no_evidence"
+                answer_origin = "abstained"
                 final_decision_payload = {
                     "thought": "Max steps exhausted without valid committed observations.",
                     "action": "final",
                     "final_answer": "The agent could not complete all steps within the configured step budget.",
                 }
+        elif not synthesis_failed:
+            if bool(final_decision_payload.get("blocked_by_guard") or analysis.prompt_injection_flagged):
+                synthesis_status = "skipped_blocked"
+                answer_origin = "abstained"
+                llm_produced_final_answer = False
+            elif is_live_llm:
+                synthesis_status = "succeeded"
+                answer_origin = "real_llm"
+                llm_produced_final_answer = True
+            elif is_mock_llm:
+                synthesis_status = "succeeded"
+                answer_origin = "mock_provider"
+                llm_produced_final_answer = False
+            else:
+                synthesis_status = "succeeded"
+                answer_origin = "deterministic_synthesizer"
+                llm_produced_final_answer = False
 
+        stage_timings_ms["synthesis_ms"] += (time.perf_counter() - _t_synth) * 1000.0
         raw_answer = str(final_decision_payload.get("final_answer", ""))
         blocked_by_guard = bool(final_decision_payload.get("blocked_by_guard") or analysis.prompt_injection_flagged)
         direct_llm_no_tools = bool(final_decision_payload.get("direct_llm_no_tools")) and not selected_tools
@@ -654,6 +1043,7 @@ class OpenEndedAgentRunner:
             emit("recovery", "7. Recovery", "skipped", {"attempted": False, "reason": "No tool failure occurred."})
 
         # Stage 8: Evidence Verification
+        _t_ev = time.perf_counter()
         external_sources = _extract_verified_external_sources(trace_entries)
         if enable_grounding:
             grounding_report = evidence_checker.verify(
@@ -664,8 +1054,17 @@ class OpenEndedAgentRunner:
                 recovery_records=recovery_records,
                 failure_report=failure_report,
             )
-            # Clear distinction: model-generated without tools vs external retrieval vs local tools
-            if blocked_by_guard or offline_scope_limited or no_evidence_only:
+            # Clear distinction: synthesis failure vs safety guard vs external retrieval vs local tools
+            if synthesis_failed:
+                knowledge_source = (
+                    "synthesis_failed_evidence_preserved"
+                    if (external_sources or any("output" in o and not o.get("error") for o in observations))
+                    else "synthesis_failed"
+                )
+                grounding_report["grounding_score"] = 0.0
+                grounding_report["supported_count"] = 0
+                grounding_report["status"] = "SYNTHESIS_FAILED"
+            elif blocked_by_guard or offline_scope_limited or no_evidence_only:
                 knowledge_source = "blocked_safety_guard" if blocked_by_guard else (
                     "offline_scope_limited" if offline_scope_limited else "abstained_insufficient_evidence"
                 )
@@ -684,16 +1083,26 @@ class OpenEndedAgentRunner:
             grounding_report["external_sources"] = external_sources
             grounding_report_path = logger.write_grounding_report(grounding_report)
         else:
-            knowledge_source = "model_generated_no_tools" if direct_llm_no_tools else (
-                "external_search_grounded" if external_sources else "grounding_disabled"
+            knowledge_source = (
+                "synthesis_failed_evidence_preserved"
+                if (synthesis_failed and external_sources)
+                else (
+                    "synthesis_failed"
+                    if synthesis_failed
+                    else (
+                        "model_generated_no_tools"
+                        if direct_llm_no_tools
+                        else ("external_search_grounded" if external_sources else "grounding_disabled")
+                    )
+                )
             )
             grounding_report = {
                 "query": cleaned_question,
                 "final_answer": raw_answer,
                 "grounded_answer": raw_answer,
-                "status": "DISABLED",
+                "status": "SYNTHESIS_FAILED" if synthesis_failed else "DISABLED",
                 "claims": [],
-                "grounding_score": None,
+                "grounding_score": 0.0 if synthesis_failed else None,
                 "supported_count": 0,
                 "unsupported_count": 0,
                 "contradicted_count": 0,
@@ -702,6 +1111,18 @@ class OpenEndedAgentRunner:
                 "external_sources": external_sources,
             }
             grounding_report_path = None
+
+        stage_timings_ms["evidence_verification_ms"] += (time.perf_counter() - _t_ev) * 1000.0
+        _t_cv = time.perf_counter()
+        llm_entailer = (
+            create_llm_entailment_evaluator(provider_adapter)
+            if (provider_adapter.is_remote_or_custom and client is None and not synthesis_failed)
+            else None
+        )
+        claim_verifier = ClaimEvidenceVerifier(ClaimExtractor(), llm_evaluator=llm_entailer)
+        claim_corpus = ClaimEvidenceVerifier.build_evidence_corpus(trace_entries, external_sources)
+        claim_evidence_report = claim_verifier.verify_answer(raw_answer, claim_corpus)
+        stage_timings_ms["claim_verification_ms"] += (time.perf_counter() - _t_cv) * 1000.0
 
         emit(
             "evidence_verification",
@@ -714,11 +1135,17 @@ class OpenEndedAgentRunner:
                 "unsupported_count": grounding_report.get("unsupported_count", 0),
                 "contradicted_count": grounding_report.get("contradicted_count", 0),
                 "external_sources": external_sources,
+                "retrieved_evidence": claim_corpus,
                 "claims": grounding_report.get("claims", []),
+                "claim_evidence_report": claim_evidence_report,
             },
         )
 
-        # Stage 9: Uncertainty Estimation
+        # Stage 9: Uncertainty Estimation & Phase 7 Abstention Taxonomy
+        _t_unc = time.perf_counter()
+        abstention_category = "grounded_confident"
+        reconciled_by_semantic = False
+        uncertainty_breakdown: dict[str, Any] = {}
         if enable_uncertainty:
             uncertainty_signals = uncertainty_estimator.estimate(
                 grounding_report,
@@ -726,8 +1153,23 @@ class OpenEndedAgentRunner:
                 recovery_report=recovery_report,
                 recovery_records=recovery_records,
             )
-            if direct_llm_no_tools and not blocked_by_guard:
-                # Transparent WARN decision for model-generated no-tool answers (never pretend tool verification)
+            if synthesis_failed:
+                final_decision = "ABSTAIN"
+                abstention_category = "provider_synthesis_failure"
+                decision_explanation = (
+                    f"LLM synthesis failed ({failure_category or 'provider_error'}): "
+                    f"{failure_reason or 'provider request failed'}. "
+                    f"Research retrieval preserved {len(external_sources)} external source(s) and "
+                    f"{len(claim_corpus)} evidence item(s) without silent deterministic fallback."
+                )
+                abstention_reason = decision_explanation
+                final_response = (
+                    f"LLM synthesis failed ({failure_category or 'provider_error'}): "
+                    f"{failure_reason or 'provider request failed'}. "
+                    f"Retrieved evidence ({len(external_sources)} external source(s), {len(claim_corpus)} evidence item(s)) "
+                    "is preserved below; no synthetic or deterministic fallback answer was substituted."
+                )
+            elif direct_llm_no_tools and not blocked_by_guard:
                 final_decision = "WARN"
                 decision_explanation = (
                     "Model-generated response without external/local tool verification; "
@@ -746,11 +1188,43 @@ class OpenEndedAgentRunner:
                 final_decision = decision_obj.final_decision
                 decision_explanation = decision_obj.decision_explanation
                 final_response = decision_obj.final_response
+
+            if not synthesis_failed:
+                tax = classify_abstention_and_uncertainty(
+                    final_decision=final_decision,
+                    decision_explanation=decision_explanation,
+                    blocked_by_guard=blocked_by_guard,
+                    offline_scope_limited=offline_scope_limited,
+                    grounding_report=grounding_report,
+                    claim_evidence_report=claim_evidence_report,
+                    failure_report=failure_report,
+                    recovery_report=recovery_report,
+                    uncertainty_signals=uncertainty_signals,
+                    external_sources=external_sources,
+                    direct_llm_no_tools=direct_llm_no_tools,
+                    answer_threshold=answer_threshold,
+                    abstain_threshold=abstain_threshold,
+                )
+                final_decision = tax["final_decision"]
+                decision_explanation = tax["decision_explanation"]
+                abstention_category = tax["abstention_category"]
+                abstention_reason = tax.get("abstention_reason") or decision_explanation
+                reconciled_by_semantic = tax["reconciled_by_semantic_verifier"]
+                uncertainty_breakdown = tax["uncertainty_breakdown"]
+                if final_decision == "ABSTAIN" and not blocked_by_guard:
+                    final_response = f"I am abstaining: {decision_explanation}"
+                elif reconciled_by_semantic:
+                    final_response = raw_answer
+
             uncertainty_report = {
                 "query": cleaned_question,
                 "original_answer": raw_answer,
                 **uncertainty_signals,
                 "final_decision": final_decision,
+                "abstention_category": abstention_category,
+                "abstention_reason": abstention_reason,
+                "reconciled_by_semantic_verifier": reconciled_by_semantic,
+                "uncertainty_breakdown": uncertainty_breakdown,
                 "decision_explanation": decision_explanation,
                 "final_response": final_response,
                 "thresholds": {
@@ -760,21 +1234,40 @@ class OpenEndedAgentRunner:
             }
             uncertainty_report_path = logger.write_uncertainty_report(uncertainty_report)
         else:
-            final_decision = "ABSTAIN" if blocked_by_guard else "NOT_APPLICABLE"
-            decision_explanation = (
-                analysis.notes
-                if blocked_by_guard
-                else "Uncertainty estimation was disabled."
-            )
-            final_response = (
-                f"I am abstaining: {decision_explanation}" if blocked_by_guard else grounding_report["grounded_answer"]
-            )
+            if synthesis_failed:
+                final_decision = "ABSTAIN"
+                abstention_category = "provider_synthesis_failure"
+                decision_explanation = (
+                    f"LLM synthesis failed ({failure_category or 'provider_error'}): "
+                    f"{failure_reason or 'provider request failed'}. Retrieved evidence preserved without silent fallback."
+                )
+                abstention_reason = decision_explanation
+                final_response = (
+                    f"LLM synthesis failed ({failure_category or 'provider_error'}): "
+                    f"{failure_reason or 'provider request failed'}. "
+                    f"Retrieved evidence ({len(external_sources)} external source(s), {len(claim_corpus)} evidence item(s)) "
+                    "is preserved below; no synthetic or deterministic fallback answer was substituted."
+                )
+            else:
+                final_decision = "ABSTAIN" if blocked_by_guard else "NOT_APPLICABLE"
+                abstention_category = "policy_blocked" if blocked_by_guard else "grounded_confident"
+                decision_explanation = (
+                    analysis.notes
+                    if blocked_by_guard
+                    else "Uncertainty estimation was disabled."
+                )
+                abstention_reason = decision_explanation
+                final_response = (
+                    f"I am abstaining: {decision_explanation}" if blocked_by_guard else grounding_report["grounded_answer"]
+                )
             uncertainty_report = {
                 "query": cleaned_question,
                 "original_answer": raw_answer,
                 "status": "DISABLED",
                 "uncertainty_score": None,
                 "final_decision": final_decision,
+                "abstention_category": abstention_category,
+                "abstention_reason": abstention_reason,
                 "decision_explanation": decision_explanation,
                 "final_response": final_response,
             }
@@ -785,6 +1278,7 @@ class OpenEndedAgentRunner:
             source_lines = "\n".join(f"- [{s['title']}]({s['url']})" for s in external_sources)
             final_response = f"{final_response}\n\nVerified External Sources:\n{source_lines}"
 
+        stage_timings_ms["uncertainty_ms"] += (time.perf_counter() - _t_unc) * 1000.0
         emit(
             "uncertainty_estimation",
             "9. Uncertainty Estimation",
@@ -793,6 +1287,9 @@ class OpenEndedAgentRunner:
                 "uncertainty_score": uncertainty_report.get("uncertainty_score"),
                 "tool_success_ratio": uncertainty_report.get("tool_success_ratio"),
                 "recovery_reliability": uncertainty_report.get("recovery_reliability"),
+                "abstention_category": abstention_category,
+                "abstention_reason": abstention_reason,
+                "uncertainty_breakdown": uncertainty_breakdown,
             },
         )
 
@@ -803,6 +1300,8 @@ class OpenEndedAgentRunner:
             "ok" if final_decision == "ANSWER" else ("warning" if final_decision == "WARN" else "abstained"),
             {
                 "final_decision": final_decision,
+                "abstention_category": abstention_category,
+                "abstention_reason": abstention_reason,
                 "knowledge_source": knowledge_source,
                 "decision_explanation": decision_explanation,
                 "final_response": final_response,
@@ -812,24 +1311,268 @@ class OpenEndedAgentRunner:
         elapsed_total = round(time.perf_counter() - started_perf, 6)
         provenance = _format_step_provenance(trace_entries)
         llm_usage = active_client.usage_summary()
+
+        has_mock_adapter = self.search_adapter is not None and (
+            getattr(self.search_adapter, "_provider_fn", None) is not None
+            or getattr(self.search_adapter, "provider_fn", None) is not None
+        )
+        connector_obs = [
+            o
+            for o in observations
+            if str(o.get("tool") or "") in {"external_search", "research_sources", "browser_inspect"}
+            or str(o.get("tool") or "").startswith("mcp_")
+        ]
+        used_external_tool = bool(external_sources) or bool(connector_obs) or any(
+            t in {"external_search", "research_sources", "browser_inspect"} or str(t).startswith("mcp_")
+            for t in provenance["tools_used"]
+        )
+        if not used_external_tool:
+            connector_status = "not_used"
+        else:
+            conn_err = sum(1 for o in connector_obs if o.get("error"))
+            conn_ok = sum(1 for o in connector_obs if not o.get("error") and "output" in o)
+            if external_sources or (conn_ok > 0 and conn_err == 0 and not no_evidence_only):
+                connector_status = "partial" if conn_err > 0 else "succeeded"
+            elif conn_ok > 0 and conn_err > 0:
+                connector_status = "partial"
+            elif no_evidence_only:
+                connector_status = "no_results"
+            else:
+                connector_status = "failed"
+
+        is_mock_conn = has_mock_adapter and (enable_external_search or used_external_tool)
+        is_live_conn = used_external_tool and not has_mock_adapter
+
+        if active_client.provider != "local":
+            execution_mode = "live_llm" if client is None else "mock_llm"
+        elif is_mock_conn:
+            execution_mode = "mock_connectors"
+        elif is_live_conn:
+            execution_mode = "live_connectors"
+        else:
+            execution_mode = "offline_deterministic"
+
+        if synthesis_failed:
+            if is_live_llm and is_live_conn:
+                execution_mode_label = "LIVE CONNECTOR (LIVE LLM SYNTHESIS FAILED)"
+            elif is_live_llm:
+                execution_mode_label = "LIVE LLM FAILED"
+            elif is_mock_llm and is_live_conn:
+                execution_mode_label = "LIVE CONNECTOR (MOCK SYNTHESIS FAILED)"
+            elif is_mock_llm:
+                execution_mode_label = "MOCK (SYNTHESIS FAILED)"
+            else:
+                execution_mode_label = "SYNTHESIS FAILED"
+        elif is_live_llm and is_live_conn:
+            execution_mode_label = "LIVE CONNECTOR + LIVE LLM"
+        elif is_live_llm:
+            execution_mode_label = "LIVE LLM"
+        elif is_live_conn:
+            execution_mode_label = "LIVE CONNECTOR"
+        elif is_mock_conn or is_mock_llm:
+            execution_mode_label = "MOCK"
+        else:
+            execution_mode_label = "OFFLINE"
+
+        plan_subtasks = list((analysis.research_plan or {}).get("subtasks") or [])
+        gap_fills = sum(1 for st in plan_subtasks if st.get("is_gap_fill"))
+        failed_obs = sum(1 for o in observations if o.get("error"))
+        succeeded_obs = sum(1 for o in observations if not o.get("error") and "output" in o)
+        plan_stats = {
+            "total_subtasks": len(plan_subtasks),
+            "completed_subtasks": min(len(plan_subtasks), succeeded_obs) if plan_subtasks else succeeded_obs,
+            "failed_subtasks": failed_obs,
+            "gap_fill_attempts": gap_fills,
+            "stop_reason": (
+                f"synthesis_failed:{failure_category}"
+                if synthesis_failed
+                else ((analysis.research_plan or {}).get("stop_reason") or "completed")
+            ),
+        }
+        provider_status_base = provider_adapter.provider_status_summary()
+        if synthesis_failed:
+            provider_status_base["connection_status"] = failure_category or "failed"
+            provider_status_base["last_error_category"] = failure_category
+        provider_info = {
+            **provider_status_base,
+            "requested_provider": requested_provider,
+            "actual_provider": active_client.provider,
+            "execution_mode": execution_mode,
+            "execution_mode_label": execution_mode_label,
+            "planning_status": planning_status,
+            "connector_status": connector_status,
+            "synthesis_status": synthesis_status,
+            "answer_origin": answer_origin,
+            "fallback_used": fallback_used,
+            "fallback_reason": fallback_reason,
+            "failed_stage": failed_stage,
+            "failure_category": failure_category,
+            "failure_reason": failure_reason,
+            "llm_produced_final_answer": llm_produced_final_answer,
+            "call_count": llm_usage.get("call_count", 0),
+            "retry_count": llm_usage.get("retry_count", provider_adapter.retry_count),
+            "failed_requests": max(
+                int(llm_usage.get("failed_requests", provider_adapter.failed_requests) or 0),
+                1 if synthesis_failed else 0,
+            ),
+            "prompt_tokens": llm_usage.get("prompt_tokens", 0),
+            "completion_tokens": llm_usage.get("completion_tokens", 0),
+            "total_tokens": llm_usage.get("total_tokens", 0),
+            "usage_source": llm_usage.get("usage_source", provider_adapter.last_usage_source),
+            "total_latency_seconds": llm_usage.get("total_latency_seconds", 0.0),
+            "estimated_cost_usd": llm_usage.get("estimated_cost_usd", 0.0),
+        }
+        structured_answer = EvidenceGroundedSynthesizer.synthesize_structured(
+            cleaned_question,
+            observations,
+            raw_answer=raw_answer,
+            external_sources=external_sources,
+            claim_evidence_report=claim_evidence_report,
+            uncertainty_report=uncertainty_report,
+            recovery_report=recovery_report,
+            execution_mode=execution_mode,
+            synthesis_status=synthesis_status,
+            failure_category=failure_category,
+            failure_reason=failure_reason,
+            answer_origin=answer_origin,
+        )
+        known_ext_urls = {str(s.get("url") or "") for s in external_sources if s.get("url")}
+        struct_cites = structured_answer.get("citations") or []
+        integration_audit = {
+            "planner_called_model": bool(active_client.provider != "local" and int(llm_usage.get("call_count", 0)) > 0),
+            "connectors_executed": [
+                t for t in provenance["tools_used"]
+                if t in {"external_search", "research_sources", "browser_inspect"} or str(t).startswith("mcp_")
+            ],
+            "retrieved_evidence_count": len(claim_corpus),
+            "retrieved_evidence_reached_synthesis": bool(structured_answer.get("supporting_evidence")),
+            "synthesis_succeeded": synthesis_status == "succeeded",
+            "llm_produced_final_answer": llm_produced_final_answer,
+            "fallback_used": fallback_used,
+            "verifier_evaluated_post_synthesis": claim_evidence_report is not None,
+            "citations_traceable_to_corpus": all(str(c.get("url") or "") in known_ext_urls for c in struct_cites),
+            "unsupported_or_contradicted_flagged": int(claim_evidence_report.get("unsupported_count") or 0) + int(claim_evidence_report.get("contradicted_count") or 0),
+        }
+        execution_integrity = {
+            "requested_provider": requested_provider,
+            "actual_provider": active_client.provider,
+            "actual_model": active_client.model,
+            "execution_mode": execution_mode,
+            "execution_mode_label": execution_mode_label,
+            "planning_status": planning_status,
+            "connector_status": connector_status,
+            "synthesis_status": synthesis_status,
+            "answer_origin": answer_origin,
+            "llm_produced_final_answer": llm_produced_final_answer,
+            "fallback_used": fallback_used,
+            "fallback_reason": fallback_reason,
+            "failed_stage": failed_stage,
+            "failure_category": failure_category,
+            "failure_reason": failure_reason,
+            "preserved_external_sources_count": len(external_sources),
+            "preserved_evidence_count": len(claim_corpus),
+            "live_llm_succeeded": bool(is_live_llm and synthesis_status == "succeeded" and llm_produced_final_answer),
+        }
+        completed_at_iso = datetime.now(timezone.utc).isoformat()
+        total_duration_ms = round(elapsed_total * 1000.0, 2)
+        rounded_timings = {k: round(v, 2) for k, v in stage_timings_ms.items()}
+        tool_call_summary = {
+            "total_calls": len(observations),
+            "succeeded": succeeded_obs,
+            "failed": failed_obs,
+            "recovered": sum(1 for o in observations if o.get("recovered")),
+            "tools": provenance["tools_used"],
+        }
+        observability = {
+            "trace_id": logger.path.stem,
+            "query_id": active_qid,
+            "conversation_id": conversation_id,
+            "session_ref": masked_sid,
+            "execution_mode": execution_mode,
+            "execution_mode_label": execution_mode_label,
+            "started_at": started_at_iso,
+            "completed_at": completed_at_iso,
+            "total_duration_ms": total_duration_ms,
+            "stage_timings_ms": rounded_timings,
+            "tool_call_summary": tool_call_summary,
+            "retry_count": int(provider_info.get("retry_count", 0) or 0),
+            "recovery_outcome": {
+                "attempted": bool(recovery_report.get("recovery_attempted")),
+                "successful": int(recovery_report.get("successful_recoveries", 0) or 0),
+                "failed": int(recovery_report.get("failed_recoveries", 0) or 0),
+                "strategies_used": list(recovery_report.get("strategies_used", [])),
+            },
+            "final_decision": final_decision,
+            "abstention_category": abstention_category,
+            "abstention_reason": redact_secret_text(str(abstention_reason or "")),
+            "provider_status": provider_info.get("connection_status"),
+            "token_usage": {
+                "prompt_tokens": int(llm_usage.get("prompt_tokens", 0) or 0),
+                "completion_tokens": int(llm_usage.get("completion_tokens", 0) or 0),
+                "total_tokens": int(llm_usage.get("total_tokens", 0) or 0),
+                "usage_source": llm_usage.get("usage_source", provider_adapter.last_usage_source),
+            },
+        }
+        _emit_structured_log(
+            "query.failed" if synthesis_failed else "query.completed",
+            level=logging.WARNING if synthesis_failed else logging.INFO,
+            trace_id=logger.path.stem,
+            query_id=active_qid,
+            session_ref=masked_sid,
+            execution_mode=execution_mode,
+            execution_mode_label=execution_mode_label,
+            final_decision=final_decision,
+            synthesis_status=synthesis_status,
+            failure_category=failure_category,
+            total_duration_ms=total_duration_ms,
+            tool_calls=len(observations),
+            recovery_successes=int(recovery_report.get("successful_recoveries", 0) or 0),
+        )
         return {
             "query_id": active_qid,
             "conversation_id": conversation_id,
             "trace_id": logger.path.stem,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": completed_at_iso,
+            "observability": observability,
             "question": cleaned_question,
             "resolved_query": analysis.resolved_query,
+            "requested_provider": requested_provider,
+            "actual_provider": active_client.provider,
             "provider": active_client.provider,
             "provider_scope": "offline_deterministic_local" if active_client.provider == "local" else "live_remote_llm",
+            "execution_mode": execution_mode,
+            "execution_mode_label": execution_mode_label,
+            "planning_status": planning_status,
+            "connector_status": connector_status,
+            "synthesis_status": synthesis_status,
+            "answer_origin": answer_origin,
+            "fallback_used": fallback_used,
+            "fallback_reason": fallback_reason,
+            "failed_stage": failed_stage,
+            "failure_category": failure_category,
+            "failure_reason": failure_reason,
+            "llm_produced_final_answer": llm_produced_final_answer,
+            "execution_integrity": execution_integrity,
+            "provider_info": provider_info,
+            "integration_audit": integration_audit,
             "model": active_client.model,
             "knowledge_source": knowledge_source,
             "external_sources": external_sources,
+            "retrieved_evidence": claim_corpus,
             "analysis": analysis.to_dict(),
+            "source_selection": analysis.source_selection,
+            "research_plan": analysis.research_plan,
+            "plan_stats": plan_stats,
             "planned_actions": planned_actions,
             "tools_selected": provenance["tools_used"],
+            "connector_tools_registered": connector_tools_registered,
             "answer": raw_answer,
+            "structured_answer": structured_answer,
             "grounded_answer": grounding_report["grounded_answer"],
             "final_decision": final_decision,
+            "abstention_category": abstention_category,
+            "abstention_reason": abstention_reason,
+            "reconciled_by_semantic_verifier": reconciled_by_semantic,
             "decision_explanation": decision_explanation,
             "final_response": final_response,
             "provenance": provenance,
@@ -839,6 +1582,7 @@ class OpenEndedAgentRunner:
             "failure_report": failure_report,
             "recovery_report": recovery_report,
             "grounding_report": grounding_report,
+            "claim_evidence_report": claim_evidence_report,
             "uncertainty_report": uncertainty_report,
             "execution_events": events,
             "trace_steps": trace_entries,

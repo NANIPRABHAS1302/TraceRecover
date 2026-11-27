@@ -1,0 +1,41 @@
+{
+  "comparison_id": "cmp-20261125T135644Z-9f70cf",
+  "created_at": "2026-11-25T13:56:45.190859+00:00",
+  "question": "hlo how are you",
+  "config": {
+    "providers": [
+      "local"
+    ],
+    "enable_external_search": true,
+    "search_provider": "auto",
+    "failure_rate": 0.0,
+    "seed": 42,
+    "use_nli": false
+  },
+  "results": [
+    {
+      "provider": "local",
+      "model": "deterministic-local",
+      "status": "completed",
+      "execution_mode": "offline_deterministic_local",
+      "final_decision": "ABSTAIN",
+      "final_response": "I am abstaining: No answer claim has usable supporting evidence in the tool trace.",
+      "knowledge_source": "abstained_insufficient_evidence",
+      "tools_selected": [
+        "external_search"
+      ],
+      "evidence_coverage": 0.0,
+      "supported_claims": 0,
+      "total_claims": 1,
+      "recovery_attempted": false,
+      "successful_recoveries": 0,
+      "latency_seconds": 1.075122,
+      "total_tokens": 0,
+      "estimated_cost_usd": 0.0,
+      "cache_hits": 0,
+      "external_sources": [],
+      "trace_id": "trace-20261125T135644Z-efbe3c99",
+      "error": null
+    }
+  ]
+}

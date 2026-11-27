@@ -19,7 +19,9 @@ _SECRET_SCRUB_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"AIza[0-9A-Za-z_-]{20,}"),
     re.compile(r"sk-ant-[0-9A-Za-z_-]{16,}"),
     re.compile(r"sk-[0-9A-Za-z_-]{16,}"),
-    re.compile(r"(?i)bearer\s+[A-Za-z0-9._-]{16,}"),
+    re.compile(r"(?i)bearer\s+[A-Za-z0-9._-]{12,}"),
+    re.compile(r"(?i)(?:x-goog-api-key|x-api-key|authorization)\s*[:=]\s*[^\s,;\"']{6,}"),
+    re.compile(r"(?i)(?:api[_-]?key|access[_-]?token)\s*[:=]\s*[^\s&\"',;]{6,}"),
 )
 
 
@@ -71,6 +73,8 @@ class ConversationStore:
         )
         self.max_turns_per_conversation = max(10, int(max_turns_per_conversation))
         self._lock = threading.Lock()
+        self._summary_cache: dict[str, tuple[int, int, dict[str, Any]]] = {}
+        self._summary_cache_max = 512
 
     def _session_dir(self, session_id: str) -> Path:
         safe_session = _sanitize_session_id(session_id)
@@ -104,12 +108,20 @@ class ConversationStore:
         }
         with self._lock:
             path = self._conversation_path(safe_session, conv_id)
-            path.write_text(
-                json.dumps(record, indent=2, ensure_ascii=False) + "\n",
-                encoding="utf-8",
-            )
+            self._write_raw(path, record)
+            summary = self._summarize_conversation(record)
+            self._cache_summary_locked(path, summary)
             self._enforce_retention_locked(safe_session)
-        return self._summarize_conversation(record)
+        return summary
+
+    def _cache_summary_locked(self, path: Path, summary: dict[str, Any]) -> None:
+        try:
+            st = path.stat()
+        except OSError:
+            return
+        if len(self._summary_cache) >= self._summary_cache_max:
+            self._summary_cache.clear()
+        self._summary_cache[str(path)] = (st.st_mtime_ns, st.st_size, dict(summary))
 
     def _enforce_retention_locked(self, safe_session: str) -> None:
         sdir = self._session_dir(safe_session)
@@ -119,6 +131,7 @@ class ConversationStore:
             reverse=True,
         )
         for stale in files[self.max_conversations_per_session :]:
+            self._summary_cache.pop(str(stale), None)
             stale.unlink(missing_ok=True)
 
     def _read_raw(self, path: Path) -> dict[str, Any]:
@@ -128,10 +141,15 @@ class ConversationStore:
         return data
 
     def _write_raw(self, path: Path, record: Mapping[str, Any]) -> None:
-        path.write_text(
-            json.dumps(record, indent=2, ensure_ascii=False, default=str) + "\n",
-            encoding="utf-8",
-        )
+        """Atomically persist JSON using a sibling temp file + os.replace() to prevent partial writes."""
+        payload = json.dumps(record, indent=2, ensure_ascii=False, default=str) + "\n"
+        tmp_path = path.with_name(f".{path.name}.{uuid4().hex[:8]}.tmp")
+        try:
+            tmp_path.write_text(payload, encoding="utf-8")
+            os.replace(tmp_path, path)
+        finally:
+            if tmp_path.exists():
+                tmp_path.unlink(missing_ok=True)
 
     @staticmethod
     def _summarize_conversation(record: Mapping[str, Any]) -> dict[str, Any]:
@@ -150,19 +168,37 @@ class ConversationStore:
         }
 
     def list_conversations(self, session_id: str = "default") -> list[dict[str, Any]]:
-        """List conversations belonging strictly to this session_id."""
+        """List conversations belonging strictly to this session_id using an mtime-validated summary cache."""
         safe_session = _sanitize_session_id(session_id)
         with self._lock:
             sdir = self._session_dir(safe_session)
             items: list[dict[str, Any]] = []
-            for path in sdir.glob("*.json"):
+            seen_keys: set[str] = set()
+            for entry in os.scandir(sdir):
+                if not entry.is_file() or not entry.name.endswith(".json"):
+                    continue
+                path_str = entry.path
+                seen_keys.add(path_str)
                 try:
-                    rec = self._read_raw(path)
+                    st = entry.stat()
+                except OSError:
+                    continue
+                cached = self._summary_cache.get(path_str)
+                if cached is not None and cached[0] == st.st_mtime_ns and cached[1] == st.st_size:
+                    if cached[2].get("session_id") == safe_session:
+                        items.append(dict(cached[2]))
+                    continue
+                try:
+                    rec = self._read_raw(Path(path_str))
                 except Exception:
                     continue
                 if rec.get("session_id") != safe_session:
                     continue
-                items.append(self._summarize_conversation(rec))
+                summary = self._summarize_conversation(rec)
+                if len(self._summary_cache) >= self._summary_cache_max:
+                    self._summary_cache.clear()
+                self._summary_cache[path_str] = (st.st_mtime_ns, st.st_size, dict(summary))
+                items.append(summary)
         items.sort(key=lambda r: str(r.get("updated_at", "")), reverse=True)
         return items
 
@@ -175,7 +211,10 @@ class ConversationStore:
         with self._lock:
             if not path.is_file():
                 return None
-            rec = self._read_raw(path)
+            try:
+                rec = self._read_raw(path)
+            except (json.JSONDecodeError, ValueError, OSError):
+                return None
         if rec.get("session_id") != safe_session:
             return None
         return rec
@@ -221,7 +260,8 @@ class ConversationStore:
         """Append an executed query turn, creating a conversation if conversation_id is omitted."""
         safe_session = _sanitize_session_id(session_id)
         with self._lock:
-            if not conversation_id:
+            created_new = not conversation_id
+            if created_new:
                 conv_id = f"conv-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}-{uuid4().hex[:6]}"
                 path = self._conversation_path(safe_session, conv_id)
                 now = datetime.now(timezone.utc).isoformat()
@@ -255,7 +295,9 @@ class ConversationStore:
             rec["turns"] = turns
             rec["updated_at"] = datetime.now(timezone.utc).isoformat()
             self._write_raw(path, rec)
-            self._enforce_retention_locked(safe_session)
+            self._cache_summary_locked(path, self._summarize_conversation(rec))
+            if created_new:
+                self._enforce_retention_locked(safe_session)
             return rec
 
     def clear_conversation(self, session_id: str, conversation_id: str) -> dict[str, Any] | None:
@@ -265,17 +307,22 @@ class ConversationStore:
         with self._lock:
             if not path.is_file():
                 return None
-            rec = self._read_raw(path)
+            try:
+                rec = self._read_raw(path)
+            except (json.JSONDecodeError, ValueError, OSError):
+                return None
             if rec.get("session_id") != safe_session:
                 return None
             rec["turns"] = []
             rec["title"] = "Cleared Conversation"
             rec["updated_at"] = datetime.now(timezone.utc).isoformat()
             self._write_raw(path, rec)
-            return self._summarize_conversation(rec)
+            summary = self._summarize_conversation(rec)
+            self._cache_summary_locked(path, summary)
+            return summary
 
     def delete_conversation(self, session_id: str, conversation_id: str) -> bool:
-        """Delete a conversation file only if owned by session_id."""
+        """Delete a conversation file only if owned by session_id (allows cleanup of corrupted own-session files)."""
         safe_session = _sanitize_session_id(session_id)
         path = self._conversation_path(safe_session, conversation_id)
         with self._lock:
@@ -283,10 +330,16 @@ class ConversationStore:
                 return False
             try:
                 rec = self._read_raw(path)
-            except Exception:
+            except (json.JSONDecodeError, ValueError):
+                # Corrupted file residing directly in this caller's isolated session dir can be safely removed
+                self._summary_cache.pop(str(path), None)
+                path.unlink(missing_ok=True)
+                return True
+            except OSError:
                 return False
             if rec.get("session_id") != safe_session:
                 return False
+            self._summary_cache.pop(str(path), None)
             path.unlink(missing_ok=True)
             return True
 

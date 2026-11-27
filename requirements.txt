@@ -4,7 +4,9 @@ fastapi>=0.115,<1.0
 uvicorn[standard]>=0.30,<1.0
 httpx>=0.27,<1.0
 reportlab>=4.2,<5.0
+mcp>=1.0,<3.0
+cryptography>=43.0,<52.0
 pytest>=8.0,<10.0
 
-# Optional for local browser-level E2E tests (tests/test_browser_e2e.py):
+# Optional for browser-level automation and E2E tests (tests/test_browser_e2e.py):
 # playwright>=1.48,<2.0

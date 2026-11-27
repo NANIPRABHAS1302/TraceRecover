@@ -1,0 +1,19 @@
+{
+  "dataset_version": "1.0.0",
+  "frozen_at_utc": "2026-11-25T03:13:49.593792+00:00",
+  "files": {
+    "phase7_4_independent_holdout.json": {
+      "sha256": "a5d796b3c5ca73fa2d9d0572f296c78df9a713859f38b83f642fd7a30a38b1ef",
+      "bytes": 44022,
+      "question_count": 92,
+      "domain_count": 18
+    },
+    "phase7_4_holdout_gold.json": {
+      "sha256": "aade3b5dfec8cad13fda83b224efd05849811429105019980aa924810ded1106",
+      "bytes": 153646,
+      "e2e_task_count": 92,
+      "provenance_audit_count": 12,
+      "contradiction_audit_count": 18
+    }
+  }
+}

@@ -23,6 +23,8 @@ services:
         value: /var/data/conversations
       - key: TRACERECOVER_UNSEEN_DATASETS_DIR
         value: /var/data/unseen_benchmarks
+      - key: TRACERECOVER_CONNECTORS_DIR
+        value: /var/data/connectors
       - key: TRACERECOVER_SEARCH_PROVIDER
         value: auto
       - key: TRACERECOVER_ENABLE_DOCS
