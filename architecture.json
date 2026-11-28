@@ -1,0 +1,23 @@
+{
+  "id": "tracerecover",
+  "title": "TraceRecover — Self-Healing LLM Agent Reliability",
+  "subtitle": "Plan -> Execute -> Recover -> Verify -> Decide (100 tasks · 300 paired runs · 0% hallucination)",
+  "nodes": [
+    { "id": "user_task", "label": "User Task", "type": "start", "layer": 0, "description": "Incoming user query or multi-step benchmark task requiring external tool calls.", "tech": "CLI / FastAPI", "module": "open_ended_runner.py" },
+    { "id": "plan", "label": "Plan", "type": "process", "layer": 1, "description": "Decomposes the task into structured ReAct tool invocations with expected schemas.", "tech": "Python · ReAct", "module": "provider_adapter.py" },
+    { "id": "execute", "label": "Execute", "type": "process", "layer": 2, "description": "Invokes external tools and logs granular JSONL execution traces for every step.", "tech": "Python · JSONL", "module": "open_ended_runner.py" },
+    { "id": "fault_inject", "label": "Fault Injection", "type": "error", "layer": 2, "description": "Configurable fault harness injecting timeout, wrong-output, empty-result, and bad-argument failures.", "tech": "Fault Harness", "module": "fault_injector.py" },
+    { "id": "verify", "label": "Verify", "type": "decision", "layer": 3, "description": "Evidence-grounded NLI verifier & uncertainty taxonomy check before answering.", "tech": "NLI · Uncertainty", "module": "verifier.py / uncertainty_taxonomy.py" },
+    { "id": "recover", "label": "Recover Loop", "type": "error", "layer": 4, "description": "Localizes tool failure and triggers targeted evidence-grounded retry or fallback tool call.", "tech": "Self-Healing", "module": "synthesizer.py" },
+    { "id": "decide", "label": "Decide (ANSWER / WARN / ABSTAIN)", "type": "output", "layer": 4, "description": "Calibration gate emitting grounded ANSWER, uncertainty WARN, or safe ABSTAIN (0% hallucination).", "tech": "Calibration · Dashboard", "module": "web_dashboard.py" }
+  ],
+  "edges": [
+    { "from": "user_task", "to": "plan", "label": "task" },
+    { "from": "plan", "to": "execute", "label": "tool plan" },
+    { "from": "fault_inject", "to": "execute", "label": "0/20/40% faults", "kind": "error" },
+    { "from": "execute", "to": "verify", "label": "JSONL trace" },
+    { "from": "verify", "to": "recover", "label": "fault / low conf", "kind": "error" },
+    { "from": "recover", "to": "execute", "label": "re-execute", "kind": "feedback" },
+    { "from": "verify", "to": "decide", "label": "verified" }
+  ]
+}

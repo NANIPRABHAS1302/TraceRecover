@@ -1,0 +1,28 @@
+flowchart LR
+  user_task(["User Task"])
+  plan["Plan"]
+  execute["Execute"]
+  fault_inject["Fault Injection"]
+  verify{"Verify"}
+  recover["Recover Loop"]
+  decide[("Decide (ANSWER / WARN / ABSTAIN)")]
+  user_task -->|task| plan
+  plan -->|tool plan| execute
+  fault_inject -.->|0/20/40% faults| execute
+  execute -->|JSONL trace| verify
+  verify -.->|fault / low conf| recover
+  recover -.->|re-execute| execute
+  verify -->|verified| decide
+  classDef start fill:#064E3B,stroke:#10B981,color:#F8FAFC;
+  classDef process fill:#172554,stroke:#3B82F6,color:#F8FAFC;
+  classDef decision fill:#1E1B4B,stroke:#6366F1,color:#F8FAFC;
+  classDef data fill:#451A03,stroke:#F59E0B,color:#F8FAFC;
+  classDef error fill:#450A0A,stroke:#EF4444,color:#F8FAFC;
+  classDef output fill:#042F2E,stroke:#14B8A6,color:#F8FAFC;
+  class user_task start;
+  class plan process;
+  class execute process;
+  class fault_inject error;
+  class verify decision;
+  class recover error;
+  class decide output;

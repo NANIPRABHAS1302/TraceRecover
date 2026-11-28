@@ -1,0 +1,35 @@
+name: Generate Animated Architecture SVG
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "architecture.json"
+      - "tools/make_architecture_svg.mjs"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-architecture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Generate docs/architecture.svg and docs/architecture.mmd
+        run: node tools/make_architecture_svg.mjs architecture.json docs
+
+      - name: Commit updated diagrams
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/architecture.svg docs/architecture.mmd
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: regenerate animated architecture SVG & Mermaid"
+            git push
+          fi

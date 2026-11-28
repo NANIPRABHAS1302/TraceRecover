@@ -131,3 +131,8 @@ Use this repository (or the generated `TraceRecover_teammate_handoff.zip` archiv
    - Add your own `GEMINI_API_KEY`, `OPENAI_API_KEY`, or `ANTHROPIC_API_KEY` into local `.env` (never commit `.env`) and test live questions in **2. Live Demo** alongside the 4 deterministic reliability presets.
 4. **Update Legacy Browser E2E Tests (Optional):**
    - The 11 legacy multi-tab Playwright E2E tests (`test_browser_e2e.py`, `test_phase3_browser_e2e.py`, etc.) still reference removed developer tabs from the earlier 13-tab UI; update them if full browser E2E coverage of the streamlined 6-page Material Design 3 dashboard is desired.
+
+## System Architecture
+
+<p align="center"><img src="docs/architecture.svg" width="100%" alt="Animated architecture"/></p>
+

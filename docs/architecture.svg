@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1090" height="396" viewBox="0 0 1090 396" role="img" aria-label="TraceRecover — Self-Healing LLM Agent Reliability">
+  <style>
+    .bg { fill: #0d1117; stroke: #30363d; stroke-width: 1.5; }
+    .title { font: 700 16px 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; fill: #f8fafc; }
+    .sub { font: 500 11.5px 'Fira Code', ui-monospace, monospace; fill: #94a3b8; }
+    .nlbl { font: 700 11.5px 'Inter', -apple-system, sans-serif; fill: #f8fafc; text-anchor: middle; }
+    .ntech { font: 500 9.5px 'Fira Code', ui-monospace, monospace; fill: #cbd5e1; text-anchor: middle; }
+    .elbl { font: 500 10px 'Fira Code', ui-monospace, monospace; fill: #94a3b8; text-anchor: middle; }
+    .flow { animation: dash 1.5s linear infinite; }
+    .nshape { animation: glow 4.5s ease-in-out infinite; }
+    @keyframes dash { from { stroke-dashoffset: 28; } to { stroke-dashoffset: 0; } }
+    @keyframes glow { 0%, 100% { filter: drop-shadow(0 0 0px rgba(239,68,68,0)); } 50% { filter: drop-shadow(0 0 8px rgba(239,68,68,0.55)); } }
+    @media (prefers-reduced-motion: reduce) { .flow, .nshape { animation: none; } }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8.5 5 L 0 8.5 z" fill="#64748B"/>
+    </marker>
+    <linearGradient id="accentBar" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#DC2626"/>
+      <stop offset="50%" stop-color="#EF4444"/>
+      <stop offset="100%" stop-color="#38BDF8"/>
+    </linearGradient>
+  </defs>
+  <rect x="1" y="1" width="1088" height="394" rx="14" class="bg"/>
+  <rect x="1" y="1" width="1088" height="4" rx="2" fill="url(#accentBar)"/>
+  <text x="24" y="32" class="title">TraceRecover — Self-Healing LLM Agent Reliability</text>
+  <text x="24" y="50" class="sub">Plan -&gt; Execute -&gt; Recover -&gt; Verify -&gt; Decide (100 tasks · 300 paired runs · 0% hallucination)</text>
+  
+    <g>
+      <path d="M 195 210 L 250 210" fill="none" stroke="#30363D" stroke-width="2.6" stroke-linecap="round" marker-end="url(#arrow)"/>
+      <path id="edge-0" class="flow" d="M 195 210 L 250 210" fill="none" stroke="#38BDF8" stroke-width="2" stroke-dasharray="7 7" stroke-linecap="round"/>
+      <circle r="3.6" fill="#38BDF8">
+        <animateMotion dur="2.20s" begin="0.00s" repeatCount="indefinite" path="M 195 210 L 250 210"/>
+      </circle>
+      <text x="222.5" y="202" class="elbl">task</text>
+    </g>
+    <g>
+      <path d="M 410 210 L 423.75 210 Q 437.5 210 437.5 196.25 L 437.5 167.75 Q 437.5 154 451.25 154 L 465 154" fill="none" stroke="#30363D" stroke-width="2.6" stroke-linecap="round" marker-end="url(#arrow)"/>
+      <path id="edge-1" class="flow" d="M 410 210 L 423.75 210 Q 437.5 210 437.5 196.25 L 437.5 167.75 Q 437.5 154 451.25 154 L 465 154" fill="none" stroke="#38BDF8" stroke-width="2" stroke-dasharray="7 7" stroke-linecap="round"/>
+      <circle r="3.6" fill="#38BDF8">
+        <animateMotion dur="2.55s" begin="0.25s" repeatCount="indefinite" path="M 410 210 L 423.75 210 Q 437.5 210 437.5 196.25 L 437.5 167.75 Q 437.5 154 451.25 154 L 465 154"/>
+      </circle>
+      <text x="437.5" y="146" class="elbl">tool plan</text>
+    </g>
+    <g>
+      <path d="M 545 238 L 545 182" fill="none" stroke="#30363D" stroke-width="2.6" stroke-linecap="round" marker-end="url(#arrow)"/>
+      <path id="edge-2" class="flow" d="M 545 238 L 545 182" fill="none" stroke="#EF4444" stroke-width="2" stroke-dasharray="7 7" stroke-linecap="round"/>
+      <circle r="3.6" fill="#EF4444">
+        <animateMotion dur="2.90s" begin="0.50s" repeatCount="indefinite" path="M 545 238 L 545 182"/>
+      </circle>
+      <text x="601" y="210" class="elbl">0/20/40% faults</text>
+    </g>
+    <g>
+      <path d="M 625 154 L 645.5 154 Q 659.5 154 659.5 168 L 659.5 196 Q 659.5 210 673.5 210 L 694 210" fill="none" stroke="#30363D" stroke-width="2.6" stroke-linecap="round" marker-end="url(#arrow)"/>
+      <path id="edge-3" class="flow" d="M 625 154 L 645.5 154 Q 659.5 154 659.5 168 L 659.5 196 Q 659.5 210 673.5 210 L 694 210" fill="none" stroke="#38BDF8" stroke-width="2" stroke-dasharray="7 7" stroke-linecap="round"/>
+      <circle r="3.6" fill="#38BDF8">
+        <animateMotion dur="2.20s" begin="0.75s" repeatCount="indefinite" path="M 625 154 L 645.5 154 Q 659.5 154 659.5 168 L 659.5 196 Q 659.5 210 673.5 210 L 694 210"/>
+      </circle>
+      <text x="659.5" y="146" class="elbl">JSONL trace</text>
+    </g>
+    <g>
+      <path d="M 826 210 L 846.5 210 Q 860.5 210 860.5 196 L 860.5 168 Q 860.5 154 874.5 154 L 895 154" fill="none" stroke="#30363D" stroke-width="2.6" stroke-linecap="round" marker-end="url(#arrow)"/>
+      <path id="edge-4" class="flow" d="M 826 210 L 846.5 210 Q 860.5 210 860.5 196 L 860.5 168 Q 860.5 154 874.5 154 L 895 154" fill="none" stroke="#EF4444" stroke-width="2" stroke-dasharray="7 7" stroke-linecap="round"/>
+      <circle r="3.6" fill="#EF4444">
+        <animateMotion dur="2.55s" begin="1.00s" repeatCount="indefinite" path="M 826 210 L 846.5 210 Q 860.5 210 860.5 196 L 860.5 168 Q 860.5 154 874.5 154 L 895 154"/>
+      </circle>
+      <text x="860.5" y="146" class="elbl">fault / low conf</text>
+    </g>
+    <g>
+      <path d="M 975 182 L 975 216 Q 975 228 963 228 L 557 228 Q 545 228 545 216 L 545 182" fill="none" stroke="#30363D" stroke-width="2.6" stroke-linecap="round" marker-end="url(#arrow)"/>
+      <path id="edge-5" class="flow" d="M 975 182 L 975 216 Q 975 228 963 228 L 557 228 Q 545 228 545 216 L 545 182" fill="none" stroke="#F59E0B" stroke-width="2" stroke-dasharray="7 7" stroke-linecap="round"/>
+      <circle r="3.6" fill="#F59E0B">
+        <animateMotion dur="2.90s" begin="1.25s" repeatCount="indefinite" path="M 975 182 L 975 216 Q 975 228 963 228 L 557 228 Q 545 228 545 216 L 545 182"/>
+      </circle>
+      <text x="760" y="242" class="elbl">re-execute</text>
+    </g>
+    <g>
+      <path d="M 826 210 L 846.5 210 Q 860.5 210 860.5 224 L 860.5 252 Q 860.5 266 874.5 266 L 895 266" fill="none" stroke="#30363D" stroke-width="2.6" stroke-linecap="round" marker-end="url(#arrow)"/>
+      <path id="edge-6" class="flow" d="M 826 210 L 846.5 210 Q 860.5 210 860.5 224 L 860.5 252 Q 860.5 266 874.5 266 L 895 266" fill="none" stroke="#38BDF8" stroke-width="2" stroke-dasharray="7 7" stroke-linecap="round"/>
+      <circle r="3.6" fill="#38BDF8">
+        <animateMotion dur="2.20s" begin="1.50s" repeatCount="indefinite" path="M 826 210 L 846.5 210 Q 860.5 210 860.5 224 L 860.5 252 Q 860.5 266 874.5 266 L 895 266"/>
+      </circle>
+      <text x="860.5" y="202" class="elbl">verified</text>
+    </g>
+  
+    <g>
+      <rect x="35" y="182" width="160" height="56" rx="28" fill="#064E3B" stroke="#10B981" stroke-width="2" class="nshape" style="animation-delay:0.00s"/>
+      <text x="115" y="211" class="nlbl"><tspan x="115" dy="0">User Task</tspan></text>
+      <text x="115" y="227" class="ntech">CLI / FastAPI</text>
+    </g>
+    <g>
+      <rect x="250" y="182" width="160" height="56" rx="10" fill="#172554" stroke="#3B82F6" stroke-width="2" class="nshape" style="animation-delay:0.55s"/>
+      <text x="330" y="211" class="nlbl"><tspan x="330" dy="0">Plan</tspan></text>
+      <text x="330" y="227" class="ntech">Python · ReAct</text>
+    </g>
+    <g>
+      <rect x="465" y="126" width="160" height="56" rx="10" fill="#172554" stroke="#3B82F6" stroke-width="2" class="nshape" style="animation-delay:1.10s"/>
+      <text x="545" y="155" class="nlbl"><tspan x="545" dy="0">Execute</tspan></text>
+      <text x="545" y="171" class="ntech">Python · JSONL</text>
+    </g>
+    <g>
+      <rect x="465" y="238" width="160" height="56" rx="10" fill="#450A0A" stroke="#EF4444" stroke-width="2" class="nshape" style="animation-delay:1.65s"/>
+      <text x="545" y="267" class="nlbl"><tspan x="545" dy="0">Fault Injection</tspan></text>
+      <text x="545" y="283" class="ntech">Fault Harness</text>
+    </g>
+    <g>
+      <polygon points="760,176 826,210 760,244 694,210" fill="#1E1B4B" stroke="#6366F1" stroke-width="2" class="nshape" style="animation-delay:2.20s"/>
+      <text x="760" y="211" class="nlbl"><tspan x="760" dy="0">Verify</tspan></text>
+      <text x="760" y="227" class="ntech">NLI · Uncertainty</text>
+    </g>
+    <g>
+      <rect x="895" y="126" width="160" height="56" rx="10" fill="#450A0A" stroke="#EF4444" stroke-width="2" class="nshape" style="animation-delay:2.75s"/>
+      <text x="975" y="155" class="nlbl"><tspan x="975" dy="0">Recover Loop</tspan></text>
+      <text x="975" y="171" class="ntech">Self-Healing</text>
+    </g>
+    <g>
+      <rect x="895" y="238" width="160" height="56" rx="22" fill="#042F2E" stroke="#14B8A6" stroke-width="2" class="nshape" style="animation-delay:3.30s"/>
+      <text x="975" y="260" class="nlbl"><tspan x="975" dy="0">Decide (ANSWER / WARN</tspan><tspan x="975" dy="13">/ ABSTAIN)</tspan></text>
+      <text x="975" y="286" class="ntech">Calibration · Dashboard</text>
+    </g>
+  <text x="24" y="382" class="sub">Generated from architecture.json · Pure CSS/SMIL SVG (GitHub README compatible)</text>
+</svg>
